@@ -37,7 +37,7 @@ A comprehensive golf tournament scoring application for managing rounds, trackin
 4. Launch as full-screen app
 
 ### Direct Access
-Visit: [https://YOUR-USERNAME.github.io/lets-golf/](https://YOUR-USERNAME.github.io/lets-golf/)
+Visit: [https://odub12.github.io/lets-golf/](https://YOUR-USERNAME.github.io/lets-golf/)
 
 ## 🎮 How to Use
 
