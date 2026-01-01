@@ -11,7 +11,7 @@
     <title>Let's Golf</title>
     <!-- QR Code Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <!-- VERSION: 2025-01-01-CLEAN-LABELS -->
+    <!-- VERSION: 2025-01-01-BUTTON-LAYOUT -->
     <style>
         * {
             margin: 0;
@@ -769,7 +769,8 @@
 
         .share-buttons {
             display: grid;
-            gap: 10px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
             margin-bottom: 16px;
         }
 
@@ -777,9 +778,9 @@
             background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
             color: white;
             border: none;
-            padding: 12px 20px;
+            padding: 12px 8px;
             border-radius: 8px;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
             display: flex;
@@ -795,6 +796,10 @@
 
         .share-btn.copy {
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .share-btn.qr {
+            background: linear-gradient(135deg, #c084fc 0%, #a855f7 100%);
         }
 
         .share-btn.download {
@@ -1577,17 +1582,19 @@
                         <input type="text" class="player-hcp-input" placeholder="HCP" id="hcp1" pattern="-?[0-9]*" inputmode="numeric">
                     </div>
                 </div>
-                <button type="button" class="btn-add-player" onclick="addPlayerRow()" id="addPlayerBtn">+ Add Player</button>
+                
+                <!-- Add Player and Load Game Side by Side -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                    <button type="button" class="btn-add-player" onclick="addPlayerRow()" id="addPlayerBtn">+ Add Player</button>
+                    <button type="button" class="btn-add-player" onclick="document.getElementById('importFile').click()" style="background: white; color: #64748b; border-color: #cbd5e1;">
+                        ↓ Load Game
+                    </button>
+                </div>
+                <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importTournamentBackup(event)">
             </div>
 
             <button type="button" class="btn btn-primary" id="resumeScoringBtn" style="background: #10b981; display: none;" onclick="resumeScoring()">Resume Scoring</button>
             <button type="button" class="btn btn-primary" onclick="startScoring()">Start Scoring</button>
-            
-            <!-- Import Backup Section -->
-            <button type="button" class="btn-add-player" onclick="document.getElementById('importFile').click()" style="margin-top: 10px;">
-                Load Game
-            </button>
-            <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importTournamentBackup(event)">
         </div>
     </div>
 
@@ -1671,7 +1678,7 @@
                     <button class="share-btn copy" onclick="copyShareLink()">
                         Copy Link
                     </button>
-                    <button class="share-btn" onclick="showQRCode()">
+                    <button class="share-btn qr" onclick="showQRCode()">
                         QR Code
                     </button>
                     <button class="share-btn download" onclick="downloadTournamentData()">
