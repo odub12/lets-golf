@@ -1,0 +1,3812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="U līK goLf?!">
+    <meta name="theme-color" content="#1e40af">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%231e40af' width='100' height='100'/><text y='70' x='50' text-anchor='middle' fill='white' font-size='60' font-family='system-ui'>⛳</text></svg>">
+    <title>U līK goLf?! Games</title>
+    <!-- VERSION: 2024-12-31-SELECT-DIRECTIVES -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            min-height: 100vh;
+            min-height: -webkit-fill-available; /* iOS Safari fix */
+            padding: 0;
+            overflow-x: hidden;
+            touch-action: pan-y; /* Allow vertical scrolling */
+        }
+
+        html {
+            height: -webkit-fill-available; /* iOS Safari fix */
+        }
+
+        /* Page Container */
+        .page {
+            display: none;
+            min-height: 100vh;
+            padding: 20px;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #1e40af;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        /* Setup Page */
+        .setup-container {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #1e40af;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            max-width: 100%;
+            padding: 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.2s;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .form-group input[type="date"] {
+            padding: 12px 14px;
+            font-size: 15px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: #f8fafc;
+        }
+
+        /* Player Input Grid */
+        .player-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow: hidden;
+        }
+
+        .player-row {
+            display: grid;
+            grid-template-columns: 1fr 80px;
+            gap: 10px;
+            align-items: center;
+            position: relative;
+            background: white;
+            border-radius: 12px;
+            overflow: visible;
+            z-index: 1;
+            transition: transform 0.3s ease;
+        }
+
+        .player-row.has-suggestions {
+            z-index: 100;
+        }
+
+        .player-row::after {
+            content: 'Delete';
+            position: absolute;
+            right: -100px;
+            top: 0;
+            bottom: 0;
+            width: 100px;
+            background: #ef4444;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 15px;
+            border-radius: 12px;
+            z-index: -1;
+        }
+
+        .player-row.swiped {
+            transform: translateX(-100px);
+        }
+
+        .player-row.deleting {
+            opacity: 0;
+            transform: translateX(-300px);
+            transition: all 0.3s ease;
+        }
+
+        .player-row::before {
+            content: 'Delete';
+            position: absolute;
+            right: -100px;
+            top: 0;
+            bottom: 0;
+            width: 100px;
+            background: #ef4444;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 15px;
+            border-radius: 12px;
+            z-index: -1;
+        }
+
+        .player-row.swiped {
+            transform: translateX(-100px);
+        }
+
+        .player-row.deleting {
+            opacity: 0;
+            transform: translateX(-300px);
+            transition: all 0.3s ease;
+        }
+
+        .player-name-input {
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 15px;
+            width: 100%;
+            background: white;
+            position: relative;
+            z-index: 1;
+        }
+
+        .player-name-input::placeholder {
+            color: #94a3b8;
+        }
+
+        .player-hcp-input {
+            width: 80px;
+            padding: 12px 8px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 15px;
+            text-align: center;
+            background: white;
+            position: relative;
+            z-index: 1;
+        }
+
+        .player-hcp-input::placeholder {
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        /* Autocomplete Suggestions */
+        .autocomplete-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 90px;
+            background: white;
+            border: 2px solid #3b82f6;
+            border-top: none;
+            border-radius: 0 0 12px 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .autocomplete-suggestions.show {
+            display: block;
+        }
+
+        .suggestion-item {
+            padding: 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-item:hover,
+        .suggestion-item:active {
+            background: #eff6ff;
+        }
+
+        .suggestion-name {
+            font-weight: 600;
+            color: #1e40af;
+        }
+
+        .suggestion-hcp {
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .btn-add-player {
+            width: auto;
+            min-width: 140px;
+            padding: 10px 20px;
+            background: white;
+            color: #3b82f6;
+            border: 2px solid #3b82f6;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px auto 0;
+            transition: all 0.2s;
+            display: block;
+        }
+
+        .btn-add-player:active {
+            background: #eff6ff;
+        }
+
+        .btn-add-player:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Quick Add Player Buttons */
+        .quick-add-btn {
+            padding: 8px 12px;
+            background: #eff6ff;
+            color: #3b82f6;
+            border: 2px solid #3b82f6;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .quick-add-btn:active {
+            background: #dbeafe;
+            transform: scale(0.95);
+        }
+
+        /* Team Setup */
+        .team-container {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .team-header {
+            color: #1e40af;
+            font-weight: 700;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+
+        .team-member-select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 10px;
+            -webkit-tap-highlight-color: transparent;
+            pointer-events: auto;
+            position: relative;
+            z-index: 10;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:active {
+            background: #2563eb;
+            transform: scale(0.98);
+        }
+
+        .btn-secondary {
+            background: #64748b;
+            color: white;
+            -webkit-user-select: none;
+            user-select: none;
+            z-index: 1000 !important;
+        }
+
+        .btn-secondary:active {
+            background: #475569;
+            transform: scale(0.98);
+        }
+
+        /* Scoring Page */
+        .scoring-header {
+            background: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: sticky;
+            top: 20px;
+            z-index: 50;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: top 0.3s;
+        }
+
+        .header-top-row {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .header-bottom-row {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .tournament-info-centered {
+            text-align: center;
+        }
+
+        .tournament-info-centered h2 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .tournament-info-centered p {
+            font-size: 12px;
+            color: #64748b;
+            margin: 2px 0 0 0;
+        }
+
+        /* Results page header - simple single row */
+        .results-page-header {
+            background: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 12px;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .tournament-info-simple {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .tournament-info-simple h2 {
+            color: #1e40af;
+            font-size: 16px;
+            margin-bottom: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .tournament-info-simple p {
+            color: #64748b;
+            font-size: 12px;
+            margin: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .scoring-content {
+            padding-top: 76px;
+            padding-left: 0;
+            padding-right: 0;
+        }
+
+        .round-indicator.active ~ .scoring-header,
+        #scoringPage .round-indicator.active ~ .scoring-header {
+            top: 52px;
+        }
+
+        .round-indicator.active ~ .scoring-content,
+        #scoringPage .round-indicator.active ~ .scoring-content {
+            padding-top: 108px;
+        }
+
+
+        .finish-btn {
+            padding: 8px 16px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            white-space: nowrap;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            pointer-events: auto;
+            position: relative;
+            z-index: 10;
+        }
+
+        .finish-btn:active {
+            background: #059669;
+        }
+
+        .back-btn {
+            padding: 8px 12px;
+            background: #64748b;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            white-space: nowrap;
+            -webkit-tap-highlight-color: rgba(100, 116, 139, 0.3);
+            touch-action: manipulation;
+            pointer-events: auto;
+            position: relative;
+            z-index: 1000;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .back-btn:active {
+            background: #475569;
+        }
+
+        /* Player Card */
+        .player-card {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .player-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .player-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1e40af;
+        }
+
+        .player-total {
+            font-size: 24px;
+            font-weight: 700;
+            color: #3b82f6;
+        }
+
+        /* Hole Grid */
+        .holes-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .hole-input-group {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 8px 5px;
+            min-width: 0;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .hole-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+            font-size: 11px;
+            color: #64748b;
+            font-weight: 600;
+            min-height: 32px;
+        }
+
+        .par-badge {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-size: 9px;
+            white-space: nowrap;
+        }
+
+        .score-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            min-width: 0;
+        }
+
+        .score-btn {
+            width: 28px;
+            height: 28px;
+            min-width: 28px;
+            border: none;
+            background: #3b82f6;
+            color: white;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            touch-action: manipulation;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .score-btn:active {
+            background: #2563eb;
+            transform: scale(0.95);
+        }
+
+        .score-input {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            text-align: center;
+            padding: 6px 2px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 700;
+            color: #1e40af;
+            box-sizing: border-box;
+        }
+
+        .score-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        /* Score coloring */
+        .score-input.birdie-better {
+            background: #dcfce7;
+            border-color: #10b981;
+            color: #059669;
+            font-weight: 600;
+        }
+
+        .score-input.par {
+            background: #dbeafe;
+            border-color: #3b82f6;
+            color: #1e40af;
+            font-weight: 600;
+        }
+
+        .score-input.bogey {
+            background: #fef3c7;
+            border-color: #f59e0b;
+            color: #d97706;
+            font-weight: 600;
+        }
+
+        .score-input.double-bogey-plus {
+            background: #fef2f2;
+            border-color: #ef4444;
+            color: #dc2626;
+            font-weight: 600;
+        }
+
+        /* Results Page */
+        .results-container {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .results-title {
+            color: #1e40af;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .results-player {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .results-player-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .results-player-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e40af;
+        }
+
+        .results-score {
+            font-size: 24px;
+            font-weight: 700;
+            color: #3b82f6;
+        }
+
+        .results-details {
+            display: flex;
+            gap: 16px;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .results-stat {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .results-stat-label {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+        }
+
+        /* Scorecard Modal */
+        .scorecard-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .scorecard-modal.active {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .scorecard-content {
+            background: white;
+            border-radius: 16px;
+            max-width: 900px;
+            width: 100%;
+            margin: 20px auto;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .scorecard-header {
+            padding: 20px;
+            border-bottom: 2px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .scorecard-body {
+            padding: 12px;
+            max-height: 75vh;
+            overflow-y: auto;
+        }
+
+        .scorecard-footer {
+            padding: 16px;
+            border-top: 2px solid #e2e8f0;
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .scorecard-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 11px;
+            table-layout: auto;
+        }
+
+        .scorecard-table th,
+        .scorecard-table td {
+            border: 1px solid #cbd5e1;
+            padding: 4px 2px;
+            text-align: center;
+            min-width: 35px;
+            line-height: 1.2;
+        }
+
+        .scorecard-table th {
+            background: #3b82f6;
+            color: white;
+            font-weight: 600;
+            font-size: 10px;
+            padding: 3px 2px;
+        }
+
+        .scorecard-table .player-name-cell {
+            background: #dbeafe;
+            font-weight: 600;
+            color: #1e40af;
+        }
+
+        .scorecard-table .total-row {
+            background: #f1f5f9;
+            font-weight: 600;
+        }
+
+        .scorecard-individual {
+            background: white;
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+            break-inside: avoid;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .scorecard-player-header {
+            text-align: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .scorecard-player-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1e40af;
+            margin-bottom: 4px;
+        }
+
+        .scorecard-player-info {
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        /* Round in Progress Indicator */
+        .round-indicator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 8px 16px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            z-index: 9998;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .round-indicator.active {
+            display: block;
+        }
+
+        .round-indicator-icon {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #fff;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .auto-save-toast {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        .auto-save-toast.show {
+            opacity: 1;
+        }
+
+        .resume-round-section {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            color: white;
+            display: none;
+        }
+
+        .resume-round-section.active {
+            display: block;
+        }
+
+        .resume-round-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .resume-round-info {
+            font-size: 14px;
+            margin-bottom: 16px;
+            opacity: 0.9;
+        }
+
+        .resume-round-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .resume-btn {
+            background: white;
+            color: #2563eb;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .discard-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* View Toggle Buttons in Header */
+        .view-toggle-btn-header {
+            padding: 8px 16px;
+            background: #f1f5f9;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #64748b;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .view-toggle-btn-header.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+
+        /* Old toggle buttons - can remove */
+        .view-toggle-btn {
+            flex: 1;
+            padding: 8px 16px;
+            background: white;
+            border: 2px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .view-toggle-btn.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+
+        /* Hole View Styles */
+        .hole-view-container {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .hole-header {
+            text-align: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .hole-number {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1e40af;
+            margin-bottom: 4px;
+        }
+
+        .hole-info {
+            font-size: 16px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .hole-player-row-ticker {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            padding: 16px;
+            margin-bottom: 12px;
+            background: #f8fafc;
+            border-radius: 12px;
+            gap: 16px;
+        }
+
+        .hole-player-info {
+            flex: 1;
+        }
+
+        .hole-player-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e40af;
+        }
+
+        .hole-player-hcp {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 2px;
+        }
+
+        .hole-score-section {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+        }
+
+        .hole-score-ticker {
+            display: grid;
+            grid-template-columns: auto auto auto;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .hole-net-score {
+            font-size: 12px;
+            color: #065f46;
+            font-weight: 700;
+            text-align: center;
+            width: 100%;
+        }
+
+        .hole-score-ticker .score-btn {
+            width: 44px;
+            height: 44px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 24px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .hole-score-ticker .score-btn:active {
+            background: #2563eb;
+        }
+
+        .hole-score-ticker .score-input {
+            width: 60px;
+            height: 44px;
+            font-size: 20px;
+            font-weight: 700;
+            text-align: center;
+            border: 2px solid #cbd5e1;
+            border-radius: 10px;
+            background: white;
+            color: #1e40af;
+        }
+
+        .hole-score-ticker .score-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        /* Score coloring for hole view */
+        .hole-score-ticker .score-input.birdie-better {
+            background: #dcfce7;
+            border-color: #86efac;
+            color: #166534;
+        }
+
+        .hole-score-ticker .score-input.par {
+            background: #dbeafe;
+            border-color: #60a5fa;
+            color: #1e40af;
+        }
+
+        .hole-score-ticker .score-input.bogey {
+            background: #fef9c3;
+            border-color: #fde047;
+            color: #854d0e;
+        }
+
+        .hole-score-ticker .score-input.double-bogey-plus {
+            background: #fee2e2;
+            border-color: #fca5a5;
+            color: #991b1b;
+        }
+
+        .hole-player-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 12px;
+            background: #f8fafc;
+            border-radius: 12px;
+            gap: 12px;
+        }
+
+        .hole-player-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e40af;
+        }
+
+        .hole-player-hcp {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 2px;
+        }
+
+        .hole-score-input {
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            background: white;
+            color: #1e40af;
+        }
+
+        .hole-score-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .hole-navigation {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 12px;
+            align-items: center;
+            margin-top: 24px;
+        }
+
+        .hole-nav-btn {
+            padding: 12px 20px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .hole-nav-btn:disabled {
+            background: #e2e8f0;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .hole-counter {
+            text-align: center;
+            font-size: 16px;
+            font-weight: 600;
+            color: #64748b;
+        }
+
+        /* Swipe gesture support */
+        .hole-view-container {
+            touch-action: pan-y;
+            position: relative;
+        }
+
+        /* Score Picker Overlay */
+        .score-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            padding: 20px;
+        }
+
+        .score-picker {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            width: 100%;
+            max-width: 320px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .score-picker-header {
+            text-align: center;
+            font-size: 16px;
+            color: #1e40af;
+            margin-bottom: 16px;
+        }
+
+        .score-display {
+            text-align: center;
+            font-size: 48px;
+            font-weight: 700;
+            color: #3b82f6;
+            margin: 20px 0;
+        }
+
+        .score-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .score-btn {
+            padding: 16px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 20px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .score-btn:active {
+            background: #2563eb;
+        }
+
+        .score-close {
+            width: 100%;
+            padding: 14px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Wrapper for table to enable horizontal scroll */
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-bottom: 20px;
+        }
+
+        @media print {
+            .scorecard-modal {
+                display: block !important;
+                position: static;
+                background: white;
+            }
+
+            .scorecard-content {
+                box-shadow: none;
+                max-width: 100%;
+            }
+
+            .scorecard-header,
+            .scorecard-footer {
+                display: none !important;
+            }
+
+            .scorecard-body {
+                max-height: none;
+                overflow: visible;
+            }
+            
+            .scorecard-individual {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            
+            .table-wrapper {
+                overflow: visible;
+            }
+            
+            .scorecard-table {
+                font-size: 10px;
+            }
+            
+            .scorecard-table th,
+            .scorecard-table td {
+                padding: 4px 2px;
+            }
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .page {
+                display: none;
+            }
+
+            #printableScorecard {
+                display: block !important;
+            }
+
+            .btn, .form-group, #resultsGameType {
+                display: none !important;
+            }
+
+            .print-scorecard {
+                display: block;
+                padding: 20px;
+                font-family: Arial, sans-serif;
+                color: black;
+            }
+
+            .print-header {
+                text-align: center;
+                margin-bottom: 20px;
+                border-bottom: 2px solid black;
+                padding-bottom: 10px;
+            }
+
+            .print-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+                page-break-inside: avoid;
+            }
+
+            .print-table th,
+            .print-table td {
+                border: 1px solid black;
+                padding: 6px;
+                text-align: center;
+                font-size: 11px;
+            }
+
+            .print-table th {
+                background: #e0e0e0;
+                font-weight: bold;
+            }
+
+            .print-results {
+                margin-top: 20px;
+                page-break-before: avoid;
+            }
+
+            .print-results h3 {
+                border-bottom: 2px solid black;
+                padding-bottom: 5px;
+                margin-bottom: 10px;
+            }
+        }
+
+        .print-scorecard {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Setup Page -->
+    <div id="setupPage" class="page active">
+        <div class="header">
+            <h1>⛳ U līK goLf?! Games <span style="font-size: 12px; font-weight: 400; color: #64748b;">by Otis Williams</span></h1>
+            <p>Tournament Setup</p>
+        </div>
+
+        <div class="setup-container">
+            <!-- Resume Round Section (hidden by default) -->
+            <div id="resumeRoundSection" class="resume-round-section">
+                <div class="resume-round-title">🔄 Round in Progress</div>
+                <div class="resume-round-info" id="resumeRoundInfo">Continue your saved round or start fresh</div>
+                <div class="resume-round-buttons">
+                    <button type="button" class="resume-btn" onclick="resumeSavedRound()">Resume Round</button>
+                    <button type="button" class="resume-btn discard-btn" onclick="discardSavedRound()">Start Fresh</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Tournament Date</label>
+                <input type="date" id="tournamentDate" placeholder="Select a Date" required>
+            </div>
+
+            <div class="form-group">
+                <label>Course</label>
+                <select id="courseSelect" onchange="updateCourse()">
+                    <option value="" selected>Select a Course</option>
+                    <option value="hidden_valley">Hidden Valley Golf Club</option>
+                    <option value="indian_hills">Indian Hills Golf Club</option>
+                    <option value="jurupa_hills">Jurupa Hills Country Club</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Game Type</label>
+                <select id="gameType" onchange="handleGameTypeChange()">
+                    <option value="" selected>Select a Game Type</option>
+                    <option value="Stroke Play Gross">Stroke Play Gross</option>
+                    <option value="Stroke Play Net">Stroke Play Net</option>
+                    <option value="Gross Skins">Gross Skins</option>
+                    <option value="Net Skins (Full Hcp)">Net Skins (Full Hcp)</option>
+                    <option value="Net Skins (18 Max)">Net Skins (18 Max)</option>
+                    <option value="Net Skins (1/2 Pop)">Net Skins (1/2 Pop)</option>
+                    <option value="Stableford">Stableford</option>
+                    <option value="Stableford (Modified)">Stableford (Modified)</option>
+                    <option value="2-Man Best Ball">2-Man Best Ball</option>
+                    <option value="3-Man Best Ball">3-Man Best Ball</option>
+                    <option value="4-Man Best Ball">4-Man Best Ball</option>
+                </select>
+            </div>
+
+            <div id="teamSetupSection" class="form-group" style="display: none;">
+                <label>Team Setup</label>
+                <div id="teamSetupContent"></div>
+            </div>
+
+            <div class="form-group">
+                <label>Players & Handicaps</label>
+                
+                <!-- Quick Add Frequent Players -->
+                <div id="quickAddSection" style="margin-bottom: 15px; display: none;">
+                    <div style="font-size: 13px; color: #64748b; margin-bottom: 8px; font-weight: 600;">Quick Add:</div>
+                    <div id="quickAddButtons" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+                </div>
+                
+                <div class="player-list" id="playerList">
+                    <div class="player-row" data-player="1">
+                        <input type="text" class="player-name-input" placeholder="Player Name" id="player1">
+                        <input type="text" class="player-hcp-input" placeholder="HCP" id="hcp1" pattern="-?[0-9]*" inputmode="numeric">
+                    </div>
+                </div>
+                <button type="button" class="btn-add-player" onclick="addPlayerRow()" id="addPlayerBtn">+ Add Player</button>
+            </div>
+
+            <button type="button" class="btn btn-primary" id="resumeScoringBtn" style="background: #10b981; display: none;" onclick="resumeScoring()">Resume Scoring</button>
+            <button type="button" class="btn btn-primary" onclick="startScoring()">Start Scoring</button>
+        </div>
+    </div>
+
+    <!-- Scoring Page -->
+    <div id="scoringPage" class="page">
+        <!-- Round in Progress Indicator -->
+        <div id="roundIndicator" class="round-indicator">
+            <span class="round-indicator-icon"></span>
+            <span>Round in Progress • Auto-saved</span>
+        </div>
+        
+        <div class="scoring-header">
+            <div class="header-top-row">
+                <button type="button" class="back-btn" id="backToSetupBtn" data-action="confirmBackToSetup">← Back</button>
+                <div class="tournament-info-centered">
+                    <h2 id="scoringGameType">Individual Stroke Play</h2>
+                    <p id="scoringDate">Today</p>
+                </div>
+                <button type="button" class="finish-btn" id="finishRoundBtn" data-action="finishRound">Results</button>
+            </div>
+            <div class="header-bottom-row">
+                <button type="button" id="toggleHoleView" class="view-toggle-btn-header active" onclick="switchToHoleView()">
+                    ⛳ Holes
+                </button>
+                <button type="button" id="togglePlayerView" class="view-toggle-btn-header" onclick="switchToPlayerView()">
+                    👤 Players
+                </button>
+            </div>
+        </div>
+
+        <div class="scoring-content">
+
+            <div id="playerCards"></div>
+            
+            <!-- By Hole View (hidden by default) -->
+            <div id="holeView" style="display: none;">
+                <div id="holeViewContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Page -->
+    <div id="resultsPage" class="page">
+        <div class="results-page-header">
+            <button class="back-btn" data-action="backToScoring">← Back</button>
+            <div class="tournament-info-simple" style="text-align: center;">
+                <h2>⛳ U līK goLf?! Games <span style="font-size: 10px; font-weight: 400; color: #64748b;">by Otis Williams</span></h2>
+                <p id="resultsSubtitle">Final Scores</p>
+            </div>
+            <button class="finish-btn" id="newRoundBtnTop" data-action="confirmNewRound" style="background: #10b981;">Finish</button>
+        </div>
+
+        <div class="results-container">
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label>View Results As:</label>
+                <select id="resultsGameType" onchange="updateResultsGameType()">
+                    <option value="Stroke Play Gross">Stroke Play Gross</option>
+                    <option value="Stroke Play Net">Stroke Play Net</option>
+                    <option value="Gross Skins">Gross Skins</option>
+                    <option value="Net Skins (Full Hcp)">Net Skins (Full Hcp)</option>
+                    <option value="Net Skins (18 Max)">Net Skins (18 Max)</option>
+                    <option value="Net Skins (1/2 Pop)">Net Skins (1/2 Pop)</option>
+                    <option value="Stableford">Stableford</option>
+                    <option value="Stableford (Modified)">Stableford (Modified)</option>
+                    <option value="2-Man Best Ball">2-Man Best Ball</option>
+                    <option value="3-Man Best Ball">3-Man Best Ball</option>
+                    <option value="4-Man Best Ball">4-Man Best Ball</option>
+                </select>
+            </div>
+            <div id="resultsContent"></div>
+            <div style="display: grid; gap: 10px; margin-top: 20px;">
+                <button type="button" class="btn btn-primary" onclick="openScorecardModal()" style="background: #3b82f6; margin-top: 0;">📋 View Scorecards</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scorecard Modal -->
+    <div id="scorecardModal" class="scorecard-modal">
+        <div class="scorecard-content">
+            <div class="scorecard-header">
+                <h2 style="color: #1e40af; margin: 0;">📋 Scorecards</h2>
+                <button onclick="closeScorecardModal()" style="background: #ef4444; color: white; border: none; border-radius: 8px; padding: 8px 16px; font-weight: 600; cursor: pointer;">✕ Close</button>
+            </div>
+            <div style="padding: 20px; border-bottom: 1px solid #e2e8f0;">
+                <label style="font-weight: 600; color: #1e40af; margin-bottom: 8px; display: block;">Select View:</label>
+                <select id="scorecardViewSelect" onchange="updateScorecardView()" style="width: 100%; padding: 12px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 16px;">
+                    <option value="all-summary">All Players - Summary Table</option>
+                    <option value="all-individual">All Players - Individual Cards</option>
+                    <option disabled>─────────────────</option>
+                </select>
+            </div>
+            <div class="scorecard-body" id="scorecardBody">
+                <!-- Scorecard content will be populated here -->
+            </div>
+            <div class="scorecard-footer">
+                <button onclick="printScorecard()" class="btn btn-primary" style="background: #10b981; margin: 0;">📤 Share / Print</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Printable Scorecard (Hidden, only shows when printing) -->
+    <div id="printableScorecard" class="print-scorecard"></div>
+
+    <!-- Auto-save Toast -->
+    <div id="autoSaveToast" class="auto-save-toast">✓ Saved</div>
+
+    <!-- Custom Confirmation Dialog (iOS-friendly) -->
+    <div id="confirmDialog" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
+        <div style="background: white; border-radius: 16px; padding: 24px; margin: 20px; max-width: 400px; box-shadow: 0 8px 16px rgba(0,0,0,0.3);">
+            <h3 id="confirmTitle" style="color: #1e40af; margin-bottom: 12px; font-size: 20px;">Confirm Action</h3>
+            <p id="confirmMessage" style="color: #64748b; margin-bottom: 24px; font-size: 16px; line-height: 1.5;"></p>
+            <div style="display: flex; gap: 12px;">
+                <button type="button" id="confirmCancel" style="flex: 1; padding: 12px; background: #e2e8f0; color: #475569; border: none; border-radius: 8px; font-size: 16px; font-weight: 600;">Cancel</button>
+                <button type="button" id="confirmOk" style="flex: 1; padding: 12px; background: #ef4444; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600;">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Course data
+        const courses = {
+            hidden_valley: {
+                name: "Hidden Valley Golf Club",
+                totalPar: 72,
+                holes: [
+                    { number: 1, par: 5, handicap: 9 },
+                    { number: 2, par: 4, handicap: 5 },
+                    { number: 3, par: 4, handicap: 13 },
+                    { number: 4, par: 4, handicap: 11 },
+                    { number: 5, par: 3, handicap: 1 },
+                    { number: 6, par: 5, handicap: 7 },
+                    { number: 7, par: 4, handicap: 17 },
+                    { number: 8, par: 3, handicap: 15 },
+                    { number: 9, par: 4, handicap: 3 },
+                    { number: 10, par: 4, handicap: 6 },
+                    { number: 11, par: 5, handicap: 10 },
+                    { number: 12, par: 4, handicap: 8 },
+                    { number: 13, par: 3, handicap: 16 },
+                    { number: 14, par: 4, handicap: 18 },
+                    { number: 15, par: 5, handicap: 4 },
+                    { number: 16, par: 3, handicap: 12 },
+                    { number: 17, par: 4, handicap: 14 },
+                    { number: 18, par: 4, handicap: 2 }
+                ]
+            },
+            indian_hills: {
+                name: "Indian Hills Golf Club",
+                totalPar: 70,
+                holes: [
+                    { number: 1, par: 4, handicap: 5 },
+                    { number: 2, par: 4, handicap: 15 },
+                    { number: 3, par: 3, handicap: 7 },
+                    { number: 4, par: 4, handicap: 3 },
+                    { number: 5, par: 3, handicap: 11 },
+                    { number: 6, par: 4, handicap: 9 },
+                    { number: 7, par: 4, handicap: 17 },
+                    { number: 8, par: 5, handicap: 13 },
+                    { number: 9, par: 4, handicap: 1 },
+                    { number: 10, par: 4, handicap: 8 },
+                    { number: 11, par: 3, handicap: 16 },
+                    { number: 12, par: 4, handicap: 18 },
+                    { number: 13, par: 4, handicap: 12 },
+                    { number: 14, par: 4, handicap: 6 },
+                    { number: 15, par: 3, handicap: 14 },
+                    { number: 16, par: 4, handicap: 4 },
+                    { number: 17, par: 4, handicap: 2 },
+                    { number: 18, par: 5, handicap: 10 }
+                ]
+            },
+            jurupa_hills: {
+                name: "Jurupa Hills Country Club",
+                totalPar: 70,
+                holes: [
+                    { number: 1, par: 4, handicap: 7 },
+                    { number: 2, par: 4, handicap: 3 },
+                    { number: 3, par: 3, handicap: 15 },
+                    { number: 4, par: 4, handicap: 11 },
+                    { number: 5, par: 4, handicap: 13 },
+                    { number: 6, par: 4, handicap: 5 },
+                    { number: 7, par: 5, handicap: 1 },
+                    { number: 8, par: 3, handicap: 17 },
+                    { number: 9, par: 4, handicap: 9 },
+                    { number: 10, par: 4, handicap: 8 },
+                    { number: 11, par: 4, handicap: 2 },
+                    { number: 12, par: 4, handicap: 14 },
+                    { number: 13, par: 4, handicap: 4 },
+                    { number: 14, par: 3, handicap: 18 },
+                    { number: 15, par: 5, handicap: 6 },
+                    { number: 16, par: 4, handicap: 12 },
+                    { number: 17, par: 4, handicap: 10 },
+                    { number: 18, par: 3, handicap: 16 }
+                ]
+            }
+        };
+
+        let courseData = null; // No default course - user must select
+
+        let currentPlayerCount = 1;
+        let nextPlayerId = 2;
+        const maxPlayers = 40;
+
+        // Swipe-to-delete functionality
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchCurrentX = 0;
+        let swipingRow = null;
+        let isScrolling = null;
+
+        // Initialize autocomplete, quick add, and swipe after page loads
+        window.addEventListener('load', function() {
+            // Don't auto-set date - user must select
+            
+            initializeAutocomplete();
+            renderQuickAddButtons();
+            initializeSwipeGestures();
+        });
+
+        function initializeSwipeGestures() {
+            // Swipe-to-delete disabled for now - will revisit later
+            return;
+        }
+
+        // Delete player row with animation
+        function deletePlayerRow(playerId) {
+            const row = document.querySelector(`[data-player="${playerId}"]`);
+            if (!row) return;
+            
+            // Don't allow deleting if only 1 player remains
+            if (currentPlayerCount <= 1) {
+                alert('You must have at least one player');
+                row.classList.remove('swiped');
+                row.style.transform = 'translateX(0)';
+                return;
+            }
+            
+            // Add deleting animation
+            row.classList.add('deleting');
+            
+            // Remove after animation
+            setTimeout(() => {
+                row.remove();
+                currentPlayerCount--;
+                
+                // Re-enable Add button if was at max
+                if (currentPlayerCount < maxPlayers) {
+                    document.getElementById('addPlayerBtn').disabled = false;
+                    document.getElementById('addPlayerBtn').textContent = '+ Add Player';
+                }
+                
+                // CRITICAL: Reset all swipe state variables
+                swipingRow = null;
+                isScrolling = null;
+                touchStartX = 0;
+                touchCurrentX = 0;
+                touchStartY = 0;
+                
+                // Remove swiped class from any other rows that might have it
+                const allRows = document.querySelectorAll('.player-row.swiped');
+                allRows.forEach(r => {
+                    r.classList.remove('swiped');
+                    r.style.transform = 'translateX(0)';
+                });
+            }, 300);
+        }
+
+        // Render quick add buttons for frequent players
+        function renderQuickAddButtons() {
+            const quickAddSection = document.getElementById('quickAddSection');
+            const quickAddButtons = document.getElementById('quickAddButtons');
+            
+            // Safety check - these elements only exist on setup page
+            if (!quickAddSection || !quickAddButtons) {
+                return;
+            }
+            
+            // Get top 8 most used players
+            const frequentPlayers = Object.values(playerHistory)
+                .sort((a, b) => b.usageCount - a.usageCount)
+                .slice(0, 8);
+            
+            if (frequentPlayers.length === 0) {
+                quickAddSection.style.display = 'none';
+                return;
+            }
+            
+            quickAddSection.style.display = 'block';
+            quickAddButtons.innerHTML = '';
+            
+            frequentPlayers.forEach(player => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'quick-add-btn';
+                btn.textContent = `${player.name} (${player.handicap})`;
+                
+                btn.onclick = function() {
+                    quickAddPlayer(player.name, player.handicap);
+                };
+                
+                quickAddButtons.appendChild(btn);
+            });
+        }
+
+        // Quick add a player to the first empty row or create new row
+        function quickAddPlayer(name, handicap) {
+            // Find first empty player row
+            const playerRows = document.querySelectorAll('.player-row');
+            let emptyRow = null;
+            
+            for (let row of playerRows) {
+                const playerId = row.getAttribute('data-player');
+                const nameInput = document.getElementById(`player${playerId}`);
+                if (nameInput && nameInput.value.trim() === '') {
+                    emptyRow = { row, playerId };
+                    break;
+                }
+            }
+            
+            if (emptyRow) {
+                // Fill empty row
+                document.getElementById(`player${emptyRow.playerId}`).value = name;
+                document.getElementById(`hcp${emptyRow.playerId}`).value = handicap;
+            } else {
+                // Add new row
+                if (currentPlayerCount >= maxPlayers) {
+                    alert(`Maximum of ${maxPlayers} players reached`);
+                    return;
+                }
+                
+                addPlayerRow();
+                // Fill the newly added row
+                document.getElementById(`player${nextPlayerId - 1}`).value = name;
+                document.getElementById(`hcp${nextPlayerId - 1}`).value = handicap;
+            }
+            
+            // Refresh team setup if team game is selected
+            refreshTeamSetupIfNeeded();
+        }
+
+        // Warn before page refresh if there's active data
+        // Initialize autocomplete on all player name inputs
+        function initializeAutocomplete() {
+            const playerList = document.getElementById('playerList');
+            if (!playerList) return;
+
+            playerList.addEventListener('input', function(e) {
+                // Refresh team setup if player name or handicap changes
+                if (e.target.classList.contains('player-name-input') || e.target.classList.contains('player-hcp-input')) {
+                    refreshTeamSetupIfNeeded();
+                }
+                
+                if (!e.target.classList.contains('player-name-input')) return;
+                
+                const input = e.target;
+                const row = input.closest('.player-row');
+                if (!row) return;
+                
+                const query = input.value;
+                
+                // Remove existing suggestions
+                const existingSuggestions = row.querySelector('.autocomplete-suggestions');
+                if (existingSuggestions) {
+                    existingSuggestions.remove();
+                }
+                
+                if (!query || query.length < 1) {
+                    row.classList.remove('has-suggestions');
+                    return;
+                }
+                
+                const suggestions = getPlayerSuggestions(query);
+                if (suggestions.length === 0) {
+                    row.classList.remove('has-suggestions');
+                    return;
+                }
+                
+                // Create suggestions dropdown
+                const suggestionsDiv = document.createElement('div');
+                suggestionsDiv.className = 'autocomplete-suggestions show';
+                
+                suggestions.forEach(player => {
+                    const item = document.createElement('div');
+                    item.className = 'suggestion-item';
+                    item.innerHTML = `
+                        <span class="suggestion-name">${player.name}</span>
+                        <span class="suggestion-hcp">HCP: ${player.handicap}</span>
+                    `;
+                    
+                    item.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        input.value = player.name;
+                        
+                        // Auto-fill handicap
+                        const playerId = row.getAttribute('data-player');
+                        const hcpInput = document.getElementById(`hcp${playerId}`);
+                        if (hcpInput) {
+                            hcpInput.value = player.handicap;
+                        }
+                        
+                        suggestionsDiv.remove();
+                        row.classList.remove('has-suggestions');
+                        
+                        // Refresh team setup
+                        refreshTeamSetupIfNeeded();
+                    });
+                    
+                    suggestionsDiv.appendChild(item);
+                });
+                
+                row.appendChild(suggestionsDiv);
+                row.classList.add('has-suggestions');
+            });
+            
+            // Close suggestions when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.classList.contains('player-name-input') && 
+                    !e.target.closest('.autocomplete-suggestions')) {
+                    document.querySelectorAll('.autocomplete-suggestions').forEach(s => s.remove());
+                    document.querySelectorAll('.player-row').forEach(r => r.classList.remove('has-suggestions'));
+                }
+            });
+        }
+
+
+        // Add new player row
+        function addPlayerRow() {
+            if (currentPlayerCount >= maxPlayers) {
+                alert(`Maximum of ${maxPlayers} players reached`);
+                return;
+            }
+
+            currentPlayerCount++;
+            const playerList = document.getElementById('playerList');
+            
+            const newRow = document.createElement('div');
+            newRow.className = 'player-row';
+            newRow.setAttribute('data-player', nextPlayerId);
+            newRow.innerHTML = `
+                <input type="text" class="player-name-input" placeholder="Player Name" id="player${nextPlayerId}">
+                <input type="text" class="player-hcp-input" placeholder="HCP" id="hcp${nextPlayerId}" pattern="-?[0-9]*" inputmode="numeric">
+            `;
+            
+            playerList.appendChild(newRow);
+            nextPlayerId++;
+            
+            // Disable button if at max
+            if (currentPlayerCount >= maxPlayers) {
+                document.getElementById('addPlayerBtn').disabled = true;
+                document.getElementById('addPlayerBtn').textContent = `Maximum ${maxPlayers} Players`;
+            }
+        }
+
+        // Delete player row with animation
+
+        let tournamentData = {
+            date: '',
+            gameType: '',
+            course: '',
+            players: [],
+            teams: []
+        };
+
+        // Current hole for hole view
+        let currentHole = 0; // 0-17 (holes 1-18)
+        let currentView = 'player'; // 'player' or 'hole'
+
+        // Format date from YYYY-MM-DD string without timezone issues
+        function formatDateDisplay(dateString) {
+            if (!dateString) return '';
+            const [year, month, day] = dateString.split('-');
+            const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            return date.toLocaleDateString();
+        }
+
+        // Player history for auto-complete and handicap memory
+        let playerHistory = JSON.parse(localStorage.getItem('indianHillsPlayerHistory') || '{}');
+        // Format: { "PlayerName": { name: "PlayerName", handicap: 10, lastUsed: timestamp, usageCount: 5 } }
+
+        // Save player history
+        function savePlayerHistory() {
+            localStorage.setItem('indianHillsPlayerHistory', JSON.stringify(playerHistory));
+        }
+
+        // Update player in history
+        function updatePlayerHistory(name, handicap) {
+            if (!name || name.trim() === '') return;
+            
+            const normalizedName = name.trim();
+            if (!playerHistory[normalizedName]) {
+                playerHistory[normalizedName] = {
+                    name: normalizedName,
+                    handicap: handicap || 0,
+                    lastUsed: Date.now(),
+                    usageCount: 1
+                };
+            } else {
+                playerHistory[normalizedName].handicap = handicap || playerHistory[normalizedName].handicap;
+                playerHistory[normalizedName].lastUsed = Date.now();
+                playerHistory[normalizedName].usageCount++;
+            }
+            savePlayerHistory();
+        }
+
+        // Get player suggestions sorted by usage and recency
+        function getPlayerSuggestions(query) {
+            query = query.toLowerCase().trim();
+            if (!query) {
+                // Return most recent players
+                return Object.values(playerHistory)
+                    .sort((a, b) => b.lastUsed - a.lastUsed)
+                    .slice(0, 5);
+            }
+            
+            // Filter and sort by match quality
+            return Object.values(playerHistory)
+                .filter(p => p.name.toLowerCase().includes(query))
+                .sort((a, b) => {
+                    // Exact match first
+                    const aExact = a.name.toLowerCase() === query ? 1 : 0;
+                    const bExact = b.name.toLowerCase() === query ? 1 : 0;
+                    if (aExact !== bExact) return bExact - aExact;
+                    
+                    // Then by usage count
+                    if (a.usageCount !== b.usageCount) return b.usageCount - a.usageCount;
+                    
+                    // Then by recency
+                    return b.lastUsed - a.lastUsed;
+                })
+                .slice(0, 5);
+        }
+
+        // Update course when selection changes
+        function updateCourse() {
+            const selectedCourse = document.getElementById('courseSelect').value;
+            if (selectedCourse) {
+                courseData = courses[selectedCourse];
+            } else {
+                courseData = null;
+            }
+        }
+
+        // Handle game type changes to show/hide team setup
+        function handleGameTypeChange() {
+            const gameType = document.getElementById('gameType').value;
+            const teamSection = document.getElementById('teamSetupSection');
+            
+            if (gameType.includes('Best Ball')) {
+                teamSection.style.display = 'block';
+                renderTeamSetup(gameType);
+            } else {
+                teamSection.style.display = 'none';
+            }
+        }
+
+        // Refresh team setup if a team game is currently selected
+        function refreshTeamSetupIfNeeded() {
+            const gameType = document.getElementById('gameType').value;
+            if (gameType.includes('Best Ball')) {
+                renderTeamSetup(gameType);
+            }
+        }
+
+        // Render team setup based on game type
+        function renderTeamSetup(gameType) {
+            const content = document.getElementById('teamSetupContent');
+            
+            // Determine players per team from game type
+            let playersPerTeam;
+            if (gameType.includes('2-Man')) {
+                playersPerTeam = 2;
+            } else if (gameType.includes('3-Man')) {
+                playersPerTeam = 3;
+            } else if (gameType.includes('4-Man')) {
+                playersPerTeam = 4;
+            }
+            
+            // Get current player names from the player list
+            const playerNames = [];
+            const playerRows = document.querySelectorAll('.player-row');
+            playerRows.forEach((row, index) => {
+                const nameInput = row.querySelector('.player-name-input');
+                const hcpInput = row.querySelector('.player-hcp-input');
+                if (nameInput && nameInput.value.trim()) {
+                    playerNames.push({
+                        index: index,
+                        name: nameInput.value.trim(),
+                        handicap: hcpInput ? hcpInput.value : '0'
+                    });
+                }
+            });
+            
+            // Calculate number of teams based on player count
+            // Example: 8 players in 3-Man teams = 2 full teams (6 players) + 1 team with 2 players = 3 teams
+            const totalPlayers = playerNames.length;
+            const numTeams = totalPlayers > 0 ? Math.ceil(totalPlayers / playersPerTeam) : 2;
+            
+            content.innerHTML = '';
+            
+            if (totalPlayers === 0) {
+                content.innerHTML = '<p style="color: #64748b; font-size: 14px; padding: 12px;">Add players first to create teams</p>';
+                return;
+            }
+            
+            // Create team selection dropdowns
+            for (let t = 0; t < numTeams; t++) {
+                const teamDiv = document.createElement('div');
+                teamDiv.className = 'team-container';
+                
+                let teamHtml = `<div class="team-header">Team ${t + 1}</div>`;
+                
+                for (let p = 0; p < playersPerTeam; p++) {
+                    teamHtml += `
+                        <select class="team-member-select" id="team${t}_player${p}">
+                            <option value="">Select Player ${p + 1}</option>
+                    `;
+                    
+                    // Add options for each added player
+                    playerNames.forEach(player => {
+                        teamHtml += `<option value="${player.index}">${player.name} (${player.handicap})</option>`;
+                    });
+                    
+                    teamHtml += `</select>`;
+                }
+                
+                teamDiv.innerHTML = teamHtml;
+                content.appendChild(teamDiv);
+            }
+        }
+
+        // Auto-save functionality
+        function saveToLocalStorage() {
+            localStorage.setItem('indianHillsScoring', JSON.stringify(tournamentData));
+        }
+
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('indianHillsScoring');
+            if (saved) {
+                tournamentData = JSON.parse(saved);
+                return true;
+            }
+            return false;
+        }
+
+        // Page navigation
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            document.getElementById(pageId).classList.add('active');
+            
+            // Refresh quick add buttons when returning to setup page
+            if (pageId === 'setupPage') {
+                renderQuickAddButtons();
+            }
+        }
+
+        // Custom confirmation dialog (iOS-friendly)
+        function showConfirm(title, message, onConfirm) {
+            const dialog = document.getElementById('confirmDialog');
+            const titleEl = document.getElementById('confirmTitle');
+            const messageEl = document.getElementById('confirmMessage');
+            const okBtn = document.getElementById('confirmOk');
+            const cancelBtn = document.getElementById('confirmCancel');
+            
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+            dialog.style.display = 'flex';
+            
+            // Remove old listeners
+            const newOkBtn = okBtn.cloneNode(true);
+            const newCancelBtn = cancelBtn.cloneNode(true);
+            okBtn.parentNode.replaceChild(newOkBtn, okBtn);
+            cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+            
+            // Add new listeners
+            newOkBtn.addEventListener('click', function() {
+                dialog.style.display = 'none';
+                onConfirm();
+            });
+            
+            newCancelBtn.addEventListener('click', function() {
+                dialog.style.display = 'none';
+            });
+        }
+
+        // Back button - shows resume option if there's an active game
+        function confirmBackToSetup() {
+            showPage('setupPage');
+            
+            // Show Resume Scoring button if there are active scores
+            if (tournamentData.players && tournamentData.players.length > 0) {
+                const resumeBtn = document.getElementById('resumeScoringBtn');
+                if (resumeBtn) {
+                    resumeBtn.style.display = 'block';
+                }
+            }
+            
+        }
+
+        // Resume scoring - go back to scoring page with existing data
+        function resumeScoring() {
+            renderScoringPage();
+            showPage('scoringPage');
+            
+            // Start in Holes view by default
+            switchToHoleView();
+        }
+
+        // Start scoring from setup page
+        function startScoring() {
+            const date = document.getElementById('tournamentDate').value;
+            const gameType = document.getElementById('gameType').value;
+            const selectedCourse = document.getElementById('courseSelect').value;
+            
+            // Validate date selection
+            if (!date) {
+                alert('Please select a date');
+                return;
+            }
+            
+            // Validate game type selection
+            if (!gameType) {
+                alert('Please select a game type');
+                return;
+            }
+            
+            // Validate course selection
+            if (!selectedCourse) {
+                alert('Please select a course');
+                return;
+            }
+            
+            // Update course data
+            courseData = courses[selectedCourse];
+            
+            const players = [];
+            // Loop through all player rows (they may not be sequential)
+            const playerRows = document.querySelectorAll('.player-row');
+            playerRows.forEach(row => {
+                const playerId = row.getAttribute('data-player');
+                const nameInput = document.getElementById(`player${playerId}`);
+                const hcpInput = document.getElementById(`hcp${playerId}`);
+                
+                if (nameInput && hcpInput) {
+                    const name = nameInput.value.trim();
+                    const hcp = parseInt(hcpInput.value) || 0;
+                    if (name) {
+                        players.push({
+                            name: name,
+                            handicap: hcp,
+                            scores: new Array(18).fill(0)
+                        });
+                    }
+                }
+            });
+
+            if (players.length === 0) {
+                alert('Please enter at least one player name');
+                return;
+            }
+
+            // Save players to history
+            players.forEach(player => {
+                updatePlayerHistory(player.name, player.handicap);
+            });
+
+            // Capture team assignments for Best Ball games
+            let teams = [];
+            if (gameType.includes('Best Ball')) {
+                const numTeams = 2;
+                const playersPerTeam = gameType === '2-Man Best Ball' ? 2 : gameType === '3-Man Best Ball' ? 3 : 4;
+                
+                for (let t = 0; t < numTeams; t++) {
+                    const teamPlayers = [];
+                    for (let p = 0; p < playersPerTeam; p++) {
+                        const playerIndex = document.getElementById(`team${t}_player${p}`).value;
+                        if (playerIndex !== '') {
+                            teamPlayers.push(parseInt(playerIndex));
+                        }
+                    }
+                    if (teamPlayers.length > 0) {
+                        teams.push(teamPlayers);
+                    }
+                }
+                
+                if (teams.length < 2) {
+                    alert('Please assign players to both teams');
+                    return;
+                }
+            }
+
+            tournamentData = {
+                date: date,
+                gameType: gameType,
+                course: selectedCourse,
+                players: players,
+                teams: teams
+            };
+
+            // Hide Resume button when starting fresh
+            const resumeBtn = document.getElementById('resumeScoringBtn');
+            if (resumeBtn) {
+                resumeBtn.style.display = 'none';
+            }
+
+            saveToLocalStorage();
+            renderScoringPage();
+            showPage('scoringPage');
+            
+            // Start in Holes view by default
+            switchToHoleView();
+        }
+
+        // Render the scoring page
+        function renderScoringPage() {
+            // Load the correct course data
+            courseData = courses[tournamentData.course];
+            
+            document.getElementById('scoringGameType').textContent = tournamentData.gameType;
+            document.getElementById('scoringDate').textContent = `${courseData.name} - ${formatDateDisplay(tournamentData.date)}`;
+
+            const container = document.getElementById('playerCards');
+            container.innerHTML = '';
+
+            tournamentData.players.forEach((player, playerIndex) => {
+                const card = document.createElement('div');
+                card.className = 'player-card';
+                
+                const total = player.scores.reduce((sum, score) => sum + score, 0);
+                const toPar = total - courseData.totalPar;
+                const toParText = toPar === 0 ? 'E' : (toPar > 0 ? `+${toPar}` : toPar);
+                const hcpDisplay = player.handicap !== 0 ? ` (${player.handicap > 0 ? player.handicap : '+' + Math.abs(player.handicap)})` : '';
+
+                card.innerHTML = `
+                    <div class="player-header">
+                        <div class="player-name">${player.name}${hcpDisplay}</div>
+                        <div class="player-total">${total > 0 ? total : '-'} <span style="font-size: 16px; color: #64748b;">(${toParText})</span></div>
+                    </div>
+                    <div class="holes-grid" id="player${playerIndex}Grid"></div>
+                `;
+
+                container.appendChild(card);
+
+                const grid = document.getElementById(`player${playerIndex}Grid`);
+                courseData.holes.forEach((hole, holeIndex) => {
+                    const holeDiv = document.createElement('div');
+                    holeDiv.className = 'hole-input-group';
+                    
+                    const score = player.scores[holeIndex];
+                    const diff = score - hole.par;
+                    let scoreClass = '';
+                    if (score > 0) {
+                        if (diff >= 2) {
+                            scoreClass = 'double-bogey-plus'; // Red
+                        } else if (diff === 1) {
+                            scoreClass = 'bogey'; // Yellow
+                        } else if (diff === 0) {
+                            scoreClass = 'par'; // Blue
+                        } else if (diff <= -1) {
+                            scoreClass = 'birdie-better'; // Green
+                        }
+                    }
+
+                    holeDiv.innerHTML = `
+                        <div class="hole-label">
+                            <span>Hole ${hole.number}</span>
+                            <span class="par-badge">Par ${hole.par} • HCP ${hole.handicap}</span>
+                        </div>
+                        <div class="score-input-wrapper">
+                            <button class="score-btn" onclick="decrementScore(${playerIndex}, ${holeIndex})">−</button>
+                            <input type="number" 
+                                   class="score-input ${scoreClass}" 
+                                   value="${score || ''}" 
+                                   onchange="updateScore(${playerIndex}, ${holeIndex}, this.value)"
+                                   onclick="this.select()"
+                                   min="0"
+                                   max="15"
+                                   inputmode="numeric">
+                            <button class="score-btn" onclick="incrementScore(${playerIndex}, ${holeIndex})">+</button>
+                        </div>
+                    `;
+                    
+                    grid.appendChild(holeDiv);
+                });
+            });
+        }
+
+        // Score modification functions
+        function updateScore(playerIndex, holeIndex, value) {
+            const score = parseInt(value) || 0;
+            tournamentData.players[playerIndex].scores[holeIndex] = score;
+            saveToLocalStorage();
+            renderScoringPage();
+        }
+
+        function incrementScore(playerIndex, holeIndex) {
+            const currentScore = tournamentData.players[playerIndex].scores[holeIndex];
+            const par = courseData.holes[holeIndex].par;
+            
+            // If score is 0, set to par first
+            if (currentScore === 0) {
+                tournamentData.players[playerIndex].scores[holeIndex] = par;
+            } else {
+                tournamentData.players[playerIndex].scores[holeIndex] = Math.min(currentScore + 1, 15);
+            }
+            
+            saveToLocalStorage();
+            renderScoringPage();
+        }
+
+        function decrementScore(playerIndex, holeIndex) {
+            const currentScore = tournamentData.players[playerIndex].scores[holeIndex];
+            const par = courseData.holes[holeIndex].par;
+            
+            // If score is 0, set to par first
+            if (currentScore === 0) {
+                tournamentData.players[playerIndex].scores[holeIndex] = par;
+            } else {
+                tournamentData.players[playerIndex].scores[holeIndex] = Math.max(currentScore - 1, 0);
+            }
+            
+            saveToLocalStorage();
+            renderScoringPage();
+        }
+
+        // Finish round and show results
+        function finishRound() {
+            renderResultsPage();
+            showPage('resultsPage');
+        }
+
+        function backToScoring() {
+            showPage('scoringPage');
+        }
+
+        // Helper functions for net score calculations
+        function getNetScore(grossScore, playerHcp, holeHcp, method = 'full') {
+            if (grossScore === 0) return 0;
+            
+            let strokes = 0;
+            
+            // Handle plus handicaps (negative values)
+            if (playerHcp < 0) {
+                const absHcp = Math.abs(playerHcp);
+                
+                if (method === 'full') {
+                    // Plus handicap: add strokes on EASIEST holes (18, 17, 16...)
+                    strokes = -Math.floor(absHcp / 18); // Negative = add to score
+                    if (holeHcp > (18 - (absHcp % 18))) {
+                        strokes -= 1; // Add another stroke on easier holes
+                    }
+                } else if (method === '18max') {
+                    // 18 Max: max 1 stroke added per hole on easiest holes
+                    if (holeHcp > (18 - Math.min(absHcp, 18))) {
+                        strokes = -1;
+                    }
+                } else if (method === 'half') {
+                    // Half Pop: 0.5 stroke added per allocated stroke
+                    const fullStrokes = Math.floor(absHcp / 18);
+                    const extraStroke = holeHcp > (18 - (absHcp % 18)) ? 1 : 0;
+                    strokes = -(fullStrokes + extraStroke) * 0.5;
+                }
+            } 
+            // Handle regular (positive) handicaps
+            else if (playerHcp > 0) {
+                if (method === 'full') {
+                    // Regular handicap: subtract strokes on HARDEST holes (1, 2, 3...)
+                    strokes = Math.floor(playerHcp / 18);
+                    if (holeHcp <= (playerHcp % 18)) {
+                        strokes += 1;
+                    }
+                } else if (method === '18max') {
+                    // 18 Max: max 1 stroke per hole
+                    if (holeHcp <= Math.min(playerHcp, 18)) {
+                        strokes = 1;
+                    }
+                } else if (method === 'half') {
+                    // Half Pop: 0.5 stroke per allocated stroke
+                    const fullStrokes = Math.floor(playerHcp / 18);
+                    const extraStroke = holeHcp <= (playerHcp % 18) ? 1 : 0;
+                    strokes = (fullStrokes + extraStroke) * 0.5;
+                }
+            }
+            
+            return grossScore - strokes;
+        }
+
+        function getStablefordPoints(netScore, par, modified = false) {
+            const diff = netScore - par;
+            
+            if (modified) {
+                // Modified Stableford
+                if (diff <= -4) return 11;  // Condor
+                if (diff === -3) return 8;   // Albatross
+                if (diff === -2) return 5;   // Eagle
+                if (diff === -1) return 2;   // Birdie
+                if (diff === 0) return 0;    // Par
+                if (diff === 1) return -1;   // Bogey
+                return -3;                    // Double bogey or worse
+            } else {
+                // Standard Stableford
+                if (diff <= -4) return 6;    // Condor
+                if (diff === -3) return 5;   // Albatross
+                if (diff === -2) return 4;   // Eagle
+                if (diff === -1) return 3;   // Birdie
+                if (diff === 0) return 2;    // Par
+                if (diff === 1) return 1;    // Bogey
+                return 0;                     // Double bogey or worse
+            }
+        }
+
+        function renderResultsPage() {
+            // Load the correct course data
+            courseData = courses[tournamentData.course];
+            
+            const subtitle = `${courseData.name} - ${tournamentData.gameType} - ${formatDateDisplay(tournamentData.date)}`;
+            document.getElementById('resultsSubtitle').textContent = subtitle;
+            
+            // Set the dropdown to match current game type
+            document.getElementById('resultsGameType').value = tournamentData.gameType;
+            
+            updateResultsDisplay();
+        }
+
+        function updateResultsGameType() {
+            const newGameType = document.getElementById('resultsGameType').value;
+            
+            // Update the tournament data
+            tournamentData.gameType = newGameType;
+            
+            // Update the scoring page header
+            document.getElementById('scoringGameType').textContent = newGameType;
+            
+            // Save to local storage
+            saveToLocalStorage();
+            
+            // Update results display
+            updateResultsDisplay(newGameType);
+        }
+
+        function updateResultsDisplay(displayGameType) {
+            const gameType = displayGameType || tournamentData.gameType;
+            const container = document.getElementById('resultsContent');
+            container.innerHTML = `<h3 class="results-title">${gameType} Results</h3>`;
+
+            // Stroke Play Gross
+            if (gameType === 'Stroke Play Gross') {
+                const results = tournamentData.players.map((player, idx) => {
+                    const total = player.scores.reduce((sum, s) => sum + s, 0);
+                    const toPar = total - courseData.totalPar;
+                    return { player, total, toPar, index: idx };
+                }).filter(r => r.total > 0);
+
+                // Sort by total, then by back-nine tiebreaker using handicap holes
+                results.sort((a, b) => {
+                    if (a.total !== b.total) return a.total - b.total;
+                    
+                    // Tiebreaker: lowest score on hardest holes (hcp 1, 2, 3...)
+                    for (let hcp = 1; hcp <= 18; hcp++) {
+                        const holeIdx = courseData.holes.findIndex(h => h.handicap === hcp);
+                        const scoreA = a.player.scores[holeIdx];
+                        const scoreB = b.player.scores[holeIdx];
+                        if (scoreA !== scoreB) return scoreA - scoreB;
+                    }
+                    return 0;
+                });
+
+                results.forEach((r, position) => {
+                    const medal = position === 0 ? '🥇' : position === 1 ? '🥈' : position === 2 ? '🥉' : `${position + 1}.`;
+                    const toParText = r.toPar === 0 ? 'E' : (r.toPar > 0 ? `+${r.toPar}` : `${r.toPar}`);
+                    
+                    container.appendChild(createPlayerResultCard(medal, r.player.name, r.total, toParText, r.player.handicap));
+                });
+            }
+
+            // Stroke Play Net
+            else if (gameType === 'Stroke Play Net') {
+                const results = tournamentData.players.map((player, idx) => {
+                    let netTotal = 0;
+                    player.scores.forEach((score, holeIdx) => {
+                        if (score > 0) {
+                            const netScore = getNetScore(score, player.handicap, courseData.holes[holeIdx].handicap, 'full');
+                            netTotal += netScore;
+                        }
+                    });
+                    const toPar = netTotal - courseData.totalPar;
+                    return { player, netTotal, toPar, index: idx };
+                }).filter(r => r.netTotal > 0);
+
+                results.sort((a, b) => {
+                    if (a.netTotal !== b.netTotal) return a.netTotal - b.netTotal;
+                    
+                    // Tiebreaker: lowest net score on hardest holes
+                    for (let hcp = 1; hcp <= 18; hcp++) {
+                        const holeIdx = courseData.holes.findIndex(h => h.handicap === hcp);
+                        const netA = getNetScore(a.player.scores[holeIdx], a.player.handicap, hcp, 'full');
+                        const netB = getNetScore(b.player.scores[holeIdx], b.player.handicap, hcp, 'full');
+                        if (netA !== netB) return netA - netB;
+                    }
+                    return 0;
+                });
+
+                results.forEach((r, position) => {
+                    const medal = position === 0 ? '🥇' : position === 1 ? '🥈' : position === 2 ? '🥉' : `${position + 1}.`;
+                    const toParText = r.toPar === 0 ? 'E' : (r.toPar > 0 ? `+${r.toPar}` : `${r.toPar}`);
+                    
+                    container.appendChild(createPlayerResultCard(medal, r.player.name, r.netTotal, toParText, r.player.handicap, 'Net'));
+                });
+            }
+
+            // Skins Games
+            else if (gameType.includes('Skins')) {
+                const method = gameType === 'Gross Skins' ? 'gross' : 
+                              gameType === 'Net Skins (Full Hcp)' ? 'full' :
+                              gameType === 'Net Skins (18 Max)' ? '18max' : 'half';
+                
+                const skinWinners = {};
+                const skinDetails = {}; // Track which holes each player won
+                
+                tournamentData.players.forEach((p, idx) => {
+                    skinWinners[idx] = 0;
+                    skinDetails[idx] = [];
+                });
+                
+                for (let holeIdx = 0; holeIdx < 18; holeIdx++) {
+                    const holeScores = tournamentData.players.map((player, pIdx) => {
+                        const gross = player.scores[holeIdx];
+                        if (gross === 0) return { pIdx, score: 999, gross: 0 };
+                        
+                        const score = method === 'gross' ? gross : 
+                                     getNetScore(gross, player.handicap, courseData.holes[holeIdx].handicap, 
+                                               method === 'full' ? 'full' : method === '18max' ? '18max' : 'half');
+                        return { pIdx, score, gross };
+                    }).filter(s => s.score < 999);
+                    
+                    if (holeScores.length === 0) continue;
+                    
+                    const minScore = Math.min(...holeScores.map(s => s.score));
+                    const winners = holeScores.filter(s => s.score === minScore);
+                    
+                    // Only award skin if there's a sole winner
+                    if (winners.length === 1) {
+                        const winnerIdx = winners[0].pIdx;
+                        skinWinners[winnerIdx]++;
+                        skinDetails[winnerIdx].push({
+                            hole: holeIdx + 1,
+                            score: winners[0].score
+                        });
+                    }
+                }
+                
+                const results = tournamentData.players.map((player, idx) => ({
+                    player,
+                    skins: skinWinners[idx] || 0,
+                    details: skinDetails[idx] || []
+                })).sort((a, b) => b.skins - a.skins);
+                
+                results.forEach((r, position) => {
+                    const medal = position === 0 ? '🥇' : position === 1 ? '🥈' : position === 2 ? '🥉' : `${position + 1}.`;
+                    const hcpDisplay = r.player.handicap !== 0 ? `(HCP ${r.player.handicap > 0 ? r.player.handicap : '+' + Math.abs(r.player.handicap)})` : '';
+                    
+                    // Format hole details
+                    const holeList = r.details.map(d => `#${d.hole}(${d.score})`).join(', ');
+                    
+                    const div = document.createElement('div');
+                    div.className = 'results-player';
+                    div.innerHTML = `
+                        <div class="results-player-header">
+                            <div class="results-player-name">${medal} ${r.player.name} ${hcpDisplay}</div>
+                            <div class="results-score">${r.skins} skin${r.skins !== 1 ? 's' : ''}</div>
+                        </div>
+                        ${holeList ? `<div style="padding: 8px 0; color: #059669; font-size: 17px; font-weight: 600;">${holeList}</div>` : ''}
+                    `;
+                    container.appendChild(div);
+                });
+            }
+
+            // Stableford
+            else if (gameType.includes('Stableford')) {
+                const modified = gameType.includes('Modified');
+                
+                const results = tournamentData.players.map((player, idx) => {
+                    let points = 0;
+                    player.scores.forEach((score, holeIdx) => {
+                        if (score > 0) {
+                            const netScore = getNetScore(score, player.handicap, courseData.holes[holeIdx].handicap, 'full');
+                            const par = courseData.holes[holeIdx].par;
+                            points += getStablefordPoints(netScore, par, modified);
+                        }
+                    });
+                    return { player, points };
+                }).sort((a, b) => b.points - a.points);
+
+                results.forEach((r, position) => {
+                    const medal = position === 0 ? '🥇' : position === 1 ? '🥈' : position === 2 ? '🥉' : `${position + 1}.`;
+                    const hcpDisplay = r.player.handicap !== 0 ? `(HCP ${r.player.handicap > 0 ? r.player.handicap : '+' + Math.abs(r.player.handicap)})` : '';
+                    const div = document.createElement('div');
+                    div.className = 'results-player';
+                    div.innerHTML = `
+                        <div class="results-player-header">
+                            <div class="results-player-name">${medal} ${r.player.name} ${hcpDisplay}</div>
+                            <div class="results-score">${r.points} pts</div>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+
+            // Best Ball Games
+            else if (gameType.includes('Best Ball')) {
+                const teamsPerRound = gameType === '2-Man Best Ball' ? 2 : gameType === '3-Man Best Ball' ? 2 : 2;
+                const scoreCount = gameType === '2-Man Best Ball' ? 1 : 2;
+                
+                const teamResults = tournamentData.teams.map((team, teamIdx) => {
+                    let teamTotal = 0;
+                    
+                    for (let holeIdx = 0; holeIdx < 18; holeIdx++) {
+                        const holeScores = team.map(playerIdx => {
+                            const player = tournamentData.players[playerIdx];
+                            const gross = player.scores[holeIdx];
+                            if (gross === 0) return 999;
+                            return getNetScore(gross, player.handicap, courseData.holes[holeIdx].handicap, 'full');
+                        }).filter(s => s < 999).sort((a, b) => a - b);
+                        
+                        // Take best 1 score (2-man) or best 2 scores (3-man, 4-man)
+                        const scoresToCount = holeScores.slice(0, scoreCount);
+                        teamTotal += scoresToCount.reduce((sum, s) => sum + s, 0);
+                    }
+                    
+                    const teamNames = team.map(pIdx => tournamentData.players[pIdx].name).join(' & ');
+                    return { teamNames, teamTotal, teamIdx };
+                }).sort((a, b) => a.teamTotal - b.teamTotal);
+
+                teamResults.forEach((r, position) => {
+                    const medal = position === 0 ? '🥇' : position === 1 ? '🥈' : `${position + 1}.`;
+                    const toPar = r.teamTotal - courseData.totalPar;
+                    const toParText = toPar === 0 ? 'E' : (toPar > 0 ? `+${toPar}` : `${toPar}`);
+                    
+                    const div = document.createElement('div');
+                    div.className = 'results-player';
+                    div.innerHTML = `
+                        <div class="results-player-header">
+                            <div class="results-player-name">${medal} ${r.teamNames}</div>
+                            <div class="results-score">${r.teamTotal} (${toParText})</div>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+        }
+
+        function createPlayerResultCard(medal, name, score, toPar, handicap, scoreType = 'Gross') {
+            const div = document.createElement('div');
+            div.className = 'results-player';
+            const hcpDisplay = handicap !== 0 ? ` (HCP ${handicap > 0 ? handicap : '+' + Math.abs(handicap)})` : '';
+            div.innerHTML = `
+                <div class="results-player-header">
+                    <div class="results-player-name">${medal} ${name}${hcpDisplay}</div>
+                    <div class="results-score">${score}</div>
+                </div>
+                <div class="results-details">
+                    <div class="results-stat">
+                        <span class="results-stat-label">${scoreType} To Par</span>
+                        <span>${toPar}</span>
+                    </div>
+                </div>
+            `;
+            return div;
+        }
+
+        // New round - with custom confirmation dialog
+        function confirmNewRound() {
+            showConfirm(
+                'Start New Round?',
+                'All current scores will be lost. This cannot be undone.',
+                function() {
+                    newRound();
+                }
+            );
+        }
+
+        function newRound() {
+            localStorage.removeItem('indianHillsScoring');
+            tournamentData = { date: '', gameType: '', course: '', players: [], teams: [] };
+            document.getElementById('tournamentDate').value = ''; // Clear date
+            
+            // Reset player list to default 1
+            const playerList = document.getElementById('playerList');
+            playerList.innerHTML = `
+                <div class="player-row" data-player="1">
+                    <input type="text" class="player-name-input" placeholder="Player Name" id="player1">
+                    <input type="text" class="player-hcp-input" placeholder="HCP" id="hcp1" pattern="-?[0-9]*" inputmode="numeric">
+                </div>
+            `;
+            
+            currentPlayerCount = 1;
+            nextPlayerId = 2;
+            document.getElementById('addPlayerBtn').disabled = false;
+            document.getElementById('addPlayerBtn').textContent = '+ Add Player';
+            
+            // Reset course and game type selection to directives
+            document.getElementById('courseSelect').value = '';
+            document.getElementById('gameType').value = '';
+            courseData = null;
+            
+            showPage('setupPage');
+        }
+
+        // Load saved data on startup
+        window.addEventListener('load', () => {
+            checkForSavedRound();
+        });
+
+        // Prevent accidental page refresh
+        // Prevent accidental page refresh/close when there's data
+        window.addEventListener('beforeunload', (e) => {
+            const hasData = localStorage.getItem('indianHillsScoring');
+            const hasPlayers = tournamentData && tournamentData.players && tournamentData.players.length > 0;
+            
+            if (hasData || hasPlayers) {
+                const message = 'You have an active round in progress. Leaving will lose unsaved data.';
+                e.preventDefault();
+                e.returnValue = message; // For Chrome
+                return message; // For other browsers
+            }
+        });
+
+        // Universal button handler for iOS compatibility
+        // This uses event delegation on the document level
+        function handleButtonClick(e) {
+            let target = e.target;
+            
+            // Find button if clicked on emoji or text inside button
+            while (target && target !== document.body) {
+                if (target.tagName === 'BUTTON' && target.hasAttribute('data-action')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const action = target.getAttribute('data-action');
+                    
+                    // Execute the corresponding function
+                    try {
+                        switch(action) {
+                            case 'confirmBackToSetup':
+                                confirmBackToSetup();
+                                break;
+                            case 'finishRound':
+                                finishRound();
+                                break;
+                            case 'shareResults':
+                                shareResults();
+                                break;
+                            case 'exportToCsv':
+                                exportToCsv();
+                                break;
+                            case 'printScorecard':
+                                printScorecard();
+                                break;
+                            case 'backToScoring':
+                                backToScoring();
+                                break;
+                            case 'confirmNewRound':
+                                confirmNewRound();
+                                break;
+                            default:
+                        }
+                    } catch (err) {
+                        console.error('Error executing button action:', err);
+                        alert('Button error: ' + err.message);
+                    }
+                    
+                    return false;
+                }
+                target = target.parentElement;
+            }
+        }
+
+        // Attach to both click and touchend for maximum compatibility
+        document.addEventListener('click', handleButtonClick, true);
+        document.addEventListener('touchend', handleButtonClick, true);
+
+        // Print Scorecard Function
+        // Share results as text
+        function shareResults() {
+            let shareText = `⛳ ${courseData.name} - ${formatDateDisplay(tournamentData.date)}\n`;
+            shareText += `Game: ${tournamentData.gameType}\n\n`;
+            shareText += `📊 FINAL RESULTS\n`;
+            shareText += `${'='.repeat(40)}\n\n`;
+            
+            // Calculate scores for all players
+            const playerResults = tournamentData.players.map(player => {
+                const grossScore = player.scores.reduce((sum, s) => sum + s, 0);
+                const netScore = grossScore - player.handicap;
+                const toPar = grossScore - courseData.totalPar;
+                return { player, grossScore, netScore, toPar };
+            });
+            
+            // Sort by appropriate score
+            const isNet = tournamentData.gameType.includes('Net');
+            playerResults.sort((a, b) => {
+                const aScore = isNet ? a.netScore : a.grossScore;
+                const bScore = isNet ? b.netScore : b.grossScore;
+                return aScore - bScore;
+            });
+            
+            // Format results
+            playerResults.forEach((r, idx) => {
+                const medal = idx === 0 ? '🥇 ' : idx === 1 ? '🥈 ' : idx === 2 ? '🥉 ' : '';
+                const score = isNet ? r.netScore : r.grossScore;
+                const toParText = r.toPar === 0 ? 'E' : (r.toPar > 0 ? `+${r.toPar}` : r.toPar);
+                shareText += `${medal}${r.player.name}: ${score} (${toParText})\n`;
+            });
+            
+            shareText += `\n---\nCreated with U līK goLf?! Games by Otis Williams`;
+            
+            // Use Web Share API if available
+            if (navigator.share) {
+                navigator.share({
+                    title: `${courseData.name} Results`,
+                    text: shareText
+                }).catch(err => {
+                    copyToClipboard(shareText);
+                });
+            } else {
+                // Fallback to copy to clipboard
+                copyToClipboard(shareText);
+            }
+        }
+        
+        // Copy to clipboard helper
+        function copyToClipboard(text) {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('Results copied to clipboard!');
+                }).catch(() => {
+                    fallbackCopy(text);
+                });
+            } else {
+                fallbackCopy(text);
+            }
+        }
+        
+        function fallbackCopy(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                alert('Results copied to clipboard!');
+            } catch (err) {
+                alert('Could not copy results. Please try again.');
+            }
+            document.body.removeChild(textarea);
+        }
+        
+        // Export to CSV
+        function exportToCsv() {
+            const dateStr = formatDateDisplay(tournamentData.date).replace(/\//g, '-');
+            const filename = `${courseData.name.replace(/\s+/g, '_')}_${dateStr}.csv`;
+            
+            let csv = `"Course","Game Type","Date"\n`;
+            csv += `"${courseData.name}","${tournamentData.gameType}","${formatDateDisplay(tournamentData.date)}"\n\n`;
+            
+            // Player scores by hole
+            csv += `"Player","Handicap"`;
+            for (let i = 1; i <= 18; i++) {
+                csv += `,"Hole ${i}"`;
+            }
+            csv += `,"Total","Net","To Par"\n`;
+            
+            tournamentData.players.forEach(player => {
+                const total = player.scores.reduce((sum, s) => sum + s, 0);
+                const net = total - player.handicap;
+                const toPar = total - courseData.totalPar;
+                const toParText = toPar === 0 ? 'E' : (toPar > 0 ? `+${toPar}` : toPar);
+                
+                csv += `"${player.name}","${player.handicap}"`;
+                player.scores.forEach(score => {
+                    csv += `,"${score || ''}"`;
+                });
+                csv += `,"${total}","${net}","${toParText}"\n`;
+            });
+            
+            // Download CSV
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+
+        function printScorecard() {
+            // Print the current scorecard view
+            window.print();
+        }
+
+        // Open scorecard modal
+        function openScorecardModal() {
+            const modal = document.getElementById('scorecardModal');
+            const select = document.getElementById('scorecardViewSelect');
+            
+            // Populate individual player options
+            const playerOptions = tournamentData.players
+                .map((player, idx) => `<option value="player-${idx}">${player.name}</option>`)
+                .join('');
+            
+            // Rebuild select to include players
+            select.innerHTML = `
+                <option value="all-summary">All Players - Summary Table</option>
+                <option value="all-individual">All Players - Individual Cards</option>
+                <option disabled>─────────────────</option>
+                ${playerOptions}
+            `;
+            
+            modal.classList.add('active');
+            updateScorecardView();
+        }
+
+        // Close scorecard modal
+        function closeScorecardModal() {
+            const modal = document.getElementById('scorecardModal');
+            modal.classList.remove('active');
+        }
+
+        // Update scorecard view based on selection
+        function updateScorecardView() {
+            const select = document.getElementById('scorecardViewSelect');
+            const body = document.getElementById('scorecardBody');
+            const viewType = select.value;
+            
+            if (viewType === 'all-summary') {
+                body.innerHTML = generateSummaryTable();
+            } else if (viewType === 'all-individual') {
+                body.innerHTML = generateAllIndividualCards();
+            } else if (viewType.startsWith('player-')) {
+                const playerIndex = parseInt(viewType.split('-')[1]);
+                body.innerHTML = generateIndividualCard(playerIndex);
+            }
+        }
+
+        // Generate summary table for all players
+        function generateSummaryTable() {
+            const currentGameType = document.getElementById('resultsGameType').value;
+            
+            // Determine handicap method based on game type
+            let hcpMethod = 'full';
+            if (currentGameType.includes('18 Max')) {
+                hcpMethod = '18max';
+            } else if (currentGameType.includes('1/2 Pop')) {
+                hcpMethod = 'half';
+            }
+            
+            // Check if this is a net or team game (team games use net scores)
+            const isNetOrTeam = currentGameType.includes('Net') || 
+                                currentGameType.includes('Best Ball') || 
+                                currentGameType.includes('Select Shot');
+            
+            let html = `
+                <div style="margin-bottom: 8px; text-align: center;">
+                    <h3 style="color: #1e40af; margin-bottom: 2px; font-size: 16px;">${courseData.name}</h3>
+                    <p style="color: #64748b; font-size: 12px; margin: 0;">${currentGameType} - ${formatDateDisplay(tournamentData.date)}</p>
+                </div>
+                <div class="table-wrapper">
+                <table class="scorecard-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 70px;">Hole</th>
+            `;
+            
+            // Add player name columns
+            tournamentData.players.forEach(player => {
+                html += `<th>${player.name}<br><span style="font-size: 11px;">(${player.handicap > 0 ? player.handicap : player.handicap < 0 ? '+' + Math.abs(player.handicap) : 'Scratch'})</span></th>`;
+            });
+            
+            html += `</tr></thead><tbody>`;
+            
+            // Add hole rows
+            for (let i = 0; i < 18; i++) {
+                const hole = courseData.holes[i];
+                html += `<tr>`;
+                html += `<td style="font-size: 10px; line-height: 1.1;"><strong style="font-size: 11px;">${hole.number}</strong><br>Par ${hole.par}<br>Hcp ${hole.handicap}</td>`;
+                
+                tournamentData.players.forEach(player => {
+                    const score = player.scores[i] || '';
+                    let netScore = '';
+                    
+                    if (score && isNetOrTeam) {
+                        netScore = getNetScore(score, player.handicap, hole.handicap, hcpMethod);
+                    }
+                    
+                    html += `<td>`;
+                    if (score) {
+                        html += `<strong>${score}</strong>`;
+                        if (netScore !== '' && netScore !== score) {
+                            html += `<br><span style="font-size: 9px; color: #10b981;">(${netScore})</span>`;
+                        }
+                    }
+                    html += `</td>`;
+                });
+                
+                html += `</tr>`;
+                
+                // Add subtotal after hole 9
+                if (i === 8) {
+                    html += `<tr class="total-row">`;
+                    html += `<td><strong>OUT</strong></td>`;
+                    
+                    tournamentData.players.forEach(player => {
+                        const outGross = player.scores.slice(0, 9).reduce((sum, s) => sum + (s || 0), 0);
+                        html += `<td><strong>${outGross || ''}</strong></td>`;
+                    });
+                    
+                    html += `</tr>`;
+                }
+            }
+            
+            // Add total row
+            html += `<tr class="total-row">`;
+            html += `<td><strong>IN</strong></td>`;
+            
+            tournamentData.players.forEach(player => {
+                const inGross = player.scores.slice(9).reduce((sum, s) => sum + (s || 0), 0);
+                html += `<td><strong>${inGross || ''}</strong></td>`;
+            });
+            
+            html += `</tr>`;
+            
+            // Add grand total
+            html += `<tr class="total-row" style="background: #dbeafe;">`;
+            html += `<td><strong>TOTAL</strong></td>`;
+            
+            tournamentData.players.forEach(player => {
+                const totalGross = player.scores.reduce((sum, s) => sum + (s || 0), 0);
+                const totalNet = totalGross - player.handicap;
+                const toPar = totalGross - courseData.totalPar;
+                const toParText = toPar === 0 ? 'E' : (toPar > 0 ? `+${toPar}` : toPar);
+                
+                html += `<td><strong>${totalGross}</strong>`;
+                if (currentGameType.includes('Net')) {
+                    html += `<br><span style="font-size: 9px; color: #10b981;">(Net: ${totalNet})</span>`;
+                }
+                html += `<br><span style="font-size: 9px;">${toParText}</span>`;
+                html += `</td>`;
+            });
+            
+            html += `</tr>`;
+            html += `</tbody></table>`;
+            html += `</div>`; // Close table-wrapper
+            
+            return html;
+        }
+
+        // Generate all individual cards
+        function generateAllIndividualCards() {
+            let html = '';
+            tournamentData.players.forEach((player, idx) => {
+                html += generateIndividualCard(idx);
+            });
+            return html;
+        }
+
+        // Generate individual scorecard for one player
+        function generateIndividualCard(playerIndex) {
+            const player = tournamentData.players[playerIndex];
+            const currentGameType = document.getElementById('resultsGameType').value;
+            
+            // Determine handicap method based on game type
+            let hcpMethod = 'full';
+            if (currentGameType.includes('18 Max')) {
+                hcpMethod = '18max';
+            } else if (currentGameType.includes('1/2 Pop')) {
+                hcpMethod = 'half';
+            }
+            
+            let html = `
+                <div class="scorecard-individual">
+                    <div class="scorecard-player-header">
+                        <div class="scorecard-player-name">${player.name}</div>
+                        <div class="scorecard-player-info">
+                            ${courseData.name} • ${currentGameType}<br>
+                            ${formatDateDisplay(tournamentData.date)} • Handicap: ${player.handicap > 0 ? player.handicap : player.handicap < 0 ? '+' + Math.abs(player.handicap) : 'Scratch'}
+                        </div>
+                    </div>
+                    
+                    <div class="table-wrapper">
+                    <table class="scorecard-table">
+                        <thead>
+                            <tr>
+                                <th>Hole</th>
+            `;
+            
+            // Front 9
+            for (let i = 1; i <= 9; i++) {
+                html += `<th>${i}</th>`;
+            }
+            html += `<th>OUT</th>`;
+            
+            // Back 9
+            for (let i = 10; i <= 18; i++) {
+                html += `<th>${i}</th>`;
+            }
+            html += `<th>IN</th><th>TOT</th>`;
+            
+            html += `</tr></thead><tbody>`;
+            
+            // Par row
+            html += `<tr><td><strong>Par</strong></td>`;
+            let frontPar = 0, backPar = 0;
+            for (let i = 0; i < 9; i++) {
+                frontPar += courseData.holes[i].par;
+                html += `<td>${courseData.holes[i].par}</td>`;
+            }
+            html += `<td><strong>${frontPar}</strong></td>`;
+            for (let i = 9; i < 18; i++) {
+                backPar += courseData.holes[i].par;
+                html += `<td>${courseData.holes[i].par}</td>`;
+            }
+            html += `<td><strong>${backPar}</strong></td><td><strong>${courseData.totalPar}</strong></td></tr>`;
+            
+            // Handicap row
+            html += `<tr><td><strong>HCP</strong></td>`;
+            for (let i = 0; i < 9; i++) {
+                html += `<td style="font-size: 11px;">${courseData.holes[i].handicap}</td>`;
+            }
+            html += `<td></td>`;
+            for (let i = 9; i < 18; i++) {
+                html += `<td style="font-size: 11px;">${courseData.holes[i].handicap}</td>`;
+            }
+            html += `<td></td><td></td></tr>`;
+            
+            // Gross score row
+            html += `<tr style="background: #f0f9ff;"><td><strong>Gross</strong></td>`;
+            let frontGross = 0, backGross = 0;
+            for (let i = 0; i < 9; i++) {
+                const score = player.scores[i] || '';
+                if (score) frontGross += score;
+                html += `<td><strong>${score}</strong></td>`;
+            }
+            html += `<td><strong>${frontGross || ''}</strong></td>`;
+            for (let i = 9; i < 18; i++) {
+                const score = player.scores[i] || '';
+                if (score) backGross += score;
+                html += `<td><strong>${score}</strong></td>`;
+            }
+            const totalGross = frontGross + backGross;
+            html += `<td><strong>${backGross || ''}</strong></td><td><strong>${totalGross || ''}</strong></td></tr>`;
+            
+            // Net score row (if applicable - for net games OR team games)
+            const isNetOrTeam = currentGameType.includes('Net') || 
+                                currentGameType.includes('Best Ball') || 
+                                currentGameType.includes('Select Shot');
+            
+            if (isNetOrTeam && player.handicap !== 0) {
+                html += `<tr style="background: #dcfce7;"><td><strong>Net</strong></td>`;
+                let frontNet = 0, backNet = 0;
+                for (let i = 0; i < 9; i++) {
+                    const gross = player.scores[i];
+                    if (gross) {
+                        const net = getNetScore(gross, player.handicap, courseData.holes[i].handicap, hcpMethod);
+                        frontNet += net;
+                        html += `<td><strong>${net}</strong></td>`;
+                    } else {
+                        html += `<td></td>`;
+                    }
+                }
+                html += `<td><strong>${frontNet || ''}</strong></td>`;
+                for (let i = 9; i < 18; i++) {
+                    const gross = player.scores[i];
+                    if (gross) {
+                        const net = getNetScore(gross, player.handicap, courseData.holes[i].handicap, hcpMethod);
+                        backNet += net;
+                        html += `<td><strong>${net}</strong></td>`;
+                    } else {
+                        html += `<td></td>`;
+                    }
+                }
+                const totalNet = frontNet + backNet;
+                html += `<td><strong>${backNet || ''}</strong></td><td><strong>${totalNet || ''}</strong></td></tr>`;
+            }
+            
+            // To Par row
+            const toPar = totalGross - courseData.totalPar;
+            const toParText = toPar === 0 ? 'Even' : (toPar > 0 ? `+${toPar}` : toPar);
+            html += `<tr class="total-row"><td colspan="11"><strong>To Par:</strong></td><td colspan="10"><strong>${toParText}</strong></td></tr>`;
+            
+            html += `</tbody></table>`;
+            html += `</div>`; // Close table-wrapper
+            html += `</div>`; // Close scorecard-individual
+            
+            return html;
+        }
+        // Check for saved round on page load
+        function checkForSavedRound() {
+            const savedData = localStorage.getItem('indianHillsScoring');
+            if (savedData) {
+                try {
+                    const data = JSON.parse(savedData);
+                    const resumeSection = document.getElementById('resumeRoundSection');
+                    const resumeInfo = document.getElementById('resumeRoundInfo');
+                    
+                    if (data.players && data.players.length > 0) {
+                        // Show resume section
+                        resumeSection.classList.add('active');
+                        
+                        // Format info
+                        const playerCount = data.players.length;
+                        const date = data.date ? new Date(data.date).toLocaleDateString() : 'Today';
+                        const gametype = data.gameType || 'Round';
+                        
+                        resumeInfo.textContent = `${playerCount} player${playerCount > 1 ? 's' : ''} • ${gametype} • ${date}`;
+                    }
+                } catch (e) {
+                    console.error('Error loading saved round:', e);
+                }
+            }
+        }
+
+        // Resume saved round
+        function resumeSavedRound() {
+            if (loadFromLocalStorage()) {
+                // Restore the course data
+                courseData = courses[tournamentData.course];
+                renderScoringPage();
+                showPage('scoringPage');
+                showRoundIndicator();
+            }
+        }
+
+        // Discard saved round and start fresh
+        function discardSavedRound() {
+            showConfirm(
+                'Discard Saved Round?',
+                'This will permanently delete your saved round. Are you sure?',
+                function() {
+                    localStorage.removeItem('indianHillsScoring');
+                    document.getElementById('resumeRoundSection').classList.remove('active');
+                    hideConfirmDialog();
+                }
+            );
+        }
+
+        // Show round in progress indicator
+        function showRoundIndicator() {
+            const indicator = document.getElementById('roundIndicator');
+            if (indicator) {
+                indicator.classList.add('active');
+            }
+        }
+
+        // Hide round in progress indicator
+        function hideRoundIndicator() {
+            const indicator = document.getElementById('roundIndicator');
+            if (indicator) {
+                indicator.classList.remove('active');
+            }
+        }
+
+        // Show auto-save toast
+        function showAutoSaveToast() {
+            const toast = document.getElementById('autoSaveToast');
+            if (toast) {
+                toast.classList.add('show');
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 800);
+            }
+        }
+
+        // Override saveToLocalStorage to add visual feedback
+        const originalSave = saveToLocalStorage;
+        saveToLocalStorage = function() {
+            originalSave();
+            showAutoSaveToast();
+        };
+
+        // Disable pull-to-refresh on iOS during active round
+        function disablePullToRefresh() {
+            document.body.style.overscrollBehavior = 'none';
+            document.documentElement.style.overscrollBehavior = 'none';
+        }
+
+        // Enable pull-to-refresh
+        function enablePullToRefresh() {
+            document.body.style.overscrollBehavior = 'auto';
+            document.documentElement.style.overscrollBehavior = 'auto';
+        }
+
+        // Switch to player view
+        function switchToPlayerView() {
+            currentView = 'player';
+            document.getElementById('playerCards').style.display = 'block';
+            document.getElementById('holeView').style.display = 'none';
+            document.getElementById('togglePlayerView').classList.add('active');
+            document.getElementById('toggleHoleView').classList.remove('active');
+            
+            // Refresh player view to show any changes from hole view
+            renderScoringPage();
+        }
+
+        // Switch to hole view
+        function switchToHoleView() {
+            currentView = 'hole';
+            document.getElementById('playerCards').style.display = 'none';
+            document.getElementById('holeView').style.display = 'block';
+            document.getElementById('togglePlayerView').classList.remove('active');
+            document.getElementById('toggleHoleView').classList.add('active');
+            renderHoleView();
+        }
+
+        // Render hole view
+        function renderHoleView() {
+            const hole = courseData.holes[currentHole];
+            const holeNumber = currentHole + 1;
+            
+            let html = `
+                <div class="hole-view-container" id="holeViewContainer">
+                    <div class="hole-header">
+                        <div class="hole-number">HOLE ${holeNumber}</div>
+                        <div class="hole-info">Par ${hole.par} • HCP ${hole.handicap}</div>
+                    </div>
+            `;
+            
+            // Determine net scoring method from game type
+            // ALWAYS show net scores, using full handicap by default
+            let netMethod = 'full'; // Default to full handicap
+            const gameTypeLower = tournamentData.gameType.toLowerCase();
+            
+            // Override with specific methods if applicable
+            if (gameTypeLower.includes('18 max')) {
+                netMethod = '18max';
+            } else if (gameTypeLower.includes('1/2 pop') || gameTypeLower.includes('half pop')) {
+                netMethod = 'half';
+            }
+            // Otherwise stays as 'full' for all other games
+            
+            console.log('renderHoleView - gameType:', tournamentData.gameType);
+            console.log('renderHoleView - netMethod:', netMethod);
+            
+            // Add player rows with inline ticker
+            tournamentData.players.forEach((player, playerIndex) => {
+                const score = player.scores[currentHole]; // Don't default to par - allow blank
+                const hasScore = score !== undefined && score !== null && score !== 0;
+                const displayScore = hasScore ? score : '';
+                
+                let scoreClass = '';
+                let netScoreDisplay = '';
+                
+                if (hasScore) {
+                    const diff = score - hole.par;
+                    
+                    if (diff >= 2) {
+                        scoreClass = 'double-bogey-plus';
+                    } else if (diff === 1) {
+                        scoreClass = 'bogey';
+                    } else if (diff === 0) {
+                        scoreClass = 'par'; // Add par class
+                    } else if (diff <= -1) {
+                        scoreClass = 'birdie-better';
+                    }
+                    
+                    // Calculate net score if this is a net game
+                    if (netMethod) {
+                        const netScore = getNetScore(score, player.handicap, hole.handicap, netMethod);
+                        netScoreDisplay = `<div class="hole-net-score">${netScore}</div>`;
+                    }
+                }
+                
+                html += `
+                    <div class="hole-player-row-ticker">
+                        <div class="hole-player-info">
+                            <div class="hole-player-name">${player.name}</div>
+                            <div class="hole-player-hcp">Handicap: ${player.handicap > 0 ? player.handicap : player.handicap < 0 ? '+' + Math.abs(player.handicap) : 'Scratch'}</div>
+                        </div>
+                        <div class="hole-score-section">
+                            <div class="hole-score-ticker">
+                                <button type="button" class="score-btn" onclick="adjustHoleScoreDirect(${playerIndex}, ${currentHole}, -1)">−</button>
+                                <input type="number" 
+                                       class="score-input ${scoreClass}" 
+                                       id="holeScore_${playerIndex}_${currentHole}"
+                                       value="${displayScore}" 
+                                       placeholder="−"
+                                       onchange="updateHoleScore(${playerIndex}, ${currentHole}, this.value)"
+                                       onfocus="handleHoleInputFocus(${playerIndex}, ${currentHole}, this)"
+                                       min="0"
+                                       max="15"
+                                       inputmode="numeric">
+                                <button type="button" class="score-btn" onclick="adjustHoleScoreDirect(${playerIndex}, ${currentHole}, 1)">+</button>
+                            </div>
+                            ${netScoreDisplay}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            // Add navigation
+            html += `
+                    <div class="hole-navigation">
+                        <button type="button" class="hole-nav-btn" onclick="goToPrevHole()" ${currentHole === 0 ? 'disabled' : ''}>
+                            ← Hole ${currentHole > 0 ? currentHole : 1}
+                        </button>
+                        <div class="hole-counter">${holeNumber}/18</div>
+                        <button type="button" class="hole-nav-btn" onclick="goToNextHole()" ${currentHole === 17 ? 'disabled' : ''}>
+                            Hole ${currentHole < 17 ? holeNumber + 1 : 18} →
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('holeViewContent').innerHTML = html;
+            setupHoleViewSwipe();
+        }
+
+        // Handle input focus in hole view - set to par if blank
+        function handleHoleInputFocus(playerIndex, holeIndex, inputElement) {
+            const currentScore = tournamentData.players[playerIndex].scores[holeIndex];
+            const hole = courseData.holes[holeIndex];
+            
+            // If no score yet, set to par
+            if (currentScore === undefined || currentScore === null || currentScore === 0) {
+                tournamentData.players[playerIndex].scores[holeIndex] = hole.par;
+                inputElement.value = hole.par;
+                
+                // Update color class for par
+                inputElement.classList.remove('birdie-better', 'bogey', 'double-bogey-plus');
+                inputElement.classList.add('par');
+                
+                // Save and update
+                saveToLocalStorage();
+                renderScoringPage(); // Update player view
+            }
+            
+            // Select all text for easy editing
+            inputElement.select();
+        }
+
+        // Adjust score directly in hole view (inline ticker)
+        function adjustHoleScoreDirect(playerIndex, holeIndex, delta) {
+            const currentScore = tournamentData.players[playerIndex].scores[holeIndex];
+            const hole = courseData.holes[holeIndex];
+            let newScore;
+            
+            // If no score yet (blank), first press sets to par
+            if (currentScore === undefined || currentScore === null || currentScore === 0) {
+                newScore = hole.par;
+            } else {
+                // Score exists, adjust by delta
+                if (delta > 0) {
+                    newScore = currentScore + 1;
+                } else {
+                    newScore = Math.max(currentScore - 1, 1); // Min score is 1
+                }
+            }
+            
+            tournamentData.players[playerIndex].scores[holeIndex] = newScore;
+            
+            // Update hole view
+            updateHoleViewScore(playerIndex, holeIndex, newScore);
+            
+            // Update player view if visible
+            renderScoringPage();
+            
+            saveToLocalStorage();
+        }
+
+        // Helper function to update hole view score display
+        function updateHoleViewScore(playerIndex, holeIndex, newScore) {
+            const input = document.getElementById(`holeScore_${playerIndex}_${holeIndex}`);
+            if (!input) return;
+            
+            input.value = newScore;
+            
+            // Update color class
+            const hole = courseData.holes[holeIndex];
+            const diff = newScore - hole.par;
+            
+            input.classList.remove('birdie-better', 'par', 'bogey', 'double-bogey-plus');
+            
+            if (diff >= 2) {
+                input.classList.add('double-bogey-plus');
+            } else if (diff === 1) {
+                input.classList.add('bogey');
+            } else if (diff === 0) {
+                input.classList.add('par');
+            } else if (diff <= -1) {
+                input.classList.add('birdie-better');
+            }
+            
+            // Update net score if applicable
+            const player = tournamentData.players[playerIndex];
+            let netMethod = null;
+            const gameTypeLower = tournamentData.gameType.toLowerCase();
+            
+            // Check for any net game
+            if (gameTypeLower.includes('net')) {
+                if (gameTypeLower.includes('full') || gameTypeLower.includes('full hcp')) {
+                    netMethod = 'full';
+                } else if (gameTypeLower.includes('18 max')) {
+                    netMethod = '18max';
+                } else if (gameTypeLower.includes('1/2 pop') || gameTypeLower.includes('half pop')) {
+                    netMethod = 'half';
+                } else {
+                    // Default to full handicap for any other net game
+                    netMethod = 'full';
+                }
+            }
+            
+            if (netMethod) {
+                const netScore = getNetScore(newScore, player.handicap, hole.handicap, netMethod);
+                const netDisplay = input.parentElement.parentElement.querySelector('.hole-net-score');
+                
+                if (netDisplay) {
+                    netDisplay.textContent = `${netScore}`;
+                } else {
+                    // Add net score display if it doesn't exist
+                    const netDiv = document.createElement('div');
+                    netDiv.className = 'hole-net-score';
+                    netDiv.textContent = `${netScore}`;
+                    input.parentElement.parentElement.appendChild(netDiv);
+                }
+            }
+        }
+
+        // Update score from manual input in hole view
+        function updateHoleScore(playerIndex, holeIndex, value) {
+            const numValue = parseInt(value);
+            
+            // If empty or invalid, delete the score
+            if (!value || isNaN(numValue) || numValue === 0) {
+                tournamentData.players[playerIndex].scores[holeIndex] = 0;
+                
+                // Clear display
+                const input = document.getElementById(`holeScore_${playerIndex}_${holeIndex}`);
+                if (input) {
+                    input.value = '';
+                    input.classList.remove('birdie-better', 'par', 'bogey', 'double-bogey-plus');
+                }
+                
+                // Remove net score
+                const netDisplay = input?.parentElement?.parentElement?.querySelector('.hole-net-score');
+                if (netDisplay) {
+                    netDisplay.remove();
+                }
+                
+                // Update player view
+                renderScoringPage();
+                saveToLocalStorage();
+                return;
+            }
+            
+            tournamentData.players[playerIndex].scores[holeIndex] = numValue;
+            
+            // Update hole view
+            updateHoleViewScore(playerIndex, holeIndex, numValue);
+            
+            // Update player view
+            renderScoringPage();
+            
+            saveToLocalStorage();
+        }
+
+        // Navigate to previous hole
+        function goToPrevHole() {
+            if (currentHole > 0) {
+                currentHole--;
+                renderHoleView();
+            }
+        }
+
+        // Navigate to next hole
+        function goToNextHole() {
+            if (currentHole < 17) {
+                currentHole++;
+                renderHoleView();
+            }
+        }
+
+        // Setup swipe gestures for hole view
+        function setupHoleViewSwipe() {
+            const container = document.getElementById('holeViewContainer');
+            if (!container) return;
+            
+            let touchStartX = 0;
+            let touchEndX = 0;
+            
+            container.addEventListener('touchstart', (e) => {
+                touchStartX = e.changedTouches[0].screenX;
+            }, { passive: true });
+            
+            container.addEventListener('touchend', (e) => {
+                touchEndX = e.changedTouches[0].screenX;
+                handleSwipe();
+            }, { passive: true });
+            
+            function handleSwipe() {
+                const swipeThreshold = 50;
+                const diff = touchStartX - touchEndX;
+                
+                if (Math.abs(diff) > swipeThreshold) {
+                    if (diff > 0) {
+                        // Swipe left - next hole
+                        goToNextHole();
+                    } else {
+                        // Swipe right - previous hole
+                        goToPrevHole();
+                    }
+                }
+            }
+        }
+
+        // Update startScoring to show indicator and disable pull-to-refresh
+        const originalStartScoring = startScoring;
+        startScoring = function() {
+            originalStartScoring();
+            showRoundIndicator();
+            disablePullToRefresh();
+        };
+
+        // Update confirmNewRound to hide indicator and enable pull-to-refresh
+        const originalConfirmNewRound = confirmNewRound;
+        confirmNewRound = function() {
+            showConfirm(
+                'Start New Round?',
+                'This will end the current round and clear all data. Make sure you\'ve saved your results!',
+                function() {
+                    localStorage.removeItem('indianHillsScoring');
+                    tournamentData = {
+                        date: '',
+                        gameType: '',
+                        course: 'indian_hills',
+                        players: [],
+                        teams: []
+                    };
+                    hideRoundIndicator();
+                    enablePullToRefresh();
+                    showPage('setupPage');
+                    hideConfirmDialog();
+                    location.reload(); // Reload to reset everything
+                }
+            );
+        };
+
+        // iOS Install Prompt - Show if not running as standalone app
+        function showInstallPrompt() {
+            // Check if running as standalone (home screen app)
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                               window.navigator.standalone === true;
+            
+            // Check if on iOS
+            const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+            
+            // Check if already dismissed
+            const dismissed = localStorage.getItem('installPromptDismissed');
+            
+            if (!isStandalone && isIOS && !dismissed) {
+                // Show after 3 seconds
+                setTimeout(() => {
+                    const banner = document.createElement('div');
+                    banner.style.cssText = `
+                        position: fixed;
+                        bottom: 0;
+                        left: 0;
+                        right: 0;
+                        background: rgba(30, 64, 175, 0.95);
+                        color: white;
+                        padding: 16px;
+                        text-align: center;
+                        z-index: 10000;
+                        font-size: 14px;
+                        line-height: 1.4;
+                        box-shadow: 0 -4px 12px rgba(0,0,0,0.3);
+                    `;
+                    banner.innerHTML = `
+                        <div style="margin-bottom: 8px;">📱 <strong>Install for Full Screen</strong></div>
+                        <div style="font-size: 12px; opacity: 0.9; margin-bottom: 12px;">
+                            Tap <strong>Share</strong> → <strong>Add to Home Screen</strong> to hide browser controls
+                        </div>
+                        <button onclick="this.closest('div').remove(); localStorage.setItem('installPromptDismissed', 'true');" 
+                                style="background: white; color: #1e40af; border: none; padding: 8px 20px; border-radius: 6px; font-weight: 600; font-size: 13px;">
+                            Got it
+                        </button>
+                    `;
+                    document.body.appendChild(banner);
+                    
+                    // Auto-dismiss after 10 seconds
+                    setTimeout(() => {
+                        if (banner.parentNode) {
+                            banner.remove();
+                        }
+                    }, 10000);
+                }, 3000);
+            }
+        }
+        
+        // Show install prompt on page load
+        showInstallPrompt();
+    </script>
+</body>
+</html>
