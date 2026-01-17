@@ -33,7 +33,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-01-17-PROFILEMODALS-v12.9 -->
+    <!-- VERSION: 2026-01-17-BUTTONFIX-v12.10 -->
     <style>
         * {
             margin: 0;
@@ -5334,20 +5334,25 @@
             const tournamentKey = activeTournamentId || tournamentData?.name || 'local';
             let links = linkedPlayers[tournamentKey] || [];
             
-            // Check if already linked
+            // Check if this player is already linked
             const existingIndex = links.findIndex(l => l.playerName === playerName);
             
             if (existingIndex >= 0) {
-                // Remove link
+                // Remove link (turning off tracking for this player)
                 links.splice(existingIndex, 1);
                 linkedPlayers[tournamentKey] = links;
                 localStorage.setItem('linkedPlayers', JSON.stringify(linkedPlayers));
                 showNotification('Tracking Off', `Stopped tracking ${playerName}`);
             } else {
-                // Add link - prompt which tracked identity to link to
+                // Adding a link
                 if (golfIdentityData.trackedPlayers.length === 1) {
-                    // Only one tracked player, link directly
+                    // Only one tracked identity - REPLACE any existing link
                     const trackedName = golfIdentityData.trackedPlayers[0].name;
+                    
+                    // Clear all existing links for this identity (can only track one player per identity)
+                    links = links.filter(l => l.trackedName !== trackedName);
+                    
+                    // Add new link
                     links.push({
                         playerName: playerName,
                         trackedName: trackedName,
@@ -5767,20 +5772,28 @@
         }
         
         function hideChangeEmailForm() {
-            document.getElementById('changeEmailForm').style.display = 'none';
+            const form = document.getElementById('changeEmailForm');
+            if (form) form.style.display = 'none';
+            const modal = document.getElementById('changeEmailModal');
+            if (modal) modal.remove();
         }
         
         // Show/hide change password form
         function showChangePasswordForm() {
-            document.getElementById('changePasswordForm').style.display = 'block';
-            document.getElementById('changeEmailForm').style.display = 'none';
-            document.getElementById('currentPasswordInput').value = '';
-            document.getElementById('newPasswordInput').value = '';
-            document.getElementById('changePasswordError').style.display = 'none';
+            // Now using modal instead
+            showChangePasswordModal();
         }
         
         function hideChangePasswordForm() {
-            document.getElementById('changePasswordForm').style.display = 'none';
+            const form = document.getElementById('changePasswordForm');
+            if (form) form.style.display = 'none';
+            const modal = document.getElementById('changePasswordModal');
+            if (modal) modal.remove();
+        }
+        
+        // Show/hide change email form (legacy - now using modal)
+        function showChangeEmailForm() {
+            showChangeEmailModal();
         }
         
         // Update email
@@ -17622,8 +17635,11 @@
             // Preserve carousel position when re-rendering
             const savedCarouselIndex = currentCarouselIndex;
             renderScoringPage();
-            currentCarouselIndex = savedCarouselIndex;
-            updateCarouselPosition();
+            // Use setTimeout to ensure DOM is rebuilt before restoring position
+            setTimeout(() => {
+                currentCarouselIndex = savedCarouselIndex;
+                updateCarouselPosition();
+            }, 50);
         }
 
         async function incrementScore(playerIndex, holeIndex) {
@@ -21260,9 +21276,6 @@
                                     <span>${player.name}${watchIndicator}</span>
                                 </div>
                                 <button onclick="showGhinModal('${player.name.replace(/'/g, "\\'")}', ${player.handicap}, ${actualPlayerIndex})" style="padding: 4px 8px; background: #1e40af; color: white; border: none; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">GHIN</button>
-                                <button onclick="event.stopPropagation(); togglePlayerTracking('${player.name.replace(/'/g, "\\'")}')" 
-                                    style="padding: 4px 6px; ${isPlayerLinkedForTracking(player.name) ? 'background: #10b981; color: white; border: 2px solid #059669;' : 'background: #f1f5f9; color: #64748b; border: 2px solid #e2e8f0;'} border-radius: 6px; font-size: 11px; cursor: pointer;" 
-                                    title="${isPlayerLinkedForTracking(player.name) ? 'Tracking stats' : 'Track stats'}">📊</button>
                                 <div class="player-total-compact">${total > 0 ? total : '-'} (${toParText})</div>
                             </div>
                             
@@ -21804,8 +21817,15 @@
                 closeExpandedScore();
                 
                 if (scoreToSave > 0) {
+                    // Set carousel index BEFORE calling updateScore so it can preserve it
+                    currentCarouselIndex = savedCarouselIndex;
                     // AWAIT the save to ensure it completes
                     await updateScore(playerIndex, holeIndex, scoreToSave);
+                    // Force re-position after updateScore completes
+                    setTimeout(() => {
+                        currentCarouselIndex = savedCarouselIndex;
+                        updateCarouselPosition();
+                    }, 100);
                 } else {
                     // Clear the score (set to 0/null)
                     tournamentData.players[playerIndex].scores[holeIndex] = 0;
@@ -21816,20 +21836,18 @@
                         const playerName = tournamentData.players[playerIndex].name;
                         await updatePlayerScore(activeTournamentId, playerName, holeIndex, 0);
                     }
-                }
-                
-                // Refresh the current view but stay on current player
-                if (currentView === 'hole') {
-                    renderHoleView();
-                } else {
-                    // Restore carousel position BEFORE re-rendering so it's preserved
-                    currentCarouselIndex = savedCarouselIndex;
-                    renderCompactPlayerView(getPlayersToShow());
-                    // Force position update after DOM rebuild with small delay
-                    setTimeout(() => {
+                    
+                    // Refresh the current view but stay on current player
+                    if (currentView === 'hole') {
+                        renderHoleView();
+                    } else {
                         currentCarouselIndex = savedCarouselIndex;
-                        updateCarouselPosition();
-                    }, 50);
+                        renderCompactPlayerView(getPlayersToShow());
+                        setTimeout(() => {
+                            currentCarouselIndex = savedCarouselIndex;
+                            updateCarouselPosition();
+                        }, 100);
+                    }
                 }
             } else {
                 closeExpandedScore();
@@ -22448,8 +22466,6 @@
                             <div style="display: flex; flex-direction: column;">
                                 <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
                                     <div class="hole-player-name" style="font-size: 17px; font-weight: 700; color: #1e293b;">${player.name}${isWatchedPlayer ? ' 👁' : ''}</div>
-                                    <button onclick="event.stopPropagation(); showGhinModal('${player.name.replace(/'/g, "\\'")}', ${player.handicap}, ${playerIndex})" 
-                                        style="padding: 2px 6px; background: #1e40af; color: white; border: none; border-radius: 4px; font-size: 9px; font-weight: 700; cursor: pointer;">GHIN</button>
                                     <button onclick="event.stopPropagation(); togglePlayerTracking('${player.name.replace(/'/g, "\\'")}')" 
                                         style="padding: 2px 6px; ${trackingBtnStyle} border-radius: 4px; font-size: 11px; cursor: pointer;" title="${trackingTitle}">📊</button>
                                 </div>
