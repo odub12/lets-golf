@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-01-27-v15.9.1-stats-by-course -->
+    <!-- VERSION: 2026-01-27-v15.9.2-auth-modals -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -4220,20 +4220,88 @@
                 <p style="color: #64748b; font-size: 13px; text-align: center; margin-bottom: 20px;">Sign in to unlock multi-device scoring and unlimited players</p>
                 
                 <div id="authForm">
-                    <div style="margin-bottom: 12px;">
-                        <input type="email" id="authEmail" placeholder="Email" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 16px; box-sizing: border-box;">
-                    </div>
-                    <div style="margin-bottom: 16px;">
-                        <input type="password" id="authPassword" placeholder="Password" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 16px; box-sizing: border-box;">
-                    </div>
-                    <div id="authError" style="display: none; color: #a51c30; font-size: 13px; margin-bottom: 12px; text-align: center;"></div>
+                    <div id="authError" style="display: none; color: #a51c30; font-size: 13px; margin-bottom: 12px; text-align: center; padding: 10px; background: #fef2f2; border-radius: 6px;"></div>
+                    <div id="authSuccess" style="display: none; color: #166534; font-size: 13px; margin-bottom: 12px; text-align: center; padding: 10px; background: #f0fdf4; border-radius: 6px;"></div>
                     
-                    <button type="button" onclick="signInUser()" style="width: 100%; padding: 14px; background: #1e3a5f; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; margin-bottom: 8px;">Sign In</button>
-                    <button type="button" onclick="registerUser()" style="width: 100%; padding: 14px; background: #d4b896; color: #1e3a5f; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; margin-bottom: 12px;">Create Account</button>
-                    
-                    <p style="text-align: center; color: #64748b; font-size: 12px;">
-                        <a href="#" onclick="sendPasswordReset()" style="color: #1e3a5f; text-decoration: none;">Forgot password?</a>
-                    </p>
+                    <button type="button" onclick="showSignInModal()" style="width: 100%; padding: 14px; background: #1e3a5f; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; margin-bottom: 8px;">Sign In</button>
+                    <button type="button" onclick="showCreateAccountModal()" style="width: 100%; padding: 14px; background: #d4b896; color: #1e3a5f; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer;">Create Account</button>
+                </div>
+            </div>
+            
+            <!-- Sign In Modal -->
+            <div id="signInModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center; padding: 16px;">
+                <div style="background: white; border-radius: 12px; max-width: 360px; width: 100%; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                    <div style="padding: 20px; border-bottom: 1px solid #e5e7eb;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="margin: 0; color: #1e3a5f; font-size: 18px;">🔐 Sign In</h3>
+                            <button type="button" onclick="closeSignInModal()" style="background: none; border: none; font-size: 24px; color: #64748b; cursor: pointer;">×</button>
+                        </div>
+                    </div>
+                    <div style="padding: 20px;">
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 4px;">Email</label>
+                            <input type="email" id="signInEmail" placeholder="your@email.com" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 16px; box-sizing: border-box;">
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 4px;">Password</label>
+                            <input type="password" id="signInPassword" placeholder="••••••••" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 16px; box-sizing: border-box;">
+                        </div>
+                        <div id="signInError" style="display: none; color: #a51c30; font-size: 13px; margin-bottom: 12px; text-align: center; padding: 8px; background: #fef2f2; border-radius: 6px;"></div>
+                        <button type="button" onclick="doSignIn()" style="width: 100%; padding: 14px; background: #1e3a5f; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; margin-bottom: 12px;">Sign In</button>
+                        <p style="text-align: center; margin: 0;">
+                            <a href="#" onclick="closeSignInModal(); showForgotPasswordModal(); return false;" style="color: #1e3a5f; font-size: 13px; text-decoration: none;">Forgot password?</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Create Account Modal -->
+            <div id="createAccountModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center; padding: 16px;">
+                <div style="background: white; border-radius: 12px; max-width: 360px; width: 100%; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                    <div style="padding: 20px; border-bottom: 1px solid #e5e7eb;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="margin: 0; color: #1e3a5f; font-size: 18px;">✨ Create Account</h3>
+                            <button type="button" onclick="closeCreateAccountModal()" style="background: none; border: none; font-size: 24px; color: #64748b; cursor: pointer;">×</button>
+                        </div>
+                    </div>
+                    <div style="padding: 20px;">
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 4px;">Email</label>
+                            <input type="email" id="createEmail" placeholder="your@email.com" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 16px; box-sizing: border-box;">
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 4px;">Password</label>
+                            <input type="password" id="createPassword" placeholder="At least 6 characters" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 16px; box-sizing: border-box;">
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 4px;">Confirm Password</label>
+                            <input type="password" id="createPasswordConfirm" placeholder="Re-enter password" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 16px; box-sizing: border-box;">
+                        </div>
+                        <div id="createError" style="display: none; color: #a51c30; font-size: 13px; margin-bottom: 12px; text-align: center; padding: 8px; background: #fef2f2; border-radius: 6px;"></div>
+                        <button type="button" onclick="doCreateAccount()" style="width: 100%; padding: 14px; background: #166534; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer;">Create Account</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Forgot Password Modal -->
+            <div id="forgotPasswordModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center; padding: 16px;">
+                <div style="background: white; border-radius: 12px; max-width: 360px; width: 100%; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                    <div style="padding: 20px; border-bottom: 1px solid #e5e7eb;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="margin: 0; color: #1e3a5f; font-size: 18px;">🔑 Reset Password</h3>
+                            <button type="button" onclick="closeForgotPasswordModal()" style="background: none; border: none; font-size: 24px; color: #64748b; cursor: pointer;">×</button>
+                        </div>
+                    </div>
+                    <div style="padding: 20px;">
+                        <p style="color: #64748b; font-size: 13px; margin-bottom: 16px;">Enter your email and we'll send you a link to reset your password.</p>
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 4px;">Email</label>
+                            <input type="email" id="forgotEmail" placeholder="your@email.com" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 16px; box-sizing: border-box;">
+                        </div>
+                        <div id="forgotError" style="display: none; color: #a51c30; font-size: 13px; margin-bottom: 12px; text-align: center; padding: 8px; background: #fef2f2; border-radius: 6px;"></div>
+                        <div id="forgotSuccess" style="display: none; color: #166534; font-size: 13px; margin-bottom: 12px; text-align: center; padding: 8px; background: #f0fdf4; border-radius: 6px;"></div>
+                        <button type="button" onclick="doForgotPassword()" style="width: 100%; padding: 14px; background: #1e3a5f; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer;">Send Reset Link</button>
+                    </div>
                 </div>
             </div>
             
@@ -6057,29 +6125,17 @@
 
         // Auth functions
         async function signInUser() {
-            const email = document.getElementById('authEmail').value.trim();
-            const password = document.getElementById('authPassword').value;
-            const errorEl = document.getElementById('authError');
-            
-            if (!email || !password) {
-                errorEl.textContent = 'Please enter email and password';
-                errorEl.style.display = 'block';
-                return;
-            }
-            
-            try {
-                errorEl.style.display = 'none';
-                await auth.signInWithEmailAndPassword(email, password);
-                hideAccountModal();
-                showNotification('Welcome Back!', 'Signed in successfully');
-            } catch (error) {
-                console.error('Sign in error:', error);
-                errorEl.textContent = getAuthErrorMessage(error.code);
-                errorEl.style.display = 'block';
-            }
+            // Legacy - redirect to new modal flow
+            showSignInModal();
         }
         
         async function registerUser() {
+            // Legacy - redirect to new modal flow
+            showCreateAccountModal();
+        }
+        
+        // Legacy function placeholders - actual logic moved to doSignIn/doCreateAccount
+        async function _legacyRegisterUser() {
             const email = document.getElementById('authEmail').value.trim();
             const password = document.getElementById('authPassword').value;
             const errorEl = document.getElementById('authError');
@@ -6142,24 +6198,150 @@
         }
         
         async function sendPasswordReset() {
-            const email = document.getElementById('authEmail').value.trim();
-            const errorEl = document.getElementById('authError');
+            // Legacy function - redirect to new modal
+            showForgotPasswordModal();
+        }
+        
+        // ============================================
+        // AUTH MODAL FUNCTIONS
+        // ============================================
+        
+        // Show Sign In Modal
+        function showSignInModal() {
+            const modal = document.getElementById('signInModal');
+            if (modal) {
+                modal.style.display = 'flex';
+                document.getElementById('signInEmail').value = '';
+                document.getElementById('signInPassword').value = '';
+                document.getElementById('signInError').style.display = 'none';
+                document.getElementById('signInEmail').focus();
+            }
+        }
+        
+        // Close Sign In Modal
+        function closeSignInModal() {
+            const modal = document.getElementById('signInModal');
+            if (modal) modal.style.display = 'none';
+        }
+        
+        // Show Create Account Modal
+        function showCreateAccountModal() {
+            const modal = document.getElementById('createAccountModal');
+            if (modal) {
+                modal.style.display = 'flex';
+                document.getElementById('createEmail').value = '';
+                document.getElementById('createPassword').value = '';
+                document.getElementById('createPasswordConfirm').value = '';
+                document.getElementById('createError').style.display = 'none';
+                document.getElementById('createEmail').focus();
+            }
+        }
+        
+        // Close Create Account Modal
+        function closeCreateAccountModal() {
+            const modal = document.getElementById('createAccountModal');
+            if (modal) modal.style.display = 'none';
+        }
+        
+        // Show Forgot Password Modal
+        function showForgotPasswordModal() {
+            const modal = document.getElementById('forgotPasswordModal');
+            if (modal) {
+                modal.style.display = 'flex';
+                document.getElementById('forgotEmail').value = '';
+                document.getElementById('forgotError').style.display = 'none';
+                document.getElementById('forgotSuccess').style.display = 'none';
+                document.getElementById('forgotEmail').focus();
+            }
+        }
+        
+        // Close Forgot Password Modal
+        function closeForgotPasswordModal() {
+            const modal = document.getElementById('forgotPasswordModal');
+            if (modal) modal.style.display = 'none';
+        }
+        
+        // Do Sign In
+        async function doSignIn() {
+            const email = document.getElementById('signInEmail').value.trim();
+            const password = document.getElementById('signInPassword').value;
+            const errorEl = document.getElementById('signInError');
             
-            if (!email) {
-                errorEl.textContent = 'Please enter your email first';
+            if (!email || !password) {
+                errorEl.textContent = 'Please enter email and password';
                 errorEl.style.display = 'block';
                 return;
             }
             
             try {
-                await auth.sendPasswordResetEmail(email);
-                errorEl.textContent = 'Password reset email sent!';
-                errorEl.style.color = '#166534';
-                errorEl.style.display = 'block';
+                errorEl.style.display = 'none';
+                await auth.signInWithEmailAndPassword(email, password);
+                closeSignInModal();
+                showNotification('✅ Signed In', 'Welcome back!');
             } catch (error) {
                 errorEl.textContent = getAuthErrorMessage(error.code);
-                errorEl.style.color = '#a51c30';
                 errorEl.style.display = 'block';
+            }
+        }
+        
+        // Do Create Account
+        async function doCreateAccount() {
+            const email = document.getElementById('createEmail').value.trim();
+            const password = document.getElementById('createPassword').value;
+            const confirmPassword = document.getElementById('createPasswordConfirm').value;
+            const errorEl = document.getElementById('createError');
+            
+            if (!email || !password || !confirmPassword) {
+                errorEl.textContent = 'Please fill in all fields';
+                errorEl.style.display = 'block';
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                errorEl.textContent = 'Passwords do not match';
+                errorEl.style.display = 'block';
+                return;
+            }
+            
+            if (password.length < 6) {
+                errorEl.textContent = 'Password must be at least 6 characters';
+                errorEl.style.display = 'block';
+                return;
+            }
+            
+            try {
+                errorEl.style.display = 'none';
+                await auth.createUserWithEmailAndPassword(email, password);
+                closeCreateAccountModal();
+                showNotification('✅ Account Created', 'Welcome to Let\'s Golf!');
+            } catch (error) {
+                errorEl.textContent = getAuthErrorMessage(error.code);
+                errorEl.style.display = 'block';
+            }
+        }
+        
+        // Do Forgot Password
+        async function doForgotPassword() {
+            const email = document.getElementById('forgotEmail').value.trim();
+            const errorEl = document.getElementById('forgotError');
+            const successEl = document.getElementById('forgotSuccess');
+            
+            if (!email) {
+                errorEl.textContent = 'Please enter your email';
+                errorEl.style.display = 'block';
+                successEl.style.display = 'none';
+                return;
+            }
+            
+            try {
+                errorEl.style.display = 'none';
+                await auth.sendPasswordResetEmail(email);
+                successEl.textContent = '✅ Reset link sent! Check your email (and spam folder).';
+                successEl.style.display = 'block';
+            } catch (error) {
+                errorEl.textContent = getAuthErrorMessage(error.code);
+                errorEl.style.display = 'block';
+                successEl.style.display = 'none';
             }
         }
         
