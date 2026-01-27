@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-01-27-v15.9.0-punch-list -->
+    <!-- VERSION: 2026-01-27-v15.9.1-stats-by-course -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -3365,119 +3365,6 @@
     </style>
 </head>
 <body>
-    <!-- Onboarding Tutorial Modal -->
-    <div id="onboardingModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 99999; align-items: center; justify-content: center;">
-        <div style="background: white; border-radius: 16px; max-width: 380px; width: 90%; max-height: 90vh; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
-            <!-- Slide Container -->
-            <div id="onboardingSlides">
-                <!-- Slide 1: Welcome -->
-                <div class="onboarding-slide" data-slide="0">
-                    <div style="background: linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 100%); padding: 40px 24px; text-align: center;">
-                        <div style="font-size: 64px; margin-bottom: 16px;">⛳</div>
-                        <h2 style="color: white; font-size: 24px; margin: 0 0 8px;">Welcome to Let's Golf!</h2>
-                        <p style="color: #94a3b8; font-size: 14px; margin: 0;">The easiest way to score with friends</p>
-                    </div>
-                    <div style="padding: 24px; text-align: center;">
-                        <p style="color: #374151; font-size: 15px; line-height: 1.6;">Track scores in real-time across multiple devices. Play fun side games like Wolf, Vegas, and Skins. See live leaderboards instantly.</p>
-                    </div>
-                </div>
-                
-                <!-- Slide 2: Multi-Device -->
-                <div class="onboarding-slide" data-slide="1" style="display: none;">
-                    <div style="background: linear-gradient(135deg, #166534 0%, #15803d 100%); padding: 40px 24px; text-align: center;">
-                        <div style="font-size: 64px; margin-bottom: 16px;">📱📱📱</div>
-                        <h2 style="color: white; font-size: 22px; margin: 0 0 8px;">Everyone Scores Together</h2>
-                    </div>
-                    <div style="padding: 24px;">
-                        <div style="display: flex; flex-direction: column; gap: 12px;">
-                            <div style="display: flex; align-items: center; gap: 12px;">
-                                <span style="font-size: 24px;">1️⃣</span>
-                                <span style="color: #374151; font-size: 14px;">Host creates tournament & shares code</span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 12px;">
-                                <span style="font-size: 24px;">2️⃣</span>
-                                <span style="color: #374151; font-size: 14px;">Players join & claim their names</span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 12px;">
-                                <span style="font-size: 24px;">3️⃣</span>
-                                <span style="color: #374151; font-size: 14px;">Everyone enters scores on their own phone</span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 12px;">
-                                <span style="font-size: 24px;">✨</span>
-                                <span style="color: #374151; font-size: 14px;">Leaderboard updates live for all!</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Slide 3: Game Types -->
-                <div class="onboarding-slide" data-slide="2" style="display: none;">
-                    <div style="background: linear-gradient(135deg, #b45309 0%, #d97706 100%); padding: 40px 24px; text-align: center;">
-                        <div style="font-size: 48px; margin-bottom: 16px;">🐺 🎰 🔵</div>
-                        <h2 style="color: white; font-size: 22px; margin: 0 0 8px;">Fun Side Games</h2>
-                    </div>
-                    <div style="padding: 24px;">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <div style="background: #fef3c7; padding: 12px; border-radius: 8px; text-align: center;">
-                                <div style="font-size: 20px;">🐺</div>
-                                <div style="font-size: 12px; font-weight: 600; color: #92400e;">Wolf</div>
-                            </div>
-                            <div style="background: #fef2f2; padding: 12px; border-radius: 8px; text-align: center;">
-                                <div style="font-size: 20px;">🎰</div>
-                                <div style="font-size: 12px; font-weight: 600; color: #dc2626;">Vegas</div>
-                            </div>
-                            <div style="background: #eff6ff; padding: 12px; border-radius: 8px; text-align: center;">
-                                <div style="font-size: 20px;">🔵</div>
-                                <div style="font-size: 12px; font-weight: 600; color: #2563eb;">Dots</div>
-                            </div>
-                            <div style="background: #f0fdf4; padding: 12px; border-radius: 8px; text-align: center;">
-                                <div style="font-size: 20px;">🔄</div>
-                                <div style="font-size: 12px; font-weight: 600; color: #166534;">Sixes</div>
-                            </div>
-                        </div>
-                        <p style="color: #6b7280; font-size: 12px; text-align: center; margin-top: 12px;">Plus Skins, Nassau, Stableford & more!</p>
-                    </div>
-                </div>
-                
-                <!-- Slide 4: Get Started -->
-                <div class="onboarding-slide" data-slide="3" style="display: none;">
-                    <div style="background: linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 100%); padding: 40px 24px; text-align: center;">
-                        <div style="font-size: 64px; margin-bottom: 16px;">🏌️</div>
-                        <h2 style="color: white; font-size: 22px; margin: 0 0 8px;">Ready to Play!</h2>
-                    </div>
-                    <div style="padding: 24px; text-align: center;">
-                        <p style="color: #374151; font-size: 15px; margin-bottom: 20px;">Start a new round or join a friend's tournament with a code.</p>
-                        <div style="display: flex; flex-direction: column; gap: 10px;">
-                            <button onclick="closeOnboardingAndStart()" style="padding: 14px; background: #1e3a5f; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer;">
-                                ⛳ Start New Round
-                            </button>
-                            <button onclick="closeOnboardingAndJoin()" style="padding: 14px; background: white; color: #1e3a5f; border: 2px solid #1e3a5f; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer;">
-                                🔗 Join with Code
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Navigation -->
-            <div style="padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
-                <button id="onboardingPrev" onclick="onboardingPrev()" style="padding: 8px 16px; background: #f3f4f6; color: #374151; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; visibility: hidden;">← Back</button>
-                <div id="onboardingDots" style="display: flex; gap: 8px;">
-                    <span class="onboarding-dot active" style="width: 8px; height: 8px; border-radius: 50%; background: #1e3a5f;"></span>
-                    <span class="onboarding-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #d1d5db;"></span>
-                    <span class="onboarding-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #d1d5db;"></span>
-                    <span class="onboarding-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #d1d5db;"></span>
-                </div>
-                <button id="onboardingNext" onclick="onboardingNext()" style="padding: 8px 16px; background: #1e3a5f; color: white; border: none; border-radius: 6px; font-size: 13px; cursor: pointer;">Next →</button>
-            </div>
-            
-            <!-- Skip -->
-            <div style="padding: 0 24px 16px; text-align: center;">
-                <button onclick="closeOnboarding()" style="background: none; border: none; color: #9ca3af; font-size: 12px; cursor: pointer;">Skip tutorial</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Setup Page -->
     <div id="setupPage" class="page active">
         <!-- Sticky Header with Actions -->
@@ -3979,64 +3866,6 @@
             </div>
         </div>
         
-        <!-- Dots Award Modal -->
-        <div id="dotsAwardModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center; padding: 16px;">
-            <div style="background: white; border-radius: 12px; max-width: 360px; width: 100%; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
-                <!-- Header -->
-                <div style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); padding: 16px; border-radius: 12px 12px 0 0; text-align: center;">
-                    <div style="font-size: 28px; margin-bottom: 4px;">🔵</div>
-                    <div id="dotsAwardHoleInfo" style="color: white; font-size: 18px; font-weight: 700;">Hole 1 Dots</div>
-                </div>
-                
-                <div style="padding: 16px;">
-                    <!-- Player Selection -->
-                    <div style="margin-bottom: 16px;">
-                        <div style="font-size: 12px; color: #6b7280; margin-bottom: 8px; font-weight: 600;">Select Player:</div>
-                        <div id="dotsPlayerSelect" style="display: flex; flex-wrap: wrap; gap: 6px;">
-                            <!-- Populated dynamically -->
-                        </div>
-                    </div>
-                    
-                    <!-- Dot Type Buttons -->
-                    <div id="dotsTypeButtons" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                        <button onclick="awardDotFromModal('sandy')" class="dots-award-btn" style="padding: 14px 10px; background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; font-size: 13px; font-weight: 600; color: #92400e; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px;">
-                            <span style="font-size: 20px;">🏖️</span>
-                            <span>Sandy (+1)</span>
-                            <span style="font-size: 10px; color: #a16207;">Par from bunker</span>
-                        </button>
-                        <button onclick="awardDotFromModal('greenie')" class="dots-award-btn" style="padding: 14px 10px; background: #dcfce7; border: 2px solid #22c55e; border-radius: 8px; font-size: 13px; font-weight: 600; color: #166534; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px;">
-                            <span style="font-size: 20px;">🎯</span>
-                            <span>Greenie (+1)</span>
-                            <span style="font-size: 10px; color: #15803d;">Closest on Par 3</span>
-                        </button>
-                        <button onclick="awardDotFromModal('poley')" class="dots-award-btn" style="padding: 14px 10px; background: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; font-size: 13px; font-weight: 600; color: #1e40af; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px;">
-                            <span style="font-size: 20px;">🏌️</span>
-                            <span>Poley (+1)</span>
-                            <span style="font-size: 10px; color: #2563eb;">Long 1-putt</span>
-                        </button>
-                        <button onclick="awardDotFromModal('birdie')" class="dots-award-btn" style="padding: 14px 10px; background: #fef2f2; border: 2px solid #ef4444; border-radius: 8px; font-size: 13px; font-weight: 600; color: #dc2626; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px;">
-                            <span style="font-size: 20px;">🐦</span>
-                            <span>Birdie (+1)</span>
-                            <span style="font-size: 10px; color: #b91c1c;">Manual award</span>
-                        </button>
-                    </div>
-                    
-                    <!-- Recent Awards This Hole -->
-                    <div id="dotsRecentAwards" style="margin-top: 16px; display: none;">
-                        <div style="font-size: 11px; color: #6b7280; margin-bottom: 6px; font-weight: 600;">Awarded This Hole:</div>
-                        <div id="dotsRecentList" style="display: flex; flex-wrap: wrap; gap: 6px;">
-                            <!-- Populated dynamically -->
-                        </div>
-                    </div>
-                    
-                    <!-- Close Button -->
-                    <button onclick="closeDotsAwardModal()" style="width: 100%; padding: 12px; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 16px;">
-                        Done
-                    </button>
-                </div>
-            </div>
-        </div>
-        
         <div class="scoring-header">
             <!-- Row 1: Title with Connection Dot -->
             <div style="text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px;">
@@ -4239,17 +4068,6 @@
                 
                 <!-- Game Results Content -->
                 <div id="foursomeGamesContent" style="padding: 12px; background: white;">
-                    <!-- Generated dynamically -->
-                </div>
-            </div>
-            
-            <!-- Course History Card -->
-            <div id="courseHistoryCard" style="display: none; margin-top: 12px; background: white; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(30, 58, 95, 0.1);">
-                <div style="background: linear-gradient(135deg, #166534 0%, #15803d 100%); padding: 10px 16px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                    <span style="font-size: 16px;">📊</span>
-                    <span style="font-size: 13px; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 1px;">Your History at This Course</span>
-                </div>
-                <div id="courseHistoryContent" style="padding: 12px; background: white;">
                     <!-- Generated dynamically -->
                 </div>
             </div>
@@ -8097,103 +7915,6 @@
 
         // Delete player row with animation
 
-        // ============================================
-        // ONBOARDING TUTORIAL SYSTEM
-        // ============================================
-        let onboardingCurrentSlide = 0;
-        const onboardingTotalSlides = 4;
-        
-        // Check if first time user
-        function checkFirstTimeUser() {
-            const hasSeenOnboarding = localStorage.getItem('letsGolfOnboardingComplete');
-            if (!hasSeenOnboarding) {
-                // Small delay to let page render
-                setTimeout(() => {
-                    showOnboarding();
-                }, 500);
-            }
-        }
-        
-        // Show onboarding modal
-        function showOnboarding() {
-            const modal = document.getElementById('onboardingModal');
-            if (modal) {
-                modal.style.display = 'flex';
-                onboardingCurrentSlide = 0;
-                updateOnboardingSlide();
-            }
-        }
-        
-        // Close onboarding
-        function closeOnboarding() {
-            const modal = document.getElementById('onboardingModal');
-            if (modal) {
-                modal.style.display = 'none';
-            }
-            // Mark as complete
-            localStorage.setItem('letsGolfOnboardingComplete', 'true');
-        }
-        
-        // Close and start new round
-        function closeOnboardingAndStart() {
-            closeOnboarding();
-            showPage('setupPage');
-        }
-        
-        // Close and show join
-        function closeOnboardingAndJoin() {
-            closeOnboarding();
-            showPage('homePage');
-            // Focus on join input if exists
-            setTimeout(() => {
-                const joinInput = document.getElementById('joinCodeInput');
-                if (joinInput) joinInput.focus();
-            }, 100);
-        }
-        
-        // Navigate to next slide
-        function onboardingNext() {
-            if (onboardingCurrentSlide < onboardingTotalSlides - 1) {
-                onboardingCurrentSlide++;
-                updateOnboardingSlide();
-            }
-        }
-        
-        // Navigate to previous slide
-        function onboardingPrev() {
-            if (onboardingCurrentSlide > 0) {
-                onboardingCurrentSlide--;
-                updateOnboardingSlide();
-            }
-        }
-        
-        // Update slide visibility and navigation
-        function updateOnboardingSlide() {
-            // Update slides
-            const slides = document.querySelectorAll('.onboarding-slide');
-            slides.forEach((slide, idx) => {
-                slide.style.display = idx === onboardingCurrentSlide ? 'block' : 'none';
-            });
-            
-            // Update dots
-            const dots = document.querySelectorAll('.onboarding-dot');
-            dots.forEach((dot, idx) => {
-                dot.style.background = idx === onboardingCurrentSlide ? '#1e3a5f' : '#d1d5db';
-            });
-            
-            // Update prev button visibility
-            const prevBtn = document.getElementById('onboardingPrev');
-            if (prevBtn) {
-                prevBtn.style.visibility = onboardingCurrentSlide === 0 ? 'hidden' : 'visible';
-            }
-            
-            // Update next button (hide on last slide since it has CTA buttons)
-            const nextBtn = document.getElementById('onboardingNext');
-            if (nextBtn) {
-                nextBtn.style.visibility = onboardingCurrentSlide === onboardingTotalSlides - 1 ? 'hidden' : 'visible';
-            }
-        }
-
         let tournamentData = {
             id: '',
             date: '',
@@ -9915,131 +9636,6 @@
             return html;
         }
         
-        // ============================================
-        // COURSE HISTORY COMPARISON
-        // ============================================
-        
-        // Render course history on results page
-        function renderCourseHistory() {
-            const card = document.getElementById('courseHistoryCard');
-            const content = document.getElementById('courseHistoryContent');
-            
-            if (!card || !content) return;
-            
-            // Get current course
-            const currentCourse = tournamentData?.course;
-            if (!currentCourse) {
-                card.style.display = 'none';
-                return;
-            }
-            
-            // Get history for this course
-            const history = getStatsHistory();
-            const courseRounds = history.filter(h => h.course === currentCourse && h.id !== (activeTournamentId || tournamentData?.id));
-            
-            if (courseRounds.length === 0) {
-                card.style.display = 'none';
-                return;
-            }
-            
-            card.style.display = 'block';
-            
-            // Get tracked players (players we care about comparing)
-            const trackedPlayers = playerOrder?.claimed?.length > 0 ? 
-                tournamentData.players.filter(p => playerOrder.claimed.includes(p.name)).map(p => p.name) :
-                tournamentData.players.slice(0, 2).map(p => p.name); // Default to first 2 players
-            
-            let html = '';
-            
-            // For each tracked player, show their history at this course
-            trackedPlayers.forEach(playerName => {
-                const playerRounds = courseRounds
-                    .filter(r => r.players && r.players[playerName])
-                    .slice(0, 5); // Last 5 rounds
-                
-                if (playerRounds.length === 0) return;
-                
-                // Calculate current round score
-                const currentPlayer = tournamentData.players.find(p => p.name === playerName);
-                const currentScore = currentPlayer?.scores?.reduce((sum, s) => sum + (s || 0), 0) || 0;
-                const currentHolesPlayed = currentPlayer?.scores?.filter(s => s > 0).length || 0;
-                
-                // Get best/worst/average
-                const pastScores = playerRounds
-                    .map(r => r.players[playerName]?.totalScore || 0)
-                    .filter(s => s > 0);
-                
-                if (pastScores.length === 0) return;
-                
-                const bestScore = Math.min(...pastScores);
-                const avgScore = Math.round(pastScores.reduce((a, b) => a + b, 0) / pastScores.length);
-                
-                // Get first name
-                const firstName = playerName.split(' ')[0];
-                
-                // Calculate projected score if not done
-                let projectedScore = currentScore;
-                if (currentHolesPlayed > 0 && currentHolesPlayed < 18) {
-                    projectedScore = Math.round((currentScore / currentHolesPlayed) * 18);
-                }
-                
-                // Compare to best
-                const vsBest = projectedScore - bestScore;
-                const vsBestText = vsBest === 0 ? 'Tied with best!' : vsBest < 0 ? `${vsBest} (New best!)` : `+${vsBest} from best`;
-                const vsBestColor = vsBest <= 0 ? '#166534' : '#dc2626';
-                
-                html += `
-                    <div style="margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #e5e7eb;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <span style="font-weight: 700; color: #1e3a5f; font-size: 14px;">${firstName}</span>
-                            <span style="font-size: 11px; color: #6b7280;">${playerRounds.length} round${playerRounds.length > 1 ? 's' : ''} here</span>
-                        </div>
-                        
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px;">
-                            <div style="text-align: center; padding: 8px; background: #f0fdf4; border-radius: 6px;">
-                                <div style="font-size: 10px; color: #166534;">Best</div>
-                                <div style="font-size: 18px; font-weight: 700; color: #166534;">${bestScore}</div>
-                            </div>
-                            <div style="text-align: center; padding: 8px; background: #f9fafb; border-radius: 6px;">
-                                <div style="font-size: 10px; color: #6b7280;">Average</div>
-                                <div style="font-size: 18px; font-weight: 700; color: #374151;">${avgScore}</div>
-                            </div>
-                            <div style="text-align: center; padding: 8px; background: #eff6ff; border-radius: 6px;">
-                                <div style="font-size: 10px; color: #2563eb;">${currentHolesPlayed < 18 ? 'Projected' : 'Today'}</div>
-                                <div style="font-size: 18px; font-weight: 700; color: #2563eb;">${projectedScore}</div>
-                            </div>
-                        </div>
-                        
-                        <div style="text-align: center; padding: 6px; background: ${vsBest <= 0 ? '#f0fdf4' : '#fef2f2'}; border-radius: 4px;">
-                            <span style="font-size: 12px; font-weight: 600; color: ${vsBestColor};">${vsBestText}</span>
-                        </div>
-                        
-                        <details style="margin-top: 10px;">
-                            <summary style="font-size: 11px; color: #6b7280; cursor: pointer;">View past rounds</summary>
-                            <div style="margin-top: 8px; font-size: 11px;">
-                                ${playerRounds.map(r => {
-                                    const rData = r.players[playerName];
-                                    const date = new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                                    return `<div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3f4f6;">
-                                        <span style="color: #6b7280;">${date}</span>
-                                        <span style="font-weight: 600; color: ${rData.totalScore === bestScore ? '#166534' : '#374151'};">${rData.totalScore}</span>
-                                    </div>`;
-                                }).join('')}
-                            </div>
-                        </details>
-                    </div>
-                `;
-            });
-            
-            if (!html) {
-                card.style.display = 'none';
-                return;
-            }
-            
-            // Remove last border
-            content.innerHTML = html.replace(/border-bottom: 1px solid #e5e7eb;([^<]*<\/div>\s*$)/, '$1');
-        }
-        
         // Initialize foursome game based on game type
         function initFoursomeGameIfNeeded() {
             if (!tournamentData) return;
@@ -10056,130 +9652,6 @@
             } else if (gameType === 'Dots') {
                 initDotsGame();
             }
-        }
-        
-        // ============================================
-        // DOTS AWARD MODAL FUNCTIONS
-        // ============================================
-        let dotsModalState = {
-            holeIndex: 0,
-            selectedPlayer: null,
-            holeAwards: []  // Awards given this hole
-        };
-        
-        // Show Dots award modal
-        function showDotsAwardModal(holeIndex) {
-            const modal = document.getElementById('dotsAwardModal');
-            if (!modal || tournamentData?.gameType !== 'Dots') return;
-            
-            dotsModalState.holeIndex = holeIndex;
-            dotsModalState.selectedPlayer = null;
-            dotsModalState.holeAwards = [];
-            
-            // Update header
-            document.getElementById('dotsAwardHoleInfo').textContent = `Hole ${holeIndex + 1} Dots`;
-            
-            // Populate player buttons
-            const playerSelect = document.getElementById('dotsPlayerSelect');
-            if (playerSelect && tournamentData?.players) {
-                playerSelect.innerHTML = tournamentData.players.map((p, idx) => `
-                    <button onclick="selectDotsPlayer('${p.name}')" id="dotsPlayer_${idx}"
-                        style="padding: 8px 14px; background: white; border: 2px solid #d1d5db; border-radius: 6px; font-size: 13px; font-weight: 600; color: #374151; cursor: pointer;">
-                        ${p.name}
-                    </button>
-                `).join('');
-            }
-            
-            // Hide recent awards initially
-            document.getElementById('dotsRecentAwards').style.display = 'none';
-            document.getElementById('dotsRecentList').innerHTML = '';
-            
-            modal.style.display = 'flex';
-        }
-        
-        // Close Dots award modal
-        function closeDotsAwardModal() {
-            const modal = document.getElementById('dotsAwardModal');
-            if (modal) modal.style.display = 'none';
-        }
-        
-        // Select player for dot award
-        function selectDotsPlayer(playerName) {
-            dotsModalState.selectedPlayer = playerName;
-            
-            // Update button styles
-            const buttons = document.querySelectorAll('#dotsPlayerSelect button');
-            buttons.forEach(btn => {
-                if (btn.textContent.trim() === playerName) {
-                    btn.style.background = '#2563eb';
-                    btn.style.borderColor = '#2563eb';
-                    btn.style.color = 'white';
-                } else {
-                    btn.style.background = 'white';
-                    btn.style.borderColor = '#d1d5db';
-                    btn.style.color = '#374151';
-                }
-            });
-        }
-        
-        // Award dot from modal
-        function awardDotFromModal(dotType) {
-            if (!dotsModalState.selectedPlayer) {
-                showNotification('Select Player', 'Please select a player first');
-                return;
-            }
-            
-            const success = awardDot(dotsModalState.selectedPlayer, dotType);
-            if (success) {
-                // Add to recent awards
-                dotsModalState.holeAwards.push({
-                    player: dotsModalState.selectedPlayer,
-                    type: dotType
-                });
-                
-                // Update recent awards display
-                updateDotsRecentAwards();
-                
-                // Show confirmation
-                const dotEmojis = { birdie: '🐦', eagle: '🦅', sandy: '🏖️', greenie: '🎯', poley: '🏌️', threePutt: '😬' };
-                showNotification(`${dotEmojis[dotType]} Dot Awarded!`, `${dotsModalState.selectedPlayer} earned a ${dotType}`);
-            }
-        }
-        
-        // Update recent awards display in modal
-        function updateDotsRecentAwards() {
-            const container = document.getElementById('dotsRecentAwards');
-            const list = document.getElementById('dotsRecentList');
-            
-            if (dotsModalState.holeAwards.length > 0) {
-                container.style.display = 'block';
-                const dotEmojis = { birdie: '🐦', eagle: '🦅', sandy: '🏖️', greenie: '🎯', poley: '🏌️', threePutt: '😬' };
-                
-                list.innerHTML = dotsModalState.holeAwards.map(a => `
-                    <span style="padding: 4px 10px; background: #eff6ff; border-radius: 12px; font-size: 12px; color: #1e40af;">
-                        ${dotEmojis[a.type]} ${a.player}
-                    </span>
-                `).join('');
-            } else {
-                container.style.display = 'none';
-            }
-        }
-        
-        // ============================================
-        // WOLF TRIGGER ON HOLE NAVIGATION
-        // ============================================
-        let wolfHoleTriggered = {};  // Track which holes have shown Wolf modal
-        
-        // Check if Wolf decision should be shown for current hole
-        function checkWolfTrigger(holeIndex) {
-            if (tournamentData?.gameType !== 'Wolf') return;
-            if (wolfHoleTriggered[holeIndex]) return;  // Already shown for this hole
-            
-            // Mark as triggered
-            wolfHoleTriggered[holeIndex] = true;
-            
-            // Show Wolf decision modal
-            showWolfDecisionModal(holeIndex);
         }
         
         
@@ -12253,7 +11725,21 @@
                             <button onclick="document.getElementById('statsHistoryModal').remove()" 
                                 style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;">×</button>
                         </div>
-                        <div style="display: flex; gap: 8px;">
+                        
+                        <!-- Tabs -->
+                        <div style="display: flex; gap: 4px; margin-bottom: 12px; background: #f3f4f6; border-radius: 6px; padding: 4px;">
+                            <button id="statsTabOverview" onclick="switchStatsTab('overview')" 
+                                style="flex: 1; padding: 8px; background: #1e3a5f; color: white; border: none; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer;">
+                                Overview
+                            </button>
+                            <button id="statsTabCourse" onclick="switchStatsTab('course')" 
+                                style="flex: 1; padding: 8px; background: transparent; color: #64748b; border: none; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer;">
+                                By Course
+                            </button>
+                        </div>
+                        
+                        <!-- Filters (shown for Overview tab) -->
+                        <div id="statsOverviewFilters" style="display: flex; gap: 8px;">
                             <select id="statsPlayerSelect" onchange="updateStatsHistoryPlayer(this.value)" 
                                 style="flex: 1; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; color: #1e3a5f;">
                                 ${playerOptions}
@@ -12261,6 +11747,14 @@
                             <select id="statsDateFilter" onchange="updateStatsHistoryDateFilter(this.value)" 
                                 style="flex: 1; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; color: #64748b;">
                                 ${dateFilterOptions}
+                            </select>
+                        </div>
+                        
+                        <!-- Course selector (shown for Course tab) -->
+                        <div id="statsCourseFilters" style="display: none;">
+                            <select id="statsCourseSelect" onchange="updateCourseHistoryView(this.value)" 
+                                style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; color: #1e3a5f;">
+                                ${getCourseOptions(playerName)}
                             </select>
                         </div>
                     </div>
@@ -12446,6 +11940,186 @@
             if (confirm('Are you sure you want to clear all stats history? This cannot be undone.')) {
                 saveStatsHistory([]);
                 document.getElementById('statsHistoryModal').remove();
+                showNotification('Cleared', 'Stats history has been cleared');
+            }
+        }
+        
+        // Get unique courses from history for a player
+        function getCourseOptions(playerName) {
+            const history = getStatsHistory();
+            const courses = new Map(); // course key -> display name
+            
+            history.forEach(round => {
+                if (round.players && round.players[playerName]) {
+                    const key = round.course || 'Unknown';
+                    const displayName = round.courseName || getCourseDisplayName(key) || key;
+                    if (!courses.has(key)) {
+                        courses.set(key, displayName);
+                    }
+                }
+            });
+            
+            if (courses.size === 0) {
+                return '<option value="">No courses played</option>';
+            }
+            
+            // Sort by display name
+            const sorted = Array.from(courses.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+            return sorted.map(([key, name]) => `<option value="${key}">${name}</option>`).join('');
+        }
+        
+        // Switch between stats tabs
+        function switchStatsTab(tab) {
+            const overviewBtn = document.getElementById('statsTabOverview');
+            const courseBtn = document.getElementById('statsTabCourse');
+            const overviewFilters = document.getElementById('statsOverviewFilters');
+            const courseFilters = document.getElementById('statsCourseFilters');
+            const content = document.getElementById('statsHistoryContent');
+            
+            if (tab === 'overview') {
+                overviewBtn.style.background = '#1e3a5f';
+                overviewBtn.style.color = 'white';
+                courseBtn.style.background = 'transparent';
+                courseBtn.style.color = '#64748b';
+                overviewFilters.style.display = 'flex';
+                courseFilters.style.display = 'none';
+                
+                // Render overview content
+                const playerSelect = document.getElementById('statsPlayerSelect');
+                const playerName = playerSelect ? playerSelect.value : null;
+                const dateFilter = window.statsHistoryDateFilter || 'all';
+                if (playerName) {
+                    const stats = getPlayerAggregateStats(playerName, dateFilter);
+                    content.innerHTML = renderStatsHistoryContent(playerName, stats);
+                }
+            } else {
+                overviewBtn.style.background = 'transparent';
+                overviewBtn.style.color = '#64748b';
+                courseBtn.style.background = '#1e3a5f';
+                courseBtn.style.color = 'white';
+                overviewFilters.style.display = 'none';
+                courseFilters.style.display = 'block';
+                
+                // Render course content
+                const courseSelect = document.getElementById('statsCourseSelect');
+                const courseKey = courseSelect ? courseSelect.value : null;
+                if (courseKey) {
+                    updateCourseHistoryView(courseKey);
+                }
+            }
+        }
+        
+        // Update course history view
+        function updateCourseHistoryView(courseKey) {
+            const content = document.getElementById('statsHistoryContent');
+            if (!content) return;
+            
+            const playerSelect = document.getElementById('statsPlayerSelect');
+            const playerName = playerSelect ? playerSelect.value : null;
+            
+            content.innerHTML = renderCourseHistoryContent(courseKey, playerName);
+        }
+        
+        // Render course history content
+        function renderCourseHistoryContent(courseKey, playerName) {
+            const history = getStatsHistory();
+            
+            // Get all rounds at this course for this player
+            const courseRounds = history
+                .filter(r => r.course === courseKey && r.players && r.players[playerName])
+                .map(r => ({
+                    date: r.date,
+                    score: r.players[playerName].totalScore,
+                    holes: r.players[playerName].holesPlayed || 18,
+                    putts: r.players[playerName].totals?.putts || '--',
+                    fir: r.players[playerName].totals?.fir || '--',
+                    gir: r.players[playerName].totals?.gir || '--'
+                }))
+                .filter(r => r.score > 0);
+            
+            if (courseRounds.length === 0) {
+                return `<p style="text-align: center; color: #64748b; padding: 40px;">No rounds recorded at this course</p>`;
+            }
+            
+            // Calculate stats
+            const fullRounds = courseRounds.filter(r => r.holes >= 18);
+            const scores = fullRounds.map(r => r.score);
+            const bestScore = scores.length > 0 ? Math.min(...scores) : '--';
+            const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : '--';
+            const worstScore = scores.length > 0 ? Math.max(...scores) : '--';
+            
+            // Get course display name
+            const courseName = getCourseDisplayName(courseKey) || courseKey;
+            
+            // Build rounds list
+            let roundsHtml = courseRounds.map((round, idx) => {
+                const isBest = round.score === bestScore && round.holes >= 18;
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; ${idx < courseRounds.length - 1 ? 'border-bottom: 1px solid #f1f5f9;' : ''} ${isBest ? 'background: #f0fdf4;' : ''}">
+                        <div>
+                            <div style="font-weight: 600; color: #1e293b; font-size: 13px;">${formatDate(round.date)} ${isBest ? '🏆' : ''}</div>
+                            <div style="font-size: 11px; color: #64748b;">${round.holes} holes</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: 700; color: ${isBest ? '#166534' : '#1e3a5f'}; font-size: 18px;">${round.score}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            return `
+                <!-- Course Name -->
+                <div style="text-align: center; margin-bottom: 16px;">
+                    <div style="font-size: 18px; font-weight: 700; color: #1e3a5f;">${courseName}</div>
+                    <div style="font-size: 12px; color: #64748b;">${courseRounds.length} round${courseRounds.length > 1 ? 's' : ''} played</div>
+                </div>
+                
+                <!-- Stats Summary -->
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;">
+                    <div style="background: #f0fdf4; border: 2px solid #166534; border-radius: 6px; padding: 14px; text-align: center;">
+                        <div style="font-size: 10px; color: #166534; font-weight: 600; margin-bottom: 4px;">BEST</div>
+                        <div style="font-size: 24px; font-weight: 700; color: #166534;">${bestScore}</div>
+                    </div>
+                    <div style="background: #f8fafc; border: 2px solid #64748b; border-radius: 6px; padding: 14px; text-align: center;">
+                        <div style="font-size: 10px; color: #64748b; font-weight: 600; margin-bottom: 4px;">AVERAGE</div>
+                        <div style="font-size: 24px; font-weight: 700; color: #374151;">${avgScore}</div>
+                    </div>
+                    <div style="background: #fef2f2; border: 2px solid #dc2626; border-radius: 6px; padding: 14px; text-align: center;">
+                        <div style="font-size: 10px; color: #dc2626; font-weight: 600; margin-bottom: 4px;">WORST</div>
+                        <div style="font-size: 24px; font-weight: 700; color: #dc2626;">${worstScore}</div>
+                    </div>
+                </div>
+                
+                <!-- Trend Chart (simple visual) -->
+                ${scores.length >= 2 ? `
+                    <div style="background: #f8fafc; border-radius: 6px; padding: 16px; margin-bottom: 16px;">
+                        <div style="font-weight: 600; color: #1e3a5f; margin-bottom: 12px; font-size: 14px;">📈 Score Trend</div>
+                        <div style="display: flex; align-items: end; gap: 4px; height: 60px;">
+                            ${courseRounds.slice(-10).map((r, i) => {
+                                const min = Math.min(...courseRounds.slice(-10).map(x => x.score));
+                                const max = Math.max(...courseRounds.slice(-10).map(x => x.score));
+                                const range = max - min || 1;
+                                const height = 20 + ((max - r.score) / range) * 40;
+                                const isBest = r.score === bestScore;
+                                return `<div style="flex: 1; height: ${height}px; background: ${isBest ? '#166534' : '#1e3a5f'}; border-radius: 2px;" title="${r.score}"></div>`;
+                            }).join('')}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+                            <span style="font-size: 9px; color: #94a3b8;">Older</span>
+                            <span style="font-size: 9px; color: #94a3b8;">Recent</span>
+                        </div>
+                    </div>
+                ` : ''}
+                
+                <!-- All Rounds -->
+                <div>
+                    <div style="font-weight: 600; color: #1e293b; margin-bottom: 12px; font-size: 14px;">All Rounds</div>
+                    <div style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
+                        ${roundsHtml}
+                    </div>
+                </div>
+            `;
+        }
                 showNotification('🗑️ Cleared', 'Stats history has been cleared');
             }
         }
@@ -13400,13 +13074,6 @@
                         players: tournament.players,
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
-                    
-                    // Check for special scores and broadcast notification
-                    if (score > 0) {
-                        const par = courseData?.holes?.[holeIndex]?.par || 4;
-                        const scoreToPar = score - par;
-                        broadcastScoreNotification(playerName, holeIndex, score, scoreToPar);
-                    }
                 });
                 
                 console.log('✅ Score successfully written to Firebase via transaction!');
@@ -13591,13 +13258,18 @@
                         const holeNum = i + 1;
                         const par = courseData?.holes?.[i]?.par || 4;
                         const diff = newScore - par;
+                        let diffText = '';
+                        if (diff === 0) diffText = ' (Par)';
+                        else if (diff < 0) diffText = ` (${diff})`;
+                        else diffText = ` (+${diff})`;
                         
                         // Get first name for shorter notification
                         const firstName = newPlayer.name.split(' ')[0];
                         
-                        // Special notifications for great scores
-                        const notification = getScoreNotificationContent(firstName, newScore, par, holeNum);
-                        showNotification(notification.title, notification.message);
+                        showNotification(
+                            `👁️ ${firstName}`,
+                            `Scored ${newScore}${diffText} on Hole ${holeNum}`
+                        );
                         
                         console.log(`🔔 Watched player notification: ${newPlayer.name} scored ${newScore} on hole ${holeNum}`);
                         
@@ -13606,73 +13278,6 @@
                     }
                 }
             });
-        }
-        
-        // Generate notification content based on score quality
-        function getScoreNotificationContent(playerName, score, par, holeNum) {
-            const diff = score - par;
-            
-            // Hole-in-one!
-            if (score === 1) {
-                return {
-                    title: `🎉🏆 ${playerName} - ACE!!!`,
-                    message: `HOLE IN ONE on Hole ${holeNum}!`
-                };
-            }
-            
-            // Albatross (-3)
-            if (diff === -3) {
-                return {
-                    title: `🦅🦅 ${playerName} - ALBATROSS!`,
-                    message: `Incredible ${score} on the Par ${par} Hole ${holeNum}!`
-                };
-            }
-            
-            // Eagle (-2)
-            if (diff === -2) {
-                return {
-                    title: `🦅 ${playerName} - EAGLE!`,
-                    message: `${score} on the Par ${par} Hole ${holeNum}!`
-                };
-            }
-            
-            // Birdie (-1)
-            if (diff === -1) {
-                return {
-                    title: `🐦 ${playerName} - Birdie!`,
-                    message: `${score} on Hole ${holeNum}`
-                };
-            }
-            
-            // Par
-            if (diff === 0) {
-                return {
-                    title: `👁️ ${playerName}`,
-                    message: `Par ${score} on Hole ${holeNum}`
-                };
-            }
-            
-            // Bogey or worse
-            let diffText = diff > 0 ? `+${diff}` : `${diff}`;
-            return {
-                title: `👁️ ${playerName}`,
-                message: `Scored ${score} (${diffText}) on Hole ${holeNum}`
-            };
-        }
-        
-        // Broadcast score notification (called when WE enter a score for Firebase broadcast)
-        function broadcastScoreNotification(playerName, holeIndex, score, scoreToPar) {
-            // This function can store pending notifications in Firebase
-            // Other devices will pick them up via the snapshot listener
-            // For now, we just log it - the watched player system handles incoming notifications
-            
-            const holeNum = holeIndex + 1;
-            const par = courseData?.holes?.[holeIndex]?.par || 4;
-            
-            // Only log special scores for debugging
-            if (scoreToPar <= -1) {
-                console.log(`🔔 Broadcasting: ${playerName} scored ${score} on hole ${holeNum} (${scoreToPar < 0 ? scoreToPar : '+' + scoreToPar})`);
-            }
         }
         
         // Update local state from cloud data - NEWEST WINS approach
@@ -17988,9 +17593,6 @@
             
             // Check if URL has join parameter
             checkForJoinLink();
-            
-            // Check for first time user - show onboarding
-            checkFirstTimeUser();
             
             const joinForm = document.getElementById('joinTournamentForm');
             if (joinForm) {
@@ -23175,9 +22777,6 @@
             
             // Render foursome game results if applicable
             renderFoursomeGameResults();
-            
-            // Render course history comparison
-            renderCourseHistory();
         }
 
         // Current scoring method state
@@ -27439,8 +27038,6 @@
                                     <div class="hole-info">Par ${hole.par} • HCP ${hole.handicap}</div>
                                 </div>
                                 <button type="button" onclick="event.stopPropagation(); showCourseNoteModal(${holeNumber})" style="padding: 6px 10px; border-radius: 6px; font-size: 14px; cursor: pointer; ${notesButtonStyle}" title="${hasNotes ? 'View/Edit Notes' : 'Add Notes'}">📝</button>
-                                ${tournamentData.gameType === 'Dots' ? `<button type="button" onclick="event.stopPropagation(); showDotsAwardModal(${currentHole})" style="padding: 6px 10px; border-radius: 6px; font-size: 14px; cursor: pointer; background: #eff6ff; border: 1px solid #2563eb;" title="Award Dots">🔵</button>` : ''}
-                                ${tournamentData.gameType === 'Wolf' ? `<button type="button" onclick="event.stopPropagation(); showWolfDecisionModal(${currentHole})" style="padding: 6px 10px; border-radius: 6px; font-size: 14px; cursor: pointer; background: #fef3c7; border: 1px solid #b45309;" title="Wolf Decision">🐺</button>` : ''}
                             </div>
                             <button type="button" class="hole-nav-btn-compact" onclick="goToNextHole()">
                                 ${nextHole} →
@@ -27981,9 +27578,6 @@
                 currentHole--;
             }
             renderHoleView();
-            
-            // Trigger Wolf decision if applicable
-            checkWolfTrigger(currentHole);
         }
 
         // Navigate to next hole
@@ -27998,9 +27592,6 @@
                 currentHole++;
             }
             renderHoleView();
-            
-            // Trigger Wolf decision if applicable
-            checkWolfTrigger(currentHole);
         }
         
         // Jump to specific hole
@@ -28011,9 +27602,6 @@
             currentHole = holeIndex;
             renderHoleView();
             closeHoleJumpModal();
-            
-            // Trigger Wolf decision if applicable
-            checkWolfTrigger(currentHole);
         }
         
         // Show hole jump modal
