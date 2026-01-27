@@ -11728,11 +11728,11 @@
                         
                         <!-- Tabs -->
                         <div style="display: flex; gap: 4px; margin-bottom: 12px; background: #f3f4f6; border-radius: 6px; padding: 4px;">
-                            <button id="statsTabOverview" onclick="switchStatsTab('overview')" 
+                            <button type="button" id="statsTabOverview" onclick="switchStatsTab('overview')" 
                                 style="flex: 1; padding: 8px; background: #1e3a5f; color: white; border: none; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer;">
                                 Overview
                             </button>
-                            <button id="statsTabCourse" onclick="switchStatsTab('course')" 
+                            <button type="button" id="statsTabCourse" onclick="switchStatsTab('course')" 
                                 style="flex: 1; padding: 8px; background: transparent; color: #64748b; border: none; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer;">
                                 By Course
                             </button>
@@ -11754,7 +11754,7 @@
                         <div id="statsCourseFilters" style="display: none;">
                             <select id="statsCourseSelect" onchange="updateCourseHistoryView(this.value)" 
                                 style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; color: #1e3a5f;">
-                                ${getCourseOptions(playerName)}
+                                ${(() => { try { return getCourseOptions(playerName); } catch(e) { console.error('getCourseOptions error:', e); return '<option value="">Error loading courses</option>'; } })()}
                             </select>
                         </div>
                     </div>
