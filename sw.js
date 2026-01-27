@@ -14,8 +14,8 @@ const STATIC_ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './icon-192x192.png',
-  './icon-512x512.png',
+  './icons/icon-192x192.png',
+  './icons/icon-512x512.png',
   'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js'
 ];
 
@@ -211,8 +211,8 @@ self.addEventListener('push', (event) => {
   
   const options = {
     body: data.body || 'New update in your round',
-    icon: './icon-192x192.png',
-    badge: './icon-72x72.png',
+    icon: './icons/icon-192x192.png',
+    badge: './icons/icon-72x72.png',
     vibrate: [100, 50, 100],
     data: {
       url: data.url || './'
