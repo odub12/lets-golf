@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-01-27-v15.9.6-null-checks -->
+    <!-- VERSION: 2026-01-28-v15.9.8-join-watch-fix -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -16199,7 +16199,7 @@
             
             container.innerHTML = `
                 <!-- Delete button revealed on swipe -->
-                <div class="swipe-delete-btn" style="position: absolute; right: 0; top: 0; bottom: 0; width: 70px; background: #a51c30; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 12px; cursor: pointer;">
+                <div class="swipe-delete-btn" style="position: absolute; right: 0; top: 0; bottom: 0; width: 70px; background: #a51c30; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 12px; cursor: pointer; z-index: 0;">
                     Delete
                 </div>
                 
@@ -16215,6 +16215,7 @@
                     z-index: 1;
                     transform: translateX(0);
                     transition: transform 0.2s ease-out;
+                    pointer-events: auto;
                 ">
                     <div style="font-size: 16px; flex-shrink: 0;">${roleIcon}</div>
                     <div style="flex: 1; min-width: 0; overflow: hidden;">
@@ -16240,7 +16241,15 @@
             
             if (reopenBtn) reopenBtn.onclick = (e) => { e.stopPropagation(); resumeRound(round.id); };
             if (resultsBtn) resultsBtn.onclick = (e) => { e.stopPropagation(); viewRoundResults(round.id); };
-            if (deleteBtn) deleteBtn.onclick = (e) => { e.stopPropagation(); deletePastRound(round.id); };
+            if (deleteBtn) {
+                deleteBtn.onclick = (e) => { e.stopPropagation(); deletePastRound(round.id); };
+                // Also handle touch for mobile
+                deleteBtn.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    deletePastRound(round.id);
+                });
+            }
             
             return container;
         }
@@ -16471,6 +16480,12 @@
                             ...data
                         };
                         
+                        // Check if user is host from history
+                        const history = getTournamentHistory();
+                        const historyEntry = history.find(h => h.id === tournamentId);
+                        isHost = historyEntry?.role === 'host';
+                        tournamentMode = 'multi';
+                        
                         // Set course data
                         courseData = courses[tournamentData.course] || customCourses[tournamentData.course];
                         
@@ -16496,6 +16511,10 @@
                         // Extract metadata
                         const metadataKeys = ['_activeTournamentId', '_tournamentMode', '_isHost', '_hostForTournament', 
                                             '_hasJoinedTournament', '_hostViewMode', '_scoreTimestamps', '_deletedPlayers', '_lastSaved'];
+                        
+                        // Set isHost and tournamentMode from saved data
+                        isHost = data._isHost || false;
+                        tournamentMode = data._tournamentMode || 'single';
                         
                         // Remove metadata from tournamentData
                         const cleanData = {...data};
@@ -17605,6 +17624,7 @@
                 isGuestUser = true;
                 hasJoinedTournament = true; // Mark as joined
                 claimedPlayers = joinSelections.claim;
+                playerOrder.claimed = joinSelections.claim;
                 playerOrder.watching = joinSelections.watch;
                 savePlayerOrder();
                 
@@ -20254,7 +20274,10 @@
                 return;
             }
             
-            loadPlayerOrder();
+            // Only load player order if not already set (e.g., fresh from joining)
+            if (!playerOrder || (!playerOrder.claimed?.length && !playerOrder.watching?.length)) {
+                loadPlayerOrder();
+            }
             
             // Show the Host/Player toggle if host in player mode
             updateMyPlayersHostToggle();
