@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-01-28-v15.9.8-join-watch-fix -->
+    <!-- VERSION: 2026-01-28-v15.9.9-player-view-fix -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -18449,7 +18449,7 @@
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                             <div>
                                 <div style="font-size: 18px; font-weight: 700; color: #1e293b;">${playerName}</div>
-                                <div style="font-size: 13px; color: #64748b;">HCP: ${player.handicap || 0}</div>
+                                <div style="font-size: 13px; color: #64748b;">HCP: ${player.handicap > 0 ? player.handicap : player.handicap < 0 ? '+' + Math.abs(player.handicap) : 'Scratch'}</div>
                             </div>
                             <div style="text-align: right;">
                                 <div style="font-size: 24px; font-weight: 700; color: ${toPar < 0 ? '#a51c30' : toPar > 0 ? '#1e3a5f' : '#166534'};">${toParDisplay}</div>
@@ -20467,7 +20467,7 @@
                         <!-- Row 1: Name + HCP -->
                         <div style="display: flex; align-items: center; gap: 4px;">
                             <span style="font-weight: 600; color: #1e293b; font-size: 14px;">${player.name}</span>
-                            <span style="color: #64748b; font-size: 12px;">(${player.handicap})</span>
+                            <span style="color: #64748b; font-size: 12px;">(${player.handicap > 0 ? player.handicap : player.handicap < 0 ? '+' + Math.abs(player.handicap) : 'Scr'})</span>
                         </div>
                         <!-- Row 2: Holes + Score -->
                         <div style="font-size: 11px; color: #64748b; margin-top: 2px;">
@@ -26190,6 +26190,19 @@
         function renderCompactPlayerView(playersToShow) {
             const container = document.getElementById('playerCards');
             
+            // Safety check - ensure courseData is available
+            if (!courseData || !courseData.holes) {
+                console.warn('⚠️ renderCompactPlayerView: courseData not loaded yet');
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #6b7280;">Loading course data...</div>';
+                // Try again after a short delay
+                setTimeout(() => {
+                    if (courseData && courseData.holes) {
+                        renderCompactPlayerView(playersToShow);
+                    }
+                }, 500);
+                return;
+            }
+            
             // Build carousel with compact cards (6 columns x 3 rows)
             let slidesHTML = playersToShow.map((player, idx) => {
                 const actualPlayerIndex = tournamentData.players.indexOf(player);
@@ -26206,7 +26219,8 @@
                 }
                 const toPar = holesPlayed > 0 ? total - parForPlayedHoles : 0;
                 const toParText = holesPlayed === 0 ? '-' : (toPar === 0 ? 'E' : (toPar > 0 ? `+${toPar}` : toPar));
-                const hcpDisplay = player.handicap !== 0 ? ` (${player.handicap})` : '';
+                // Display handicap: negative internally means plus handicap (e.g., -1 shows as +1)
+                const hcpDisplay = player.handicap !== 0 ? ` (${player.handicap > 0 ? player.handicap : '+' + Math.abs(player.handicap)})` : '';
                 
                 // Check if this is a watched player (view only)
                 // Hosts/co-hosts in HOST mode can edit all players
