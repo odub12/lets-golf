@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-01-28-v15.9.9-player-view-fix -->
+    <!-- VERSION: 2026-01-28-v15.9.10-delete-initials-fix -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -16198,12 +16198,12 @@
             const roleIcon = round.role === 'host' ? '👑' : '🏌️';
             
             container.innerHTML = `
-                <!-- Delete button revealed on swipe -->
-                <div class="swipe-delete-btn" style="position: absolute; right: 0; top: 0; bottom: 0; width: 70px; background: #a51c30; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 12px; cursor: pointer; z-index: 0;">
+                <!-- Delete button revealed on swipe - positioned to be clickable when revealed -->
+                <div class="swipe-delete-btn" style="position: absolute; right: 0; top: 0; bottom: 0; width: 70px; background: #a51c30; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 12px; cursor: pointer;">
                     Delete
                 </div>
                 
-                <!-- Card content -->
+                <!-- Card content - slides left to reveal delete -->
                 <div class="past-round-content" style="
                     background: #e8e8e8;
                     border-radius: 8px;
@@ -16212,10 +16212,8 @@
                     align-items: center;
                     gap: 8px;
                     position: relative;
-                    z-index: 1;
                     transform: translateX(0);
                     transition: transform 0.2s ease-out;
-                    pointer-events: auto;
                 ">
                     <div style="font-size: 16px; flex-shrink: 0;">${roleIcon}</div>
                     <div style="flex: 1; min-width: 0; overflow: hidden;">
@@ -16237,17 +16235,37 @@
             // Attach event listeners
             const reopenBtn = container.querySelector('.reopen-btn');
             const resultsBtn = container.querySelector('.results-btn');
-            const deleteBtn = container.querySelector('.swipe-delete-btn');
+            const swipeDeleteBtn = container.querySelector('.swipe-delete-btn');
             
             if (reopenBtn) reopenBtn.onclick = (e) => { e.stopPropagation(); resumeRound(round.id); };
             if (resultsBtn) resultsBtn.onclick = (e) => { e.stopPropagation(); viewRoundResults(round.id); };
-            if (deleteBtn) {
-                deleteBtn.onclick = (e) => { e.stopPropagation(); deletePastRound(round.id); };
-                // Also handle touch for mobile
-                deleteBtn.addEventListener('touchend', (e) => {
-                    e.preventDefault();
+            if (swipeDeleteBtn) {
+                // Track touch to prevent ghost clicks
+                let touchStarted = false;
+                
+                swipeDeleteBtn.addEventListener('touchstart', (e) => {
+                    touchStarted = true;
                     e.stopPropagation();
-                    deletePastRound(round.id);
+                }, { passive: true });
+                
+                swipeDeleteBtn.addEventListener('touchend', (e) => {
+                    if (touchStarted) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        touchStarted = false;
+                        // Small delay to let swipe animation complete
+                        setTimeout(() => {
+                            deletePastRound(round.id);
+                        }, 50);
+                    }
+                });
+                
+                // Also handle click for desktop
+                swipeDeleteBtn.addEventListener('click', (e) => { 
+                    if (!touchStarted) { // Only if not already handled by touch
+                        e.stopPropagation(); 
+                        deletePastRound(round.id); 
+                    }
                 });
             }
             
@@ -17821,18 +17839,25 @@
             // Update calculated course HCP display
             updateClaimCourseHcp();
             
-            // Pre-fill initials if saved
-            const savedInitials = localStorage.getItem('deviceInitials') || '';
+            // Pre-fill initials - prefer logged-in user name, then localStorage
+            let savedInitials = '';
+            if (currentAuthUser && currentAuthUser.displayName) {
+                savedInitials = currentAuthUser.displayName;
+            } else if (currentAuthUser && currentAuthUser.email) {
+                savedInitials = currentAuthUser.email.split('@')[0];
+            } else {
+                savedInitials = localStorage.getItem('deviceInitials') || '';
+            }
             initialsInput.value = savedInitials;
             
             dialog.style.display = 'flex';
             
-            // Focus on initials input if empty, otherwise handicap
+            // Focus on handicap if initials are pre-filled (logged in or saved), otherwise initials
             setTimeout(() => {
-                if (!savedInitials) {
-                    initialsInput.focus();
-                } else {
+                if (savedInitials) {
                     handicapInput.focus();
+                } else {
+                    initialsInput.focus();
                 }
             }, 100);
             
