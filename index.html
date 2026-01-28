@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-01-28-v15.9.11-swipe-signin-colors-copy -->
+    <!-- VERSION: 2026-01-28-v15.9.14-guest-home-signin -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -5146,10 +5146,14 @@
                 currentAuthUser = user;
                 if (user) {
                     await loadUserSubscription(user.uid);
+                    // Load and merge tournament history from Firebase
+                    await loadTournamentHistoryFromFirebase();
                 } else {
                     userSubscription = { status: 'free', expiresAt: null, email: null };
                 }
                 updateAccountUI();
+                // Refresh home page to show/hide tournaments based on auth state
+                populateHomeRoundsList();
             });
         }
         
@@ -6152,7 +6156,16 @@
             hideSignOutConfirm();
             try {
                 await auth.signOut();
+                currentAuthUser = null;
+                userSubscription = { status: 'free', expiresAt: null, email: null };
                 hideAccountModal();
+                
+                // Force update the UI to show device initials instead of username
+                updateAccountUI();
+                
+                // Refresh home page to update any visible content
+                populateHomeRoundsList();
+                
                 showNotification('Signed Out', 'See you next time!');
             } catch (error) {
                 console.error('Sign out error:', error);
@@ -6172,7 +6185,10 @@
         function showSignInModal() {
             const modal = document.getElementById('signInModal');
             if (modal) {
-                modal.style.display = 'flex';
+                modal.style.setProperty('display', 'flex', 'important');
+                modal.style.visibility = 'visible';
+                modal.style.opacity = '1';
+                modal.style.pointerEvents = 'auto';
                 document.getElementById('signInEmail').value = '';
                 document.getElementById('signInPassword').value = '';
                 document.getElementById('signInError').style.display = 'none';
@@ -6238,11 +6254,13 @@
             try {
                 errorEl.style.display = 'none';
                 await auth.signInWithEmailAndPassword(email, password);
-                // Force close the modal
+                // Force close the modal - multiple methods for reliability
                 const modal = document.getElementById('signInModal');
                 if (modal) {
-                    modal.style.display = 'none';
+                    modal.style.setProperty('display', 'none', 'important');
                     modal.style.visibility = 'hidden';
+                    modal.style.opacity = '0';
+                    modal.style.pointerEvents = 'none';
                 }
                 showNotification('✅ Signed In', 'Welcome back!');
             } catch (error) {
@@ -14728,6 +14746,12 @@
 
         // Page navigation
         function showPage(pageId) {
+            // If guest (not signed in) tries to go to home page, show sign-in modal instead
+            if ((pageId === 'guestHomePage' || pageId === 'hostHomePage') && !currentAuthUser) {
+                showSignInModal();
+                return; // Don't navigate to home page
+            }
+            
             document.querySelectorAll('.page').forEach(page => {
                 page.classList.remove('active');
             });
@@ -16002,13 +16026,90 @@
             }
         }
         
-        // Save tournament history to localStorage
+        // Save tournament history to localStorage AND Firebase (if signed in)
         function saveTournamentHistory(history) {
             try {
                 localStorage.setItem('tournamentHistory', JSON.stringify(history));
+                
+                // Also sync to Firebase if user is signed in
+                if (currentAuthUser && db) {
+                    syncTournamentHistoryToFirebase(history);
+                }
             } catch (error) {
                 console.error('Error saving tournament history:', error);
             }
+        }
+        
+        // Sync tournament history to Firebase for cross-device access
+        async function syncTournamentHistoryToFirebase(history) {
+            if (!currentAuthUser || !db) return;
+            
+            try {
+                const userRef = db.collection('users').doc(currentAuthUser.uid);
+                await userRef.set({
+                    tournamentHistory: history,
+                    lastHistorySync: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+                console.log('📤 Tournament history synced to Firebase');
+            } catch (error) {
+                console.error('Error syncing tournament history to Firebase:', error);
+            }
+        }
+        
+        // Load tournament history from Firebase and merge with localStorage
+        async function loadTournamentHistoryFromFirebase() {
+            if (!currentAuthUser || !db) return;
+            
+            try {
+                const userDoc = await db.collection('users').doc(currentAuthUser.uid).get();
+                
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    const firebaseHistory = userData.tournamentHistory || [];
+                    
+                    if (firebaseHistory.length > 0) {
+                        // Merge Firebase history with local history
+                        const localHistory = getTournamentHistory();
+                        const mergedHistory = mergeTournamentHistories(localHistory, firebaseHistory);
+                        
+                        // Save merged history to localStorage (don't re-sync to avoid loop)
+                        localStorage.setItem('tournamentHistory', JSON.stringify(mergedHistory));
+                        
+                        console.log('📥 Tournament history loaded from Firebase:', firebaseHistory.length, 'tournaments');
+                        console.log('🔀 Merged history:', mergedHistory.length, 'tournaments');
+                        
+                        // Refresh home page to show synced tournaments
+                        populateHomeRoundsList();
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading tournament history from Firebase:', error);
+            }
+        }
+        
+        // Merge two tournament histories, keeping the most recent entry for each tournament
+        function mergeTournamentHistories(localHistory, firebaseHistory) {
+            const merged = new Map();
+            
+            // Add all local tournaments
+            for (const t of localHistory) {
+                merged.set(t.id, t);
+            }
+            
+            // Add/update with Firebase tournaments (prefer more recent lastAccess)
+            for (const t of firebaseHistory) {
+                const existing = merged.get(t.id);
+                if (!existing || (t.lastAccess && t.lastAccess > (existing.lastAccess || 0))) {
+                    merged.set(t.id, t);
+                }
+            }
+            
+            // Convert back to array and sort by lastAccess (most recent first)
+            const result = Array.from(merged.values());
+            result.sort((a, b) => (b.lastAccess || 0) - (a.lastAccess || 0));
+            
+            // Keep only last N tournaments
+            return result.slice(0, MAX_TOURNAMENT_HISTORY);
         }
         
         // Add tournament to history (called when joining/creating)
@@ -16115,6 +16216,25 @@
             // Check if there's an active tournament in progress
             const hasActiveTournament = activeTournamentId && tournamentData && tournamentData.players && tournamentData.players.length > 0;
             
+            // If user is signed out, hide all tournament sections
+            const isSignedIn = !!currentAuthUser;
+            
+            if (!isSignedIn) {
+                // Hide all tournament sections when signed out
+                if (currentBox) currentBox.style.display = 'none';
+                if (hostCurrentBox) hostCurrentBox.style.display = 'none';
+                if (pastBox) pastBox.style.display = 'none';
+                if (hostPastBox) hostPastBox.style.display = 'none';
+                // Clear content
+                if (pastList) pastList.innerHTML = '';
+                if (hostPastList) hostPastList.innerHTML = '';
+                return;
+            }
+            
+            // User is signed in - show tournament sections
+            if (pastBox) pastBox.style.display = 'block';
+            if (hostPastBox) hostPastBox.style.display = 'block';
+            
             // Handle Current Tournament Box
             if (hasActiveTournament) {
                 const currentCardHTML = createCurrentRoundCardHTML();
@@ -16148,8 +16268,12 @@
                 ? history.filter(h => h.id !== activeTournamentId)
                 : history;
             
-            // Handle Past Tournaments Box
-            if (filteredHistory.length === 0) {
+            // Handle Past Tournaments Box (only if signed in)
+            if (!isSignedIn) {
+                // Clear past list content when signed out
+                if (pastList) pastList.innerHTML = '';
+                if (hostPastList) hostPastList.innerHTML = '';
+            } else if (filteredHistory.length === 0) {
                 if (pastList) pastList.innerHTML = '<p style="color: #6b7280; font-size: 12px; text-align: center; padding: 12px 0;">No past rounds yet</p>';
                 if (hostPastList) hostPastList.innerHTML = '<p style="color: #6b7280; font-size: 12px; text-align: center; padding: 12px 0;">No past rounds yet</p>';
             } else {
@@ -16221,8 +16345,8 @@
             const roleIcon = round.role === 'host' ? '👑' : '🏌️';
             
             container.innerHTML = `
-                <!-- Delete button revealed on swipe -->
-                <div class="swipe-delete-btn" style="position: absolute; right: 0; top: 0; bottom: 0; width: 70px; background: #a51c30; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 12px; cursor: pointer;" onclick="deletePastRound('${round.id}')">
+                <!-- Delete button revealed on swipe - higher z-index to receive clicks -->
+                <div class="swipe-delete-btn" style="position: absolute; right: 0; top: 0; bottom: 0; width: 70px; background: #a51c30; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 12px; cursor: pointer; z-index: 2;" onclick="deletePastRound('${round.id}')">
                     Delete
                 </div>
                 
@@ -22215,8 +22339,12 @@
             loadPlayerStatsFromLocalStorage();
             loadStatsConfig();
             
-            // Load the correct course data (check both built-in and custom courses)
-            courseData = courses[tournamentData.course] || customCourses[tournamentData.course];
+            // Load the correct course data - check tournament's embedded courseData first, then lookup by key
+            if (tournamentData.courseData && tournamentData.courseData.holes) {
+                courseData = tournamentData.courseData;
+            } else {
+                courseData = courses[tournamentData.course] || customCourses[tournamentData.course];
+            }
             
             // Debug logging
             console.log('🏌️ renderScoringPage:', {
