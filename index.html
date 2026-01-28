@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-01-27-v15.9.4-icons-authmodals -->
+    <!-- VERSION: 2026-01-27-v15.9.5-auth-null-fix -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -5398,10 +5398,11 @@
             } else {
                 loggedOut.style.display = 'block';
                 loggedIn.style.display = 'none';
-                // Clear form
-                document.getElementById('authEmail').value = '';
-                document.getElementById('authPassword').value = '';
-                document.getElementById('authError').style.display = 'none';
+                // Clear any error messages
+                const authError = document.getElementById('authError');
+                const authSuccess = document.getElementById('authSuccess');
+                if (authError) authError.style.display = 'none';
+                if (authSuccess) authSuccess.style.display = 'none';
             }
             
             modal.style.display = 'flex';
@@ -6134,45 +6135,6 @@
             showCreateAccountModal();
         }
         
-        // Legacy function placeholders - actual logic moved to doSignIn/doCreateAccount
-        async function _legacyRegisterUser() {
-            const email = document.getElementById('authEmail').value.trim();
-            const password = document.getElementById('authPassword').value;
-            const errorEl = document.getElementById('authError');
-            
-            if (!email || !password) {
-                errorEl.textContent = 'Please enter email and password';
-                errorEl.style.display = 'block';
-                return;
-            }
-            
-            if (password.length < 6) {
-                errorEl.textContent = 'Password must be at least 6 characters';
-                errorEl.style.display = 'block';
-                return;
-            }
-            
-            // Check if auth is available
-            if (!auth) {
-                errorEl.textContent = 'Authentication not ready. Please refresh and try again.';
-                errorEl.style.display = 'block';
-                console.error('Firebase auth not initialized');
-                return;
-            }
-            
-            try {
-                errorEl.style.display = 'none';
-                console.log('Creating account for:', email);
-                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-                console.log('Account created successfully:', userCredential.user.uid);
-                hideAccountModal();
-                showNotification('Account Created!', 'Welcome to Let\'s Golf');
-            } catch (error) {
-                console.error('Register error:', error.code, error.message);
-                errorEl.textContent = getAuthErrorMessage(error.code);
-                errorEl.style.display = 'block';
-            }
-        }
         
         // Show sign out confirmation
         function showSignOutConfirm() {
