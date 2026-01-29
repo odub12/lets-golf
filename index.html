@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-01-28-v15.9.15-fix-nav -->
+    <!-- VERSION: 2026-01-28-v15.9.17-account-claims-stats -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -5132,7 +5132,7 @@
             
             // Initialize device name and initials from localStorage
             deviceName = localStorage.getItem('deviceName') || 'My Device';
-            deviceInitials = localStorage.getItem('deviceInitials') || 'MD';
+            deviceInitials = localStorage.getItem('deviceInitials') || '';
             
             authCompleted = true;
             console.log('✅ Device authenticated successfully (no Firebase Auth needed)!');
@@ -5148,6 +5148,10 @@
                     await loadUserSubscription(user.uid);
                     // Load and merge tournament history from Firebase
                     await loadTournamentHistoryFromFirebase();
+                    // Load stats from Firebase
+                    await loadPlayerStatsFromFirebase();
+                    // Migrate any device-based claims to account-based claims
+                    await migrateDeviceClaimsToAccount();
                 } else {
                     userSubscription = { status: 'free', expiresAt: null, email: null };
                 }
@@ -5155,6 +5159,42 @@
                 // Refresh home page to show/hide tournaments based on auth state
                 populateHomeRoundsList();
             });
+        }
+        
+        // Migrate device-based claims to account-based claims
+        // This runs when a signed-in user loads the app
+        async function migrateDeviceClaimsToAccount() {
+            if (!currentAuthUser || !activeTournamentId || !db) return;
+            
+            try {
+                const tournamentRef = db.collection('tournaments').doc(activeTournamentId);
+                const doc = await tournamentRef.get();
+                if (!doc.exists) return;
+                
+                const tournament = doc.data();
+                const userId = 'user_' + currentAuthUser.uid;
+                let needsUpdate = false;
+                
+                // Check each player - if claimed by my deviceId, migrate to userId
+                tournament.players.forEach(player => {
+                    if (player.claimedBy === currentDeviceId) {
+                        console.log(`🔄 Migrating claim for ${player.name} from device to account`);
+                        player.claimedBy = userId;
+                        needsUpdate = true;
+                    }
+                });
+                
+                if (needsUpdate) {
+                    await tournamentRef.update({ players: tournament.players });
+                    console.log('✅ Claims migrated to account');
+                    // Update local data
+                    if (tournamentData) {
+                        tournamentData.players = tournament.players;
+                    }
+                }
+            } catch (error) {
+                console.error('Error migrating claims:', error);
+            }
         }
         
         // ===== SUBSCRIPTION SYSTEM =====
@@ -5304,11 +5344,11 @@
                 if (hostOwnerBadge) hostOwnerBadge.style.display = isOwner ? 'inline-block' : 'none';
             } else {
                 // Show device corner and sign in button, hide profile button
-                // Reset to device initials when signed out
+                // Reset to device initials when signed out (or 'Guest' if no initials)
                 const guestInitials = document.getElementById('guestDeviceInitials');
                 const hostInitials = document.getElementById('hostDeviceInitials');
-                if (guestInitials) guestInitials.textContent = deviceInitials || '--';
-                if (hostInitials) hostInitials.textContent = deviceInitials || '--';
+                if (guestInitials) guestInitials.textContent = deviceInitials || 'Guest';
+                if (hostInitials) hostInitials.textContent = deviceInitials || 'Guest';
                 
                 if (guestDeviceCorner) guestDeviceCorner.style.display = 'inline-flex';
                 if (guestSignInBtn) guestSignInBtn.style.display = 'inline-flex';
@@ -5320,6 +5360,56 @@
                 if (hostProfileBtn) hostProfileBtn.style.display = 'none';
                 if (hostOwnerBadge) hostOwnerBadge.style.display = 'none';
             }
+        }
+        
+        // ============================================
+        // GENERIC MODAL FUNCTIONS
+        // ============================================
+        
+        // Show a generic modal dialog
+        function showModal(title, content, buttons, showCloseX = true) {
+            // Remove any existing generic modal
+            const existingModal = document.getElementById('genericModal');
+            if (existingModal) existingModal.remove();
+            
+            const modal = document.createElement('div');
+            modal.id = 'genericModal';
+            modal.style.cssText = `
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,0.7);
+                z-index: 10000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 16px;
+            `;
+            
+            modal.innerHTML = `
+                <div style="background: white; border-radius: 12px; max-width: 400px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                    <div style="padding: 16px 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="margin: 0; color: #1e3a5f; font-size: 16px;">${title}</h3>
+                        ${showCloseX ? '<button onclick="closeModal()" style="background: none; border: none; font-size: 24px; color: #64748b; cursor: pointer; padding: 0; line-height: 1;">×</button>' : ''}
+                    </div>
+                    <div style="padding: 20px;">
+                        ${content}
+                    </div>
+                    ${buttons ? `<div style="padding: 0 20px 20px;">${buttons}</div>` : ''}
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Close on backdrop click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal();
+            });
+        }
+        
+        // Close the generic modal
+        function closeModal() {
+            const modal = document.getElementById('genericModal');
+            if (modal) modal.remove();
         }
         
         // Show/hide account modal
@@ -6965,6 +7055,31 @@
         let deviceName = null;
         let deviceInitials = null;
         
+        // Get the identifier to use for claiming players
+        // If signed in, use userId (persists across refreshes/devices)
+        // If guest, use deviceId (current behavior)
+        function getClaimIdentifier() {
+            if (currentAuthUser && currentAuthUser.uid) {
+                return 'user_' + currentAuthUser.uid;
+            }
+            return currentDeviceId;
+        }
+        
+        // Check if a player is claimed by the current user/device
+        function isClaimedByMe(player) {
+            if (!player || !player.claimedBy) return false;
+            
+            // Check if claimed by current user (account-based)
+            if (currentAuthUser && currentAuthUser.uid) {
+                if (player.claimedBy === 'user_' + currentAuthUser.uid) return true;
+            }
+            
+            // Check if claimed by current device (legacy/guest)
+            if (isClaimedByMe(player)) return true;
+            
+            return false;
+        }
+        
         // Subscription state
         let currentAuthUser = null;  // Firebase auth user
         let userSubscription = {
@@ -7040,7 +7155,7 @@
                     
                     // Initialize device name and initials
                     deviceName = localStorage.getItem('deviceName') || 'My Device';
-                    deviceInitials = localStorage.getItem('deviceInitials') || 'MD';
+                    deviceInitials = localStorage.getItem('deviceInitials') || '';
                     
                     console.log('✅ Device IDs created via fallback');
                     console.log('   User ID:', currentUserId);
@@ -10713,7 +10828,7 @@
             
             if (tournamentMode === 'multi' && (!canManageTournament() || isHostInPlayerMode())) {
                 // Non-host: only check claimed players (not watched - we don't control their stats)
-                playersToCheck = tournamentData.players.filter(p => p.claimedBy === currentDeviceId);
+                playersToCheck = tournamentData.players.filter(p => isClaimedByMe(p));
             } else {
                 // Host: check all players
                 playersToCheck = tournamentData.players;
@@ -10924,9 +11039,13 @@
             setTimeout(() => checkAutoAdvance(), 500);
         }
         
-        // Save player stats to localStorage
+        // Save player stats to localStorage (and Firebase if signed in)
         function savePlayerStatsToLocalStorage() {
             localStorage.setItem('playerStats', JSON.stringify(playerStats));
+            // Also sync to Firebase if signed in
+            if (currentAuthUser) {
+                savePlayerStatsToFirebase();
+            }
         }
         
         // Load player stats from localStorage
@@ -10939,6 +11058,46 @@
                     console.error('Error loading player stats:', e);
                     playerStats = {};
                 }
+            }
+        }
+        
+        // Load player stats from Firebase (for signed-in users)
+        async function loadPlayerStatsFromFirebase() {
+            if (!currentAuthUser || !db) return;
+            
+            try {
+                const userDoc = await db.collection('users').doc(currentAuthUser.uid).get();
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    const firebaseStats = userData.playerStats || {};
+                    
+                    if (Object.keys(firebaseStats).length > 0) {
+                        // Merge with local stats (Firebase takes priority)
+                        const localStats = playerStats || {};
+                        playerStats = { ...localStats, ...firebaseStats };
+                        
+                        // Save merged stats back to localStorage
+                        localStorage.setItem('playerStats', JSON.stringify(playerStats));
+                        console.log('📥 Player stats loaded from Firebase');
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading player stats from Firebase:', error);
+            }
+        }
+        
+        // Save player stats to Firebase (for signed-in users)
+        async function savePlayerStatsToFirebase() {
+            if (!currentAuthUser || !db) return;
+            
+            try {
+                await db.collection('users').doc(currentAuthUser.uid).set({
+                    playerStats: playerStats,
+                    lastStatsSync: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+                console.log('📤 Player stats saved to Firebase');
+            } catch (error) {
+                console.error('Error saving player stats to Firebase:', error);
             }
         }
         
@@ -13104,7 +13263,7 @@
                     players: firebase.firestore.FieldValue.arrayUnion({
                         ...playerInfo,
                         joinedAt: new Date().toISOString(),
-                        claimedBy: currentDeviceId,
+                        claimedBy: getClaimIdentifier(),
                         scores: new Array(18).fill(null)
                     }),
                     [`devices.${currentDeviceId}`]: {
@@ -13153,7 +13312,7 @@
                 }
                 
                 // Claim the player
-                tournament.players[playerIndex].claimedBy = currentDeviceId;
+                tournament.players[playerIndex].claimedBy = getClaimIdentifier();
                 
                 await tournamentRef.update({
                     players: tournament.players
@@ -13406,7 +13565,7 @@
             newTournament.players.forEach(newPlayer => {
                 // Only check watched players (not claimed by us)
                 if (!watchedNames.includes(newPlayer.name)) return;
-                if (newPlayer.claimedBy === currentDeviceId) return; // Don't notify for our own players
+                if (isClaimedByMe(newPlayer)) return; // Don't notify for our own players
                 
                 // Find the old player data
                 const oldPlayer = tournamentData.players.find(p => p.name === newPlayer.name);
@@ -13979,7 +14138,7 @@
                     return;
                 }
                 
-                const myClaimedPlayers = tournament.players.filter(p => p.claimedBy === currentDeviceId);
+                const myClaimedPlayers = tournament.players.filter(p => isClaimedByMe(p));
                 
                 if (myClaimedPlayers.length > 0) {
                     // Device has claimed players - show Keep/Release dialog
@@ -14076,7 +14235,7 @@
                 
                 // Get claimed players
                 claimedPlayers = tournament.players
-                    .filter(p => p.claimedBy === currentDeviceId)
+                    .filter(p => isClaimedByMe(p))
                     .map(p => p.name);
                 
                 // Load tournament data
@@ -14131,7 +14290,7 @@
                 // Release all players claimed by this device
                 let released = [];
                 tournament.players.forEach(p => {
-                    if (p.claimedBy === currentDeviceId) {
+                    if (isClaimedByMe(p)) {
                         released.push(p.name);
                         p.claimedBy = null;
                     }
@@ -14217,7 +14376,7 @@
                 // Release all players claimed by this device
                 let released = [];
                 tournament.players.forEach(p => {
-                    if (p.claimedBy === currentDeviceId) {
+                    if (isClaimedByMe(p)) {
                         released.push(p.name);
                         p.claimedBy = null;
                     }
@@ -15215,10 +15374,16 @@
                 document.getElementById('hostTournamentInfo').textContent = 
                     `${courseName} • ${formatDateDisplay(tournamentData.date) || ''}`;
                 
-                // Update device initials display
+                // Update device initials display - prefer username if signed in
                 const initialsEl = document.getElementById('hostDeviceInitials');
                 if (initialsEl) {
-                    initialsEl.textContent = deviceInitials || 'MD';
+                    if (currentAuthUser && currentAuthUser.displayName) {
+                        initialsEl.textContent = currentAuthUser.displayName;
+                    } else if (currentAuthUser && currentAuthUser.email) {
+                        initialsEl.textContent = currentAuthUser.email.split('@')[0];
+                    } else {
+                        initialsEl.textContent = deviceInitials || 'Guest';
+                    }
                 }
                 
                 // Update role badge based on user's actual role
@@ -16312,6 +16477,7 @@
                 position: relative;
                 overflow: hidden;
                 border-radius: 8px;
+                margin-bottom: 8px;
             `;
             
             const dateStr = round.date ? formatShortDate(round.date) : '';
@@ -16320,12 +16486,27 @@
             const roleIcon = round.role === 'host' ? '👑' : '🏌️';
             
             container.innerHTML = `
-                <!-- Delete button revealed on swipe - higher z-index to receive clicks -->
-                <div class="swipe-delete-btn" style="position: absolute; right: 0; top: 0; bottom: 0; width: 70px; background: #a51c30; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 12px; cursor: pointer; z-index: 2;" onclick="deletePastRound('${round.id}')">
+                <!-- Delete button - positioned absolute, will be revealed when content slides left -->
+                <div class="swipe-delete-btn" style="
+                    position: absolute; 
+                    right: 0; 
+                    top: 0; 
+                    bottom: 0; 
+                    width: 70px; 
+                    background: #a51c30; 
+                    display: flex; 
+                    align-items: center; 
+                    justify-content: center; 
+                    color: white; 
+                    font-weight: 600; 
+                    font-size: 12px; 
+                    cursor: pointer;
+                    z-index: 1;
+                " onclick="deletePastRound('${round.id}')">
                     Delete
                 </div>
                 
-                <!-- Card content -->
+                <!-- Card content - covers full width, slides left to reveal delete -->
                 <div class="past-round-content" style="
                     background: #e8e8e8;
                     border-radius: 8px;
@@ -16334,9 +16515,11 @@
                     align-items: center;
                     gap: 8px;
                     position: relative;
-                    z-index: 1;
+                    z-index: 2;
                     transform: translateX(0);
                     transition: transform 0.2s ease-out;
+                    width: 100%;
+                    box-sizing: border-box;
                 ">
                     <div style="font-size: 16px; flex-shrink: 0;">${roleIcon}</div>
                     <div style="flex: 1; min-width: 0; overflow: hidden;">
@@ -17465,7 +17648,7 @@
                         
                         // AUTO-REJOIN: Check if this device already has claimed players
                         if (tournament.players && tournament.players.length > 0) {
-                            const claimedByThisDevice = tournament.players.filter(p => p.claimedBy === currentDeviceId);
+                            const claimedByThisDevice = tournament.players.filter(p => isClaimedByMe(p));
                             if (claimedByThisDevice.length > 0) {
                                 // Device recognized with claimed players - bypass join screen!
                                 console.log(`🔄 Auto-rejoin: Found ${claimedByThisDevice.length} claimed players for device ${currentDeviceId}`);
@@ -17708,7 +17891,7 @@
                 for (const playerName of joinSelections.claim) {
                     const playerIndex = tournament.players.findIndex(p => p.name === playerName);
                     if (playerIndex > -1 && !tournament.players[playerIndex].claimedBy) {
-                        tournament.players[playerIndex].claimedBy = currentDeviceId;
+                        tournament.players[playerIndex].claimedBy = getClaimIdentifier();
                     }
                 }
                 
@@ -19106,7 +19289,7 @@
             
             content.innerHTML = tournament.players.map((p, index) => {
                 const claimedDevice = p.claimedBy ? tournament.devices[p.claimedBy] : null;
-                const isHostPlayer = p.claimedBy === currentDeviceId;
+                const isHostPlayer = isClaimedByMe(p);
                 const deviceDisplay = claimedDevice ? (claimedDevice.initials || claimedDevice.name) : null;
                 const holesPlayed = p.scores ? p.scores.filter(s => s !== null && s !== undefined).length : 0;
                 const totalScore = p.scores ? p.scores.reduce((sum, s) => sum + (s || 0), 0) : 0;
@@ -20444,7 +20627,7 @@
                     smartInfo.textContent = `${name} | ${gameType} | ${courseInitials} | ${date}`;
                 }
                 
-                const claimedPlayers = tournament.players.filter(p => p.claimedBy === currentDeviceId);
+                const claimedPlayers = tournament.players.filter(p => isClaimedByMe(p));
                 const watchedPlayerNames = playerOrder.watching || [];
                 const watchedPlayers = tournament.players.filter(p => 
                     watchedPlayerNames.includes(p.name) && p.claimedBy !== currentDeviceId
@@ -20695,7 +20878,7 @@
                     name: playerName,
                     handicap: handicap,
                     scores: new Array(18).fill(null),
-                    claimedBy: currentDeviceId // Claim immediately
+                    claimedBy: getClaimIdentifier() // Claim immediately
                 };
                 
                 // Update Firebase
@@ -20776,7 +20959,7 @@
                         // Release all players claimed by this device
                         let releasedCount = 0;
                         tournament.players.forEach(player => {
-                            if (player.claimedBy === currentDeviceId) {
+                            if (isClaimedByMe(player)) {
                                 player.claimedBy = null;
                                 player.deviceInitials = null;
                                 releasedCount++;
@@ -20825,7 +21008,7 @@
                 const tournament = tournamentDoc.data();
                 
                 const playerIndex = tournament.players.findIndex(p => p.name === playerName);
-                if (playerIndex !== -1 && tournament.players[playerIndex].claimedBy === currentDeviceId) {
+                if (playerIndex !== -1 && isClaimedByMe(tournament.players[playerIndex])) {
                     tournament.players[playerIndex].claimedBy = null;
                     tournament.players[playerIndex].deviceInitials = null;
                     
@@ -21016,7 +21199,7 @@
             if (!tournamentData || !tournamentData.players) return false;
             
             // Check claimed players
-            const hasClaimed = tournamentData.players.some(p => p.claimedBy === currentDeviceId);
+            const hasClaimed = tournamentData.players.some(p => isClaimedByMe(p));
             
             // Check watched players from playerOrder
             const hasWatched = playerOrder.watching && playerOrder.watching.length > 0;
@@ -21397,7 +21580,7 @@
                         
                         // Also update deviceInitials on any claimed players
                         tournament.players.forEach(p => {
-                            if (p.claimedBy === currentDeviceId) {
+                            if (isClaimedByMe(p)) {
                                 p.deviceInitials = newInitials;
                             }
                         });
@@ -21522,7 +21705,7 @@
                     
                     // Release all players claimed by this device
                     tournament.players.forEach(p => {
-                        if (p.claimedBy === currentDeviceId) {
+                        if (isClaimedByMe(p)) {
                             p.claimedBy = null;
                             p.deviceInitials = null;
                         }
@@ -21700,7 +21883,7 @@
             // Show filtered view for non-hosts OR when host is in player mode
             if (tournamentMode === 'multi' && (!canManageTournament() || isHostInPlayerMode())) {
                 // Separate claimed and watched players
-                const claimedPlayers = tournamentData.players.filter(p => p.claimedBy === currentDeviceId);
+                const claimedPlayers = tournamentData.players.filter(p => isClaimedByMe(p));
                 const watchedPlayers = tournamentData.players.filter(p => 
                     playerOrder.watching && playerOrder.watching.includes(p.name) && p.claimedBy !== currentDeviceId
                 );
@@ -21909,7 +22092,7 @@
             
             // Show filtered view for non-hosts OR when host is in player mode
             if (tournamentMode === 'multi' && (!canManageTournament() || isHostInPlayerMode())) {
-                const claimed = playersToShow.filter(p => p.claimedBy === currentDeviceId);
+                const claimed = playersToShow.filter(p => isClaimedByMe(p));
                 const watched = playersToShow.filter(p => playerOrder.watching && playerOrder.watching.includes(p.name) && p.claimedBy !== currentDeviceId);
                 
                 const sortedClaimed = sortPlayersByOrder(claimed, playerOrder.claimed);
@@ -24043,7 +24226,7 @@
             if (currentResultsFilter === 'mine' && tournamentMode === 'multi') {
                 loadPlayerOrder();
                 playersToDisplay = playersToDisplay.filter(p => 
-                    p.claimedBy === currentDeviceId || playerOrder.watching.includes(p.name)
+                    isClaimedByMe(p) || playerOrder.watching.includes(p.name)
                 );
             }
             
@@ -25037,7 +25220,7 @@
             if (!canViewAll && tournamentMode === 'multi') {
                 loadPlayerOrder();
                 playersToShow = tournamentData.players.filter(p => 
-                    p.claimedBy === currentDeviceId || playerOrder.watching.includes(p.name)
+                    isClaimedByMe(p) || playerOrder.watching.includes(p.name)
                 );
             }
             
@@ -25115,7 +25298,7 @@
                 const player = tournamentData.players[playerIndex];
                 if (player) {
                     loadPlayerOrder();
-                    const isMyPlayer = player.claimedBy === currentDeviceId || playerOrder.watching.includes(player.name);
+                    const isMyPlayer = isClaimedByMe(player) || playerOrder.watching.includes(player.name);
                     if (!isMyPlayer) {
                         body.innerHTML = `
                             <div style="text-align: center; padding: 40px 20px;">
@@ -25178,7 +25361,7 @@
             
             if (myPlayersOnly) {
                 playersToShow = tournamentData.players.filter(p => 
-                    p.claimedBy === currentDeviceId || playerOrder.watching.includes(p.name)
+                    isClaimedByMe(p) || playerOrder.watching.includes(p.name)
                 );
             }
             
@@ -25280,7 +25463,7 @@
                 // Row highlighting - peach/cream for claimed players
                 let rowBg = 'white';
                 let stickyBg = 'white';
-                if (player.claimedBy === currentDeviceId) {
+                if (isClaimedByMe(player)) {
                     rowBg = '#fef3e2';
                     stickyBg = '#fef3e2';
                 } else if (playerOrder.watching && playerOrder.watching.includes(player.name)) {
@@ -25489,7 +25672,7 @@
             if (myPlayersOnly) {
                 loadPlayerOrder();
                 playersToShow = tournamentData.players.filter(p => 
-                    p.claimedBy === currentDeviceId || playerOrder.watching.includes(p.name)
+                    isClaimedByMe(p) || playerOrder.watching.includes(p.name)
                 );
             }
             
@@ -26348,7 +26531,7 @@
                 // Hosts/co-hosts in HOST mode can edit all players
                 // Hosts/co-hosts in PLAYER mode can only edit their claimed players
                 const isHostInHostModeCompact = canManageTournament() && !isHostInPlayerMode();
-                const isMyClaimedPlayerCompact = player.claimedBy === currentDeviceId;
+                const isMyClaimedPlayerCompact = isClaimedByMe(player);
                 const isWatchedPlayer = tournamentMode === 'multi' && !isHostInHostModeCompact && !isMyClaimedPlayerCompact;
                 const watchIndicator = isWatchedPlayer ? ' 👁' : '';
                 
@@ -27370,7 +27553,7 @@
             // Show filtered view for non-hosts OR when host is in player mode
             if (tournamentMode === 'multi' && (!canManageTournament() || isHostInPlayerMode())) {
                 // Non-hosts/non-co-hosts (or host in player mode) only see their claimed players AND watched players
-                const claimedPlayers = tournamentData.players.filter(p => p.claimedBy === currentDeviceId);
+                const claimedPlayers = tournamentData.players.filter(p => isClaimedByMe(p));
                 const watchedPlayers = tournamentData.players.filter(p => 
                     playerOrder.watching && playerOrder.watching.includes(p.name) && p.claimedBy !== currentDeviceId
                 );
@@ -27450,7 +27633,7 @@
                 // Hosts/co-hosts in PLAYER mode can only edit their claimed players
                 // Regular players can only edit their claimed players
                 const isHostInHostMode = canManageTournament() && !isHostInPlayerMode();
-                const isMyClaimedPlayer = player.claimedBy === currentDeviceId;
+                const isMyClaimedPlayer = isClaimedByMe(player);
                 const isWatchedPlayer = tournamentMode === 'multi' && !isHostInHostMode && !isMyClaimedPlayer;
                 
                 // Load player stats
