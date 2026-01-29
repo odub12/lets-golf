@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-01-28-v15.9.19-fix-claim-recognition -->
+    <!-- VERSION: 2026-01-28-v15.9.20-fix-signout-simplify-hcp -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -4540,18 +4540,18 @@
             <div style="margin-bottom: 12px;">
                 <label style="display: block; margin-bottom: 8px; color: #475569; font-weight: 600; font-size: 14px;">Handicap Entry</label>
                 <div style="display: flex; gap: 8px;">
-                    <button type="button" id="hcpModeIndex" onclick="setClaimHcpMode('index')" style="flex: 1; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: 2px solid #1e3a5f; background: #1e3a5f; color: white;">
-                        HCP Index
-                    </button>
-                    <button type="button" id="hcpModeCourse" onclick="setClaimHcpMode('course')" style="flex: 1; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: 2px solid #e2e8f0; background: white; color: #64748b;">
+                    <button type="button" id="hcpModeCourse" onclick="setClaimHcpMode('course')" style="flex: 1; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: 2px solid #1e3a5f; background: #1e3a5f; color: white;">
                         Course HCP
+                    </button>
+                    <button type="button" id="hcpModeIndex" onclick="setClaimHcpMode('index')" style="flex: 1; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: 2px solid #e2e8f0; background: white; color: #64748b;">
+                        GHIN Index
                     </button>
                 </div>
             </div>
             
             <!-- Handicap Input -->
             <div style="margin-bottom: 16px;">
-                <label id="handicapInputLabel" style="display: block; margin-bottom: 8px; color: #475569; font-weight: 600; font-size: 14px;">HCP Index</label>
+                <label id="handicapInputLabel" style="display: block; margin-bottom: 8px; color: #475569; font-weight: 600; font-size: 14px;">Course Handicap</label>
                 <input type="number" id="handicapConfirmInput" min="-10" max="54" step="0.1" placeholder="0" style="width: 100%; padding: 12px; border: 2px solid #1e3a5f; border-radius: 8px; font-size: 18px; text-align: center; font-weight: 600; box-sizing: border-box;" oninput="updateClaimCourseHcp()">
                 <p id="claimCalculatedHcp" style="font-size: 13px; color: #166534; margin-top: 6px; font-weight: 600; text-align: center;"></p>
             </div>
@@ -6248,12 +6248,35 @@
                 await auth.signOut();
                 currentAuthUser = null;
                 userSubscription = { status: 'free', expiresAt: null, email: null };
+                
+                // Clear active tournament state on sign out
+                activeTournamentId = null;
+                tournamentData = null;
+                isHost = false;
+                hasJoinedTournament = false;
+                claimedPlayers = [];
+                
                 hideAccountModal();
                 
-                // Force update the UI to show device initials instead of username
+                // Force hide profile buttons and show sign in buttons
+                const guestProfileBtn = document.getElementById('guestProfileBtn');
+                const hostProfileBtn = document.getElementById('hostProfileBtn');
+                const guestSignInBtn = document.getElementById('guestSignInBtn');
+                const hostSignInBtn = document.getElementById('hostSignInBtn');
+                const guestDeviceCorner = document.getElementById('guestDeviceCorner');
+                const hostDeviceCorner = document.getElementById('hostDeviceCorner');
+                
+                if (guestProfileBtn) guestProfileBtn.style.display = 'none';
+                if (hostProfileBtn) hostProfileBtn.style.display = 'none';
+                if (guestSignInBtn) guestSignInBtn.style.display = 'inline-flex';
+                if (hostSignInBtn) hostSignInBtn.style.display = 'inline-flex';
+                if (guestDeviceCorner) guestDeviceCorner.style.display = 'none';
+                if (hostDeviceCorner) hostDeviceCorner.style.display = 'none';
+                
+                // Force update the UI
                 updateAccountUI();
                 
-                // Refresh home page to update any visible content
+                // Refresh home page to hide tournaments
                 populateHomeRoundsList();
                 
                 showNotification('Signed Out', 'See you next time!');
@@ -7976,8 +7999,7 @@
             newRow.setAttribute('data-player', nextPlayerId);
             newRow.innerHTML = `
                 <input type="text" class="player-name-input" placeholder="Player Name" id="player${nextPlayerId}">
-                <input type="text" class="player-hcp-input" placeholder="H.I." id="hcp${nextPlayerId}" pattern="-?[0-9.]*" inputmode="decimal" oninput="calculatePlayingHandicap(${nextPlayerId})">
-                <input type="text" class="player-ph-input" placeholder="P.H." id="ph${nextPlayerId}" pattern="-?[0-9]*" inputmode="numeric">
+                <input type="text" class="player-hcp-input" placeholder="HCP" id="hcp${nextPlayerId}" pattern="-?[0-9.]*" inputmode="decimal" title="Course Handicap">
             `;
             
             wrapper.appendChild(deleteBtn);
@@ -16381,10 +16403,21 @@
             const hostPastList = document.getElementById('hostHomeRoundsList');
             const hostPastBox = document.getElementById('hostHomePastTournaments');
             
+            // If signed out, hide all tournament sections
+            if (!currentAuthUser) {
+                if (currentBox) currentBox.style.display = 'none';
+                if (hostCurrentBox) hostCurrentBox.style.display = 'none';
+                if (pastBox) pastBox.style.display = 'none';
+                if (hostPastBox) hostPastBox.style.display = 'none';
+                if (pastList) pastList.innerHTML = '';
+                if (hostPastList) hostPastList.innerHTML = '';
+                return;
+            }
+            
             // Check if there's an active tournament in progress
             const hasActiveTournament = activeTournamentId && tournamentData && tournamentData.players && tournamentData.players.length > 0;
             
-            // Show tournament sections
+            // Show tournament sections (user is signed in)
             if (pastBox) pastBox.style.display = 'block';
             if (hostPastBox) hostPastBox.style.display = 'block';
             
@@ -18087,7 +18120,7 @@
         
         // Show handicap confirmation dialog
         // Claim dialog state
-        let claimHcpMode = 'index'; // 'index' or 'course'
+        let claimHcpMode = 'course'; // 'index' or 'course' - default to course for casual golfers
         let claimSelectedTee = null;
         let claimPlayerHandicapIndex = null;
         
@@ -18104,22 +18137,21 @@
             nameInput.value = playerName;
             originalNameInput.value = playerName;
             
-            // Get player's handicap index from tournament data - round to nearest tenth
+            // Get player's handicap from tournament data
             const player = tournamentData?.players?.find(p => p.name === playerName);
-            const rawIndex = player?.handicapIndex ?? currentHandicap;
-            claimPlayerHandicapIndex = Math.round(rawIndex * 10) / 10; // Round to nearest tenth
+            const playerHandicap = player?.handicap ?? currentHandicap ?? 0;
             
-            // Reset to default mode
-            claimHcpMode = 'index';
-            setClaimHcpMode('index');
+            // Reset to default mode (course handicap)
+            claimHcpMode = 'course';
+            setClaimHcpMode('course');
             
-            // Set initial handicap value (rounded to tenth)
-            handicapInput.value = claimPlayerHandicapIndex;
+            // Set initial handicap value (the course handicap)
+            handicapInput.value = Math.round(playerHandicap);
             
             // Set selected tee to tournament default
             claimSelectedTee = tournamentData?.tee || null;
             
-            // Render tee buttons
+            // Render tee buttons (hidden in course mode)
             renderClaimTeeButtons();
             
             // Update calculated course HCP display
@@ -18240,6 +18272,7 @@
             const label = document.getElementById('handicapInputLabel');
             const calcDisplay = document.getElementById('claimCalculatedHcp');
             const input = document.getElementById('handicapConfirmInput');
+            const teeSection = document.getElementById('claimTeeButtons')?.parentElement;
             
             if (mode === 'index') {
                 indexBtn.style.background = '#1e3a5f';
@@ -18248,10 +18281,11 @@
                 courseBtn.style.background = 'white';
                 courseBtn.style.color = '#64748b';
                 courseBtn.style.borderColor = '#e2e8f0';
-                label.textContent = 'HCP Index';
+                label.textContent = 'GHIN Index';
                 input.step = '0.1';
                 input.placeholder = '0.0';
                 calcDisplay.style.display = 'block';
+                if (teeSection) teeSection.style.display = 'block'; // Show tee selection for index calculation
                 // Restore index value
                 if (claimPlayerHandicapIndex !== null) {
                     input.value = claimPlayerHandicapIndex;
@@ -18263,15 +18297,12 @@
                 indexBtn.style.background = 'white';
                 indexBtn.style.color = '#64748b';
                 indexBtn.style.borderColor = '#e2e8f0';
-                label.textContent = 'Course HCP';
+                label.textContent = 'Course Handicap';
                 input.step = '1';
                 input.placeholder = '0';
                 calcDisplay.style.display = 'none';
-                // Convert to course HCP if we have index
-                if (claimPlayerHandicapIndex !== null && courseData?.tees?.[claimSelectedTee]) {
-                    const teeData = courseData.tees[claimSelectedTee];
-                    input.value = calculateCourseHandicap(claimPlayerHandicapIndex, teeData.slope, teeData.rating, courseData.totalPar);
-                }
+                if (teeSection) teeSection.style.display = 'none'; // Hide tee selection - not needed for direct course HCP
+                // Keep current value as-is for direct entry
             }
             updateClaimCourseHcp();
         }
@@ -18944,40 +18975,22 @@
             playerRows.forEach(row => {
                 const playerId = row.getAttribute('data-player');
                 const nameInput = document.getElementById(`player${playerId}`);
-                const hiInput = document.getElementById(`hcp${playerId}`);  // Handicap Index
-                const phInput = document.getElementById(`ph${playerId}`);   // Playing Handicap
+                const hcpInput = document.getElementById(`hcp${playerId}`);  // Course Handicap
                 
                 if (nameInput) {
                     const name = nameInput.value.trim();
-                    const indexValue = parseFloat(hiInput?.value);
-                    const phValue = parseInt(phInput?.value);
+                    const hcpValue = parseFloat(hcpInput?.value);
                     
-                    // Use P.H. if entered, otherwise calculate from H.I.
-                    let playingHcp = 0;
-                    let handicapIndex = null;
-                    
-                    if (!isNaN(phValue)) {
-                        // P.H. was entered directly (either manually or calculated)
-                        playingHcp = phValue;
-                    }
-                    
-                    if (!isNaN(indexValue)) {
-                        handicapIndex = indexValue;
-                        // If P.H. not entered, calculate it
-                        if (isNaN(phValue)) {
-                            if (teeData && courseData) {
-                                playingHcp = calculateCourseHandicap(indexValue, teeData.slope, teeData.rating, courseData.totalPar);
-                            } else {
-                                playingHcp = Math.round(indexValue);
-                            }
-                        }
+                    // Just use the entered handicap directly
+                    let handicap = 0;
+                    if (!isNaN(hcpValue)) {
+                        handicap = Math.round(hcpValue); // Round to whole number
                     }
                     
                     if (name) {
                         players.push({
                             name: name,
-                            handicap: playingHcp,
-                            handicapIndex: handicapIndex,
+                            handicap: handicap,
                             scores: new Array(18).fill(0)
                         });
                     }
@@ -21982,25 +21995,6 @@
             const cancelBtn = document.getElementById('confirmCancel');
             const okBtn = document.getElementById('confirmOk');
             
-            // Get player's handicap index if stored, otherwise use course handicap as estimate
-            const player = tournamentData.players.find(p => p.name === playerName);
-            const currentIndex = player?.handicapIndex ?? currentHandicap;
-            
-            // Get course slope and rating from selected tee
-            let slopeRating = 113;
-            let courseRating = 72;
-            let totalPar = 72;
-            
-            if (courseData) {
-                totalPar = courseData.totalPar || 72;
-                // Get selected tee data
-                const selectedTeeId = tournamentData.selectedTee || 'white';
-                if (courseData.tees && courseData.tees[selectedTeeId]) {
-                    slopeRating = courseData.tees[selectedTeeId].slope || 113;
-                    courseRating = courseData.tees[selectedTeeId].rating || 72;
-                }
-            }
-            
             titleEl.textContent = `Edit ${playerName}`;
             messageEl.innerHTML = `
                 <div style="margin: 16px 0;">
@@ -22008,41 +22002,17 @@
                     <input type="text" id="editPlayerName" value="${playerName}" 
                         style="width: 100%; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
                     
-                    <label style="display: block; margin: 16px 0 8px; font-weight: 600;">Handicap Index:</label>
-                    <input type="number" id="editPlayerIndex" value="${currentIndex}" step="0.1"
-                        onchange="calculateCourseHandicapEdit()"
-                        oninput="calculateCourseHandicapEdit()"
-                        style="width: 100%; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
-                    <p style="font-size: 11px; color: #64748b; margin: 4px 0 0 0;">Your official GHIN handicap index</p>
-                    
-                    <label style="display: block; margin: 16px 0 8px; font-weight: 600;">Course Handicap:</label>
+                    <label style="display: block; margin: 16px 0 8px; font-weight: 600;">Handicap:</label>
                     <input type="number" id="editPlayerHandicap" value="${currentHandicap}" 
-                        style="width: 100%; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
-                    <p style="font-size: 11px; color: #64748b; margin: 4px 0 0 0;">Auto-calculated (Slope: ${slopeRating}, Rating: ${courseRating})</p>
+                        style="width: 100%; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 14px; box-sizing: border-box;"
+                        min="-10" max="54">
                 </div>
             `;
             
             dialog.style.display = 'flex';
             
-            // Auto-calculate course handicap when index changes using USGA formula
-            // Store values in closure for the callback
-            const _slopeRating = slopeRating;
-            const _courseRating = courseRating;
-            const _totalPar = totalPar;
-            window.calculateCourseHandicapEdit = function() {
-                const indexInput = document.getElementById('editPlayerIndex');
-                const hcpInput = document.getElementById('editPlayerHandicap');
-                if (indexInput && hcpInput) {
-                    const index = parseFloat(indexInput.value) || 0;
-                    // USGA Formula: Course Handicap = Index × (Slope / 113) + (Rating - Par)
-                    const courseHcp = Math.round(index * (_slopeRating / 113) + (_courseRating - _totalPar));
-                    hcpInput.value = courseHcp;
-                }
-            };
-            
             const handleOk = async () => {
                 const newName = document.getElementById('editPlayerName').value.trim();
-                const newIndex = parseFloat(document.getElementById('editPlayerIndex').value) || 0;
                 const newHandicap = parseInt(document.getElementById('editPlayerHandicap').value) || 0;
                 
                 if (!newName) {
@@ -22058,7 +22028,6 @@
                     const playerIndex = tournament.players.findIndex(p => p.name === playerName);
                     if (playerIndex > -1) {
                         tournament.players[playerIndex].name = newName;
-                        tournament.players[playerIndex].handicapIndex = newIndex;
                         tournament.players[playerIndex].handicap = newHandicap;
                         
                         await tournamentRef.update({
@@ -22164,24 +22133,6 @@
             const cancelBtn = document.getElementById('confirmCancel');
             const okBtn = document.getElementById('confirmOk');
             
-            // Get player's handicap index if stored
-            const player = tournamentData.players.find(p => p.name === playerName);
-            const currentIndex = player?.handicapIndex ?? currentHandicap;
-            
-            // Get course slope and rating from selected tee
-            let slopeRating = 113;
-            let courseRating = 72;
-            let totalPar = 72;
-            
-            if (courseData) {
-                totalPar = courseData.totalPar || 72;
-                const selectedTeeId = tournamentData.selectedTee || 'white';
-                if (courseData.tees && courseData.tees[selectedTeeId]) {
-                    slopeRating = courseData.tees[selectedTeeId].slope || 113;
-                    courseRating = courseData.tees[selectedTeeId].rating || 72;
-                }
-            }
-            
             titleEl.textContent = `Edit ${playerName}`;
             messageEl.innerHTML = `
                 <div style="margin: 16px 0;">
@@ -22189,41 +22140,17 @@
                     <input type="text" id="editPlayerName" value="${playerName}" 
                         style="width: 100%; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
                     
-                    <label style="display: block; margin: 16px 0 8px; font-weight: 600;">Handicap Index:</label>
-                    <input type="number" id="editPlayerIndex" value="${currentIndex}" step="0.1"
-                        onchange="calculateCourseHandicapMgmt()"
-                        oninput="calculateCourseHandicapMgmt()"
-                        style="width: 100%; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
-                    <p style="font-size: 11px; color: #64748b; margin: 4px 0 0 0;">Your official GHIN handicap index</p>
-                    
-                    <label style="display: block; margin: 16px 0 8px; font-weight: 600;">Course Handicap:</label>
+                    <label style="display: block; margin: 16px 0 8px; font-weight: 600;">Handicap:</label>
                     <input type="number" id="editPlayerHandicap" value="${currentHandicap}" 
-                        style="width: 100%; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
-                    <p style="font-size: 11px; color: #64748b; margin: 4px 0 0 0;">Auto-calculated (Slope: ${slopeRating}, Rating: ${courseRating})</p>
+                        style="width: 100%; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 14px; box-sizing: border-box;"
+                        min="-10" max="54">
                 </div>
             `;
             
             dialog.style.display = 'flex';
             
-            // Auto-calculate course handicap when index changes using USGA formula
-            // Store values in closure for the callback
-            const _slopeRating = slopeRating;
-            const _courseRating = courseRating;
-            const _totalPar = totalPar;
-            window.calculateCourseHandicapMgmt = function() {
-                const indexInput = document.getElementById('editPlayerIndex');
-                const hcpInput = document.getElementById('editPlayerHandicap');
-                if (indexInput && hcpInput) {
-                    const index = parseFloat(indexInput.value) || 0;
-                    // USGA Formula: Course Handicap = Index × (Slope / 113) + (Rating - Par)
-                    const courseHcp = Math.round(index * (_slopeRating / 113) + (_courseRating - _totalPar));
-                    hcpInput.value = courseHcp;
-                }
-            };
-            
             const handleOk = async () => {
                 const newName = document.getElementById('editPlayerName').value.trim();
-                const newIndex = parseFloat(document.getElementById('editPlayerIndex').value) || 0;
                 const newHandicap = parseInt(document.getElementById('editPlayerHandicap').value) || 0;
                 
                 if (!newName) {
@@ -22239,7 +22166,6 @@
                     const playerIndex = tournament.players.findIndex(p => p.name === playerName);
                     if (playerIndex > -1) {
                         tournament.players[playerIndex].name = newName;
-                        tournament.players[playerIndex].handicapIndex = newIndex;
                         tournament.players[playerIndex].handicap = newHandicap;
                         
                         await tournamentRef.update({
