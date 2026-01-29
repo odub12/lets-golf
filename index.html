@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-01-29-v15.9.24-fix-signout-ui -->
+    <!-- VERSION: 2026-01-29-v15.9.26-hcp-checkbox-course-search -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -1443,30 +1443,30 @@
 
         /* Score coloring */
         .score-input.birdie-better {
-            background: #dcfce7;
-            border-color: #166534;
-            color: #166534;
+            background: #dcfce7 !important;
+            border-color: #166534 !important;
+            color: #166534 !important;
             font-weight: 600;
         }
 
         .score-input.par {
-            background: #f8fafc;
-            border-color: #d1d5db;
-            color: #1e3a5f;
+            background: #f8fafc !important;
+            border-color: #d1d5db !important;
+            color: #1e3a5f !important;
             font-weight: 600;
         }
 
         .score-input.bogey {
-            background: #fef3c7;
-            border-color: #f59e0b;
-            color: #d97706;
+            background: #fef2f2 !important;
+            border-color: #a51c30 !important;
+            color: #a51c30 !important;
             font-weight: 600;
         }
 
         .score-input.double-bogey-plus {
-            background: #fef2f2;
-            border-color: #a51c30;
-            color: #a51c30;
+            background: #fef2f2 !important;
+            border-color: #a51c30 !important;
+            color: #a51c30 !important;
             font-weight: 600;
         }
 
@@ -2286,8 +2286,8 @@
 
         .hole-score-ticker .score-input.bogey {
             background: white !important;
-            border: 2px solid #f59e0b !important;
-            color: #b45309 !important;
+            border: 2px solid #a51c30 !important;
+            color: #a51c30 !important;
             border-radius: 4px !important;
         }
 
@@ -3096,6 +3096,7 @@
             border: 2px solid transparent;
             transition: all 0.15s;
             background: white;
+            color: #1e3a5f; /* Default navy text for unclassified scores */
         }
         
         .hole-cell .score-cell:active {
@@ -3127,7 +3128,7 @@
         .hole-cell .score-cell.par {
             background: white !important;
             color: #1e3a5f !important;
-            border: 1.5px solid rgba(30, 58, 95, 0.7) !important;
+            border: 1.5px solid #d1d5db !important;
             border-radius: 4px !important;
         }
         
@@ -4527,8 +4528,8 @@
                 <p style="font-size: 12px; color: #64748b; margin-top: 4px;">So the host knows who's scoring</p>
             </div>
             
-            <!-- Tee Selection -->
-            <div style="margin-bottom: 16px;">
+            <!-- Tee Selection (hidden by default, shown when using GHIN Index) -->
+            <div id="claimTeeSelectionDiv" style="margin-bottom: 16px; display: none;">
                 <label style="display: block; margin-bottom: 8px; color: #475569; font-weight: 600; font-size: 14px;">Playing From</label>
                 <div id="claimTeeButtons" style="display: flex; gap: 8px; flex-wrap: wrap;">
                     <!-- Tee buttons will be populated dynamically -->
@@ -4536,24 +4537,20 @@
                 <p id="claimTeeDefault" style="font-size: 11px; color: #64748b; margin-top: 4px;"></p>
             </div>
             
-            <!-- Handicap Type Toggle -->
-            <div style="margin-bottom: 12px;">
-                <label style="display: block; margin-bottom: 8px; color: #475569; font-weight: 600; font-size: 14px;">Handicap Entry</label>
-                <div style="display: flex; gap: 8px;">
-                    <button type="button" id="hcpModeCourse" onclick="setClaimHcpMode('course')" style="flex: 1; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: 2px solid #1e3a5f; background: #1e3a5f; color: white;">
-                        Course HCP
-                    </button>
-                    <button type="button" id="hcpModeIndex" onclick="setClaimHcpMode('index')" style="flex: 1; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: 2px solid #e2e8f0; background: white; color: #64748b;">
-                        GHIN Index
-                    </button>
-                </div>
-            </div>
-            
             <!-- Handicap Input -->
-            <div style="margin-bottom: 16px;">
+            <div style="margin-bottom: 12px;">
                 <label id="handicapInputLabel" style="display: block; margin-bottom: 8px; color: #475569; font-weight: 600; font-size: 14px;">Course Handicap</label>
                 <input type="number" id="handicapConfirmInput" min="-10" max="54" step="0.1" placeholder="0" style="width: 100%; padding: 12px; border: 2px solid #1e3a5f; border-radius: 8px; font-size: 18px; text-align: center; font-weight: 600; box-sizing: border-box;" oninput="updateClaimCourseHcp()">
-                <p id="claimCalculatedHcp" style="font-size: 13px; color: #166534; margin-top: 6px; font-weight: 600; text-align: center;"></p>
+                <p id="claimCalculatedHcp" style="font-size: 13px; color: #166534; margin-top: 6px; font-weight: 600; text-align: center; display: none;"></p>
+            </div>
+            
+            <!-- GHIN Index Checkbox -->
+            <div style="margin-bottom: 16px;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <input type="checkbox" id="useGhinIndexCheckbox" onchange="toggleGhinIndexMode(this.checked)" style="width: 20px; height: 20px; cursor: pointer;">
+                    <span style="color: #475569; font-weight: 600; font-size: 14px;">Use GHIN Handicap Index</span>
+                </label>
+                <p style="font-size: 11px; color: #64748b; margin-top: 4px; margin-left: 4px;">Check this if you know your official GHIN Index</p>
             </div>
             
             <div style="display: flex; gap: 12px;">
@@ -6404,15 +6401,8 @@
                 errorEl.style.display = 'none';
                 await auth.signInWithEmailAndPassword(email, password);
                 
-                // Close modal using proper function
+                // Close modal using proper function (do NOT remove from DOM)
                 closeSignInModal();
-                
-                // Also force close with direct DOM manipulation as backup
-                const modal = document.getElementById('signInModal');
-                if (modal) {
-                    modal.style.display = 'none';
-                    modal.remove(); // Remove from DOM entirely
-                }
                 
                 // Update UI
                 updateAccountUI();
@@ -8739,7 +8729,7 @@
                         <button onclick="closeCourseSearchModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;">✕</button>
                     </div>
                     
-                    <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
                         <input type="text" id="courseSearchInput" placeholder="Course name or city..." 
                             style="flex: 1; padding: 12px; border: 1.5px solid #1e3a5f; border-radius: 4px; font-size: 14px;"
                             onkeypress="if(event.key === 'Enter') searchCourses();">
@@ -8748,9 +8738,15 @@
                         </button>
                     </div>
                     
+                    <div style="display: flex; justify-content: center; margin-bottom: 16px;">
+                        <button onclick="searchNearbyCourses()" style="padding: 10px 20px; background: #166534; color: white; border: none; border-radius: 20px; font-weight: 600; cursor: pointer; font-size: 14px;">
+                            📍 Find Nearby Courses
+                        </button>
+                    </div>
+                    
                     <div id="courseSearchResults" style="min-height: 100px;">
                         <p style="text-align: center; color: #94a3b8; font-size: 14px; padding: 24px;">
-                            Enter a course name or city to search
+                            Enter a course name or use 📍 Nearby to find courses
                         </p>
                     </div>
                     
@@ -8775,10 +8771,15 @@
             if (modal) modal.remove();
         }
         
-        // Hardcoded API key for Golf Course API
+        // Hardcoded API key for Golf Course API (primary)
         const GOLF_API_KEY = 'WYX3P2U672HYTIWKZ223YGFNNI';
         
-        // Search courses via API
+        // RapidAPI keys (secondary fallback)
+        const RAPIDAPI_KEY = '00d735f3c4msh99ba09db9d5f561p15fcc8jsnf99c23fc89f9';
+        const RAPIDAPI_COURSES_HOST = 'golf-courses-api.p.rapidapi.com';
+        const RAPIDAPI_FINDER_HOST = 'golf-course-finder.p.rapidapi.com';
+        
+        // Search courses via multiple APIs
         async function searchCourses() {
             const searchTerm = document.getElementById('courseSearchInput').value.trim();
             const resultsDiv = document.getElementById('courseSearchResults');
@@ -8788,43 +8789,86 @@
                 return;
             }
             
-            resultsDiv.innerHTML = '<p style="text-align: center; color: #1e3a5f; font-size: 14px; padding: 24px;">🔄 Searching...</p>';
+            resultsDiv.innerHTML = '<p style="text-align: center; color: #1e3a5f; font-size: 14px; padding: 24px;">🔄 Searching GolfCourseAPI...</p>';
             
             try {
-                // Try multiple search variations for better results
                 let allCourses = [];
+                
+                // === STEP 1: Try GolfCourseAPI.com (primary) ===
                 const searchVariations = [
                     searchTerm,
                     searchTerm.replace(/golf club|golf course|gc|cc/gi, '').trim(),
-                    searchTerm.split(' ').slice(0, 2).join(' ') // First two words only
-                ].filter((v, i, arr) => v && arr.indexOf(v) === i); // Remove duplicates and empty
+                    searchTerm.split(' ').slice(0, 2).join(' ')
+                ].filter((v, i, arr) => v && arr.indexOf(v) === i);
                 
                 for (const term of searchVariations) {
-                    if (allCourses.length >= 10) break; // Already have enough results
+                    if (allCourses.length >= 8) break;
                     
                     try {
                         const response = await fetch(`https://api.golfcourseapi.com/v1/search?search_query=${encodeURIComponent(term)}`, {
-                            headers: {
-                                'Authorization': `Key ${GOLF_API_KEY}`
-                            }
+                            headers: { 'Authorization': `Key ${GOLF_API_KEY}` }
                         });
                         
                         if (response.ok) {
                             const data = await response.json();
                             if (data.courses && data.courses.length > 0) {
-                                // Add courses we don't already have
                                 data.courses.forEach(course => {
                                     if (!allCourses.some(c => c.id === course.id)) {
+                                        course._source = 'golfcourseapi';
                                         allCourses.push(course);
                                     }
                                 });
                             }
                         }
                     } catch (e) {
-                        console.log('Search variation failed:', term, e);
+                        console.log('GolfCourseAPI search failed:', term, e);
                     }
                 }
                 
+                // === STEP 2: Try RapidAPI Golf Courses API (fallback) ===
+                if (allCourses.length < 5) {
+                    resultsDiv.innerHTML = '<p style="text-align: center; color: #1e3a5f; font-size: 14px; padding: 24px;">🔄 Searching additional sources...</p>';
+                    
+                    try {
+                        const rapidResponse = await fetch(`https://${RAPIDAPI_COURSES_HOST}/Courses?name=${encodeURIComponent(searchTerm)}`, {
+                            headers: {
+                                'X-RapidAPI-Key': RAPIDAPI_KEY,
+                                'X-RapidAPI-Host': RAPIDAPI_COURSES_HOST
+                            }
+                        });
+                        
+                        if (rapidResponse.ok) {
+                            const rapidData = await rapidResponse.json();
+                            // RapidAPI may return array directly or in a wrapper
+                            const courses = Array.isArray(rapidData) ? rapidData : (rapidData.courses || rapidData.data || []);
+                            
+                            courses.forEach(course => {
+                                // Normalize RapidAPI response to our format
+                                const normalizedCourse = {
+                                    id: 'rapid_' + (course.id || course.course_id || Math.random().toString(36).substr(2, 9)),
+                                    club_name: course.name || course.courseName || course.club_name,
+                                    course_name: course.name || course.courseName,
+                                    location: {
+                                        city: course.city || '',
+                                        state: course.state || ''
+                                    },
+                                    _source: 'rapidapi',
+                                    _rawData: course
+                                };
+                                
+                                // Avoid duplicates by name
+                                const name = normalizedCourse.club_name?.toLowerCase();
+                                if (name && !allCourses.some(c => (c.club_name || c.course_name)?.toLowerCase() === name)) {
+                                    allCourses.push(normalizedCourse);
+                                }
+                            });
+                        }
+                    } catch (e) {
+                        console.log('RapidAPI search failed:', e);
+                    }
+                }
+                
+                // === STEP 3: Display results ===
                 if (allCourses.length === 0) {
                     resultsDiv.innerHTML = `
                         <div style="text-align: center; padding: 20px;">
@@ -8833,12 +8877,17 @@
                                 <strong>Search tips:</strong><br>
                                 • Try just the course name (e.g., "Oak Quarry")<br>
                                 • Try the city name (e.g., "Riverside")<br>
-                                • Check spelling
+                                • Use 📍 Nearby to find courses near you
                             </p>
-                            <button onclick="showManualCourseEntry()" 
+                            <button onclick="showManualCourseEntry('${searchTerm.replace(/'/g, "\\'")}')" 
                                 style="padding: 12px 20px; background: #d4b896; color: #1e3a5f; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
                                 ➕ Enter Course Manually
                             </button>
+                            <p style="margin-top: 12px;">
+                                <a href="https://ncrdb.usga.org/" target="_blank" style="color: #1e3a5f; font-size: 12px;">
+                                    🔗 Look up slope/rating on USGA.org
+                                </a>
+                            </p>
                         </div>
                     `;
                     return;
@@ -8846,15 +8895,20 @@
                 
                 let html = '';
                 allCourses.slice(0, 10).forEach(course => {
+                    const courseName = course.club_name || course.course_name || 'Unknown Course';
+                    const city = course.location?.city || course.city || '';
+                    const state = course.location?.state || course.state || '';
                     const isFavorite = favoriteCourses.some(f => f.id === course.id);
+                    const sourceIcon = course._source === 'rapidapi' ? ' 🌐' : '';
+                    
                     html += `
                         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; margin-bottom: 8px;">
                             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                                 <div style="flex: 1;">
-                                    <div style="font-weight: 700; color: #1e293b; font-size: 14px;">${course.club_name || course.course_name}</div>
-                                    <div style="font-size: 12px; color: #64748b;">${course.location?.city || ''}, ${course.location?.state || ''}</div>
+                                    <div style="font-weight: 700; color: #1e293b; font-size: 14px;">${courseName}${sourceIcon}</div>
+                                    <div style="font-size: 12px; color: #64748b;">${city}${city && state ? ', ' : ''}${state}</div>
                                 </div>
-                                <button onclick="toggleFavorite('${course.id}', '${(course.club_name || course.course_name).replace(/'/g, "\\'")}', '${course.location?.city || ''}', '${course.location?.state || ''}')" 
+                                <button onclick="toggleFavorite('${course.id}', '${courseName.replace(/'/g, "\\'")}', '${city}', '${state}')" 
                                     style="background: none; border: none; font-size: 20px; cursor: pointer;">
                                     ${isFavorite ? '⭐' : '☆'}
                                 </button>
@@ -8871,10 +8925,15 @@
                 html += `
                     <div style="text-align: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
                         <p style="color: #64748b; font-size: 12px; margin-bottom: 8px;">Don't see your course?</p>
-                        <button onclick="showManualCourseEntry()" 
+                        <button onclick="showManualCourseEntry('${searchTerm.replace(/'/g, "\\'")}')" 
                             style="padding: 10px 16px; background: #d4b896; color: #1e3a5f; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px;">
                             ➕ Enter Manually
                         </button>
+                        <p style="margin-top: 8px;">
+                            <a href="https://ncrdb.usga.org/" target="_blank" style="color: #1e3a5f; font-size: 11px;">
+                                🔗 USGA Course Database
+                            </a>
+                        </p>
                     </div>
                 `;
                 
@@ -8887,6 +8946,147 @@
                         <p style="color: #a51c30; font-size: 14px; margin-bottom: 16px;">
                             Error: ${error.message}
                         </p>
+                        <button onclick="showManualCourseEntry('${searchTerm.replace(/'/g, "\\'")}')" 
+                            style="padding: 12px 20px; background: #d4b896; color: #1e3a5f; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                            ➕ Enter Course Manually
+                        </button>
+                    </div>
+                `;
+            }
+        }
+        
+        // Search for nearby courses using GPS
+        async function searchNearbyCourses() {
+            const resultsDiv = document.getElementById('courseSearchResults');
+            
+            // Check if geolocation is supported
+            if (!navigator.geolocation) {
+                resultsDiv.innerHTML = `
+                    <div style="text-align: center; padding: 20px;">
+                        <p style="color: #a51c30; font-size: 14px;">📍 Location not supported by your browser</p>
+                        <p style="color: #64748b; font-size: 12px; margin-top: 8px;">Try searching by course name or city instead</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            resultsDiv.innerHTML = `
+                <div style="text-align: center; padding: 30px;">
+                    <p style="color: #1e3a5f; font-size: 14px;">📍 Getting your location...</p>
+                    <p style="color: #64748b; font-size: 12px; margin-top: 8px;">Please allow location access when prompted</p>
+                </div>
+            `;
+            
+            try {
+                // Get user's position
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 300000 // 5 minutes cache
+                    });
+                });
+                
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                
+                resultsDiv.innerHTML = `
+                    <div style="text-align: center; padding: 30px;">
+                        <p style="color: #1e3a5f; font-size: 14px;">🔄 Searching courses within 15 miles...</p>
+                    </div>
+                `;
+                
+                // Call RapidAPI Golf Course Finder
+                const response = await fetch(`https://${RAPIDAPI_FINDER_HOST}/api/golf-clubs/?miles=15&latitude=${lat}&longitude=${lng}`, {
+                    headers: {
+                        'X-RapidAPI-Key': RAPIDAPI_KEY,
+                        'X-RapidAPI-Host': RAPIDAPI_FINDER_HOST
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch nearby courses');
+                }
+                
+                const data = await response.json();
+                const courses = Array.isArray(data) ? data : (data.courses || data.data || []);
+                
+                if (courses.length === 0) {
+                    resultsDiv.innerHTML = `
+                        <div style="text-align: center; padding: 20px;">
+                            <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px;">No courses found within 15 miles</p>
+                            <p style="color: #64748b; font-size: 12px; margin-bottom: 16px;">Try searching by name instead</p>
+                            <button onclick="showManualCourseEntry()" 
+                                style="padding: 12px 20px; background: #d4b896; color: #1e3a5f; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                                ➕ Enter Course Manually
+                            </button>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Calculate distance for each course and sort by distance
+                courses.forEach(course => {
+                    if (course.latitude && course.longitude) {
+                        course._distance = calculateDistance(lat, lng, parseFloat(course.latitude), parseFloat(course.longitude));
+                    } else {
+                        course._distance = 999;
+                    }
+                });
+                courses.sort((a, b) => a._distance - b._distance);
+                
+                let html = `<p style="color: #166534; font-size: 13px; font-weight: 600; margin-bottom: 12px; text-align: center;">📍 ${courses.length} course${courses.length !== 1 ? 's' : ''} found nearby</p>`;
+                
+                courses.slice(0, 15).forEach(course => {
+                    const courseName = course.club_name || course.name || course.courseName || 'Unknown Course';
+                    const city = course.city || '';
+                    const state = course.state || '';
+                    const distanceText = course._distance < 999 ? `${course._distance.toFixed(1)} mi` : '';
+                    
+                    // Create a normalized course object for selection
+                    const normalizedId = 'nearby_' + (course.id || Math.random().toString(36).substr(2, 9));
+                    
+                    html += `
+                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; margin-bottom: 8px;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 700; color: #1e293b; font-size: 14px;">${courseName}</div>
+                                    <div style="font-size: 12px; color: #64748b;">${city}${city && state ? ', ' : ''}${state}</div>
+                                </div>
+                                ${distanceText ? `<span style="background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">${distanceText}</span>` : ''}
+                            </div>
+                            <button onclick="selectNearbyCourse('${normalizedId}', '${courseName.replace(/'/g, "\\'")}', '${city}', '${state}')" 
+                                style="width: 100%; margin-top: 8px; padding: 8px; background: #166534; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                                Select Course
+                            </button>
+                        </div>
+                    `;
+                });
+                
+                // Add manual entry option
+                html += `
+                    <div style="text-align: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
+                        <p style="color: #64748b; font-size: 12px; margin-bottom: 8px;">Don't see your course?</p>
+                        <button onclick="showManualCourseEntry()" 
+                            style="padding: 10px 16px; background: #d4b896; color: #1e3a5f; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px;">
+                            ➕ Enter Manually
+                        </button>
+                    </div>
+                `;
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Nearby search error:', error);
+                let errorMsg = 'Unable to get your location';
+                if (error.code === 1) errorMsg = 'Location access denied. Please enable location permissions.';
+                else if (error.code === 2) errorMsg = 'Location unavailable. Please try again.';
+                else if (error.code === 3) errorMsg = 'Location request timed out. Please try again.';
+                
+                resultsDiv.innerHTML = `
+                    <div style="text-align: center; padding: 20px;">
+                        <p style="color: #a51c30; font-size: 14px; margin-bottom: 12px;">📍 ${errorMsg}</p>
+                        <p style="color: #64748b; font-size: 12px; margin-bottom: 16px;">Try searching by course name instead</p>
                         <button onclick="showManualCourseEntry()" 
                             style="padding: 12px 20px; background: #d4b896; color: #1e3a5f; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
                             ➕ Enter Course Manually
@@ -8896,16 +9096,45 @@
             }
         }
         
+        // Calculate distance between two lat/lng points in miles
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 3959; // Earth's radius in miles
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+        
+        // Select a nearby course (creates manual entry since we don't have full data)
+        function selectNearbyCourse(id, name, city, state) {
+            // For nearby courses, we need to create a manual entry since the API doesn't provide full course data
+            showManualCourseEntry(name);
+            
+            // Pre-fill city and state
+            setTimeout(() => {
+                const cityInput = document.getElementById('manualCourseCity');
+                const stateInput = document.getElementById('manualCourseState');
+                if (cityInput && city) cityInput.value = city;
+                if (stateInput && state) stateInput.value = state;
+            }, 100);
+        }
+        
         // Show manual course entry form
-        function showManualCourseEntry() {
+        function showManualCourseEntry(prefillName = '') {
             const resultsDiv = document.getElementById('courseSearchResults');
+            const searchInput = document.getElementById('courseSearchInput');
+            const nameToPreFill = prefillName || searchInput?.value || '';
+            
             resultsDiv.innerHTML = `
                 <div style="padding: 8px;">
                     <h4 style="color: #1e3a5f; margin: 0 0 12px 0; font-size: 15px;">Enter Course Details</h4>
                     
                     <div style="margin-bottom: 12px;">
                         <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 4px;">Course Name *</label>
-                        <input type="text" id="manualCourseName" placeholder="e.g., Oak Quarry Golf Club" 
+                        <input type="text" id="manualCourseName" placeholder="e.g., Oak Quarry Golf Club" value="${nameToPreFill.replace(/"/g, '&quot;')}"
                             style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
                     </div>
                     
@@ -18403,6 +18632,7 @@
             const initialsInput = document.getElementById('initialsInput');
             const cancelBtn = document.getElementById('handicapConfirmCancel');
             const okBtn = document.getElementById('handicapConfirmOk');
+            const ghinCheckbox = document.getElementById('useGhinIndexCheckbox');
             
             // Set editable name field and store original name
             nameInput.value = playerName;
@@ -18412,9 +18642,10 @@
             const player = tournamentData?.players?.find(p => p.name === playerName);
             const playerHandicap = player?.handicap ?? currentHandicap ?? 0;
             
-            // Reset to default mode (course handicap)
+            // Reset to default mode (course handicap) - uncheck the GHIN checkbox
             claimHcpMode = 'course';
-            setClaimHcpMode('course');
+            if (ghinCheckbox) ghinCheckbox.checked = false;
+            toggleGhinIndexMode(false);
             
             // Set initial handicap value (the course handicap)
             handicapInput.value = Math.round(playerHandicap);
@@ -18536,46 +18767,43 @@
             initialsInput.addEventListener('keyup', handleEnterKey);
         }
         
-        function setClaimHcpMode(mode) {
-            claimHcpMode = mode;
-            const indexBtn = document.getElementById('hcpModeIndex');
-            const courseBtn = document.getElementById('hcpModeCourse');
+        // Toggle between Course HCP and GHIN Index mode
+        function toggleGhinIndexMode(useIndex) {
+            claimHcpMode = useIndex ? 'index' : 'course';
             const label = document.getElementById('handicapInputLabel');
             const calcDisplay = document.getElementById('claimCalculatedHcp');
             const input = document.getElementById('handicapConfirmInput');
-            const teeSection = document.getElementById('claimTeeButtons')?.parentElement;
+            const teeSection = document.getElementById('claimTeeSelectionDiv');
             
-            if (mode === 'index') {
-                indexBtn.style.background = '#1e3a5f';
-                indexBtn.style.color = 'white';
-                indexBtn.style.borderColor = '#1e3a5f';
-                courseBtn.style.background = 'white';
-                courseBtn.style.color = '#64748b';
-                courseBtn.style.borderColor = '#e2e8f0';
-                label.textContent = 'GHIN Index';
+            if (useIndex) {
+                // GHIN Index mode
+                label.textContent = 'GHIN Handicap Index';
                 input.step = '0.1';
-                input.placeholder = '0.0';
+                input.placeholder = '12.4';
                 calcDisplay.style.display = 'block';
-                if (teeSection) teeSection.style.display = 'block'; // Show tee selection for index calculation
-                // Restore index value
+                if (teeSection) teeSection.style.display = 'block';
+                // Restore index value if saved
                 if (claimPlayerHandicapIndex !== null) {
                     input.value = claimPlayerHandicapIndex;
                 }
             } else {
-                courseBtn.style.background = '#1e3a5f';
-                courseBtn.style.color = 'white';
-                courseBtn.style.borderColor = '#1e3a5f';
-                indexBtn.style.background = 'white';
-                indexBtn.style.color = '#64748b';
-                indexBtn.style.borderColor = '#e2e8f0';
+                // Course Handicap mode (default)
                 label.textContent = 'Course Handicap';
                 input.step = '1';
                 input.placeholder = '0';
                 calcDisplay.style.display = 'none';
-                if (teeSection) teeSection.style.display = 'none'; // Hide tee selection - not needed for direct course HCP
-                // Keep current value as-is for direct entry
+                if (teeSection) teeSection.style.display = 'none';
             }
             updateClaimCourseHcp();
+        }
+        
+        // Legacy function for compatibility
+        function setClaimHcpMode(mode) {
+            const checkbox = document.getElementById('useGhinIndexCheckbox');
+            if (checkbox) {
+                checkbox.checked = (mode === 'index');
+            }
+            toggleGhinIndexMode(mode === 'index');
         }
         
         function renderClaimTeeButtons() {
