@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-01-28-v15.9.20-fix-signout-simplify-hcp -->
+    <!-- VERSION: 2026-01-29-v15.9.24-fix-signout-ui -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -1450,8 +1450,8 @@
         }
 
         .score-input.par {
-            background: #dbeafe;
-            border-color: rgba(30, 58, 95, 0.7);
+            background: #f8fafc;
+            border-color: #d1d5db;
             color: #1e3a5f;
             font-weight: 600;
         }
@@ -2260,43 +2260,43 @@
             align-items: center;
         }
 
-        /* Score coloring for hole view */
+        /* Score coloring for hole view - use !important to ensure these take precedence */
         .hole-score-ticker .score-input.eagle-better {
-            background: white;
-            border: 1.5px solid #166534;
-            color: #166534;
-            border-radius: 50%;
-            box-shadow: 0 0 0 1.5px white, 0 0 0 3px #166534;
+            background: white !important;
+            border: 2px solid #166534 !important;
+            color: #166534 !important;
+            border-radius: 50% !important;
+            box-shadow: 0 0 0 2px white, 0 0 0 4px #166534 !important;
         }
         
         .hole-score-ticker .score-input.birdie-better,
         .hole-score-ticker .score-input.birdie {
-            background: white;
-            border: 1.5px solid #166534;
-            color: #166534;
-            border-radius: 50%;
+            background: white !important;
+            border: 2px solid #166534 !important;
+            color: #166534 !important;
+            border-radius: 50% !important;
         }
 
         .hole-score-ticker .score-input.par {
-            background: white;
-            border: 1.5px solid rgba(30, 58, 95, 0.7);
-            color: #1e3a5f;
-            border-radius: 4px;
+            background: white !important;
+            border: 1.5px solid #d1d5db !important;
+            color: #1e3a5f !important;
+            border-radius: 4px !important;
         }
 
         .hole-score-ticker .score-input.bogey {
-            background: white;
-            border: 1.5px solid #a51c30;
-            color: #a51c30;
-            border-radius: 4px;
+            background: white !important;
+            border: 2px solid #f59e0b !important;
+            color: #b45309 !important;
+            border-radius: 4px !important;
         }
 
         .hole-score-ticker .score-input.double-bogey-plus {
-            background: white;
-            border: 1.5px solid #a51c30;
-            color: #a51c30;
-            border-radius: 4px;
-            box-shadow: 0 0 0 1.5px white, 0 0 0 3px #a51c30;
+            background: white !important;
+            border: 2px solid #a51c30 !important;
+            color: #a51c30 !important;
+            border-radius: 4px !important;
+            box-shadow: 0 0 0 2px white, 0 0 0 4px #a51c30 !important;
         }
 
         .hole-player-row {
@@ -5343,19 +5343,14 @@
                 }
                 if (hostOwnerBadge) hostOwnerBadge.style.display = isOwner ? 'inline-block' : 'none';
             } else {
-                // Show device corner and sign in button, hide profile button
-                // Reset to device initials when signed out (or 'Guest' if no initials)
-                const guestInitials = document.getElementById('guestDeviceInitials');
-                const hostInitials = document.getElementById('hostDeviceInitials');
-                if (guestInitials) guestInitials.textContent = deviceInitials || 'Guest';
-                if (hostInitials) hostInitials.textContent = deviceInitials || 'Guest';
-                
-                if (guestDeviceCorner) guestDeviceCorner.style.display = 'inline-flex';
+                // Signed out: Only show Sign In button, hide everything else
+                // Don't show device corner - it may contain stale username from localStorage
+                if (guestDeviceCorner) guestDeviceCorner.style.display = 'none';
                 if (guestSignInBtn) guestSignInBtn.style.display = 'inline-flex';
                 if (guestProfileBtn) guestProfileBtn.style.display = 'none';
                 if (guestOwnerBadge) guestOwnerBadge.style.display = 'none';
                 
-                if (hostDeviceCorner) hostDeviceCorner.style.display = 'inline-flex';
+                if (hostDeviceCorner) hostDeviceCorner.style.display = 'none';
                 if (hostSignInBtn) hostSignInBtn.style.display = 'inline-flex';
                 if (hostProfileBtn) hostProfileBtn.style.display = 'none';
                 if (hostOwnerBadge) hostOwnerBadge.style.display = 'none';
@@ -6245,6 +6240,9 @@
         async function signOutUser() {
             hideSignOutConfirm();
             try {
+                // Capture username before signing out to clear from localStorage
+                const previousUsername = currentAuthUser?.displayName || currentAuthUser?.email?.split('@')[0] || '';
+                
                 await auth.signOut();
                 currentAuthUser = null;
                 userSubscription = { status: 'free', expiresAt: null, email: null };
@@ -6253,10 +6251,33 @@
                 activeTournamentId = null;
                 tournamentData = null;
                 isHost = false;
+                isCoHost = false;
                 hasJoinedTournament = false;
                 claimedPlayers = [];
+                tournamentMode = 'single';
+                
+                // Clear Firebase listener
+                if (tournamentUnsubscribe) {
+                    tournamentUnsubscribe();
+                    tournamentUnsubscribe = null;
+                }
+                
+                // Clear deviceInitials if it matches the signed-out user's name
+                const storedInitials = localStorage.getItem('deviceInitials') || '';
+                if (storedInitials && previousUsername && 
+                    (storedInitials.toLowerCase() === previousUsername.toLowerCase() ||
+                     storedInitials.toLowerCase().includes(previousUsername.toLowerCase().split(' ')[0]))) {
+                    localStorage.removeItem('deviceInitials');
+                    deviceInitials = '';
+                }
                 
                 hideAccountModal();
+                
+                // Reset device initials display to "Guest"
+                const guestInitialsSpan = document.getElementById('guestDeviceInitials');
+                const hostInitialsSpan = document.getElementById('hostDeviceInitials');
+                if (guestInitialsSpan) guestInitialsSpan.textContent = 'Guest';
+                if (hostInitialsSpan) hostInitialsSpan.textContent = 'Guest';
                 
                 // Force hide profile buttons and show sign in buttons
                 const guestProfileBtn = document.getElementById('guestProfileBtn');
@@ -6265,9 +6286,16 @@
                 const hostSignInBtn = document.getElementById('hostSignInBtn');
                 const guestDeviceCorner = document.getElementById('guestDeviceCorner');
                 const hostDeviceCorner = document.getElementById('hostDeviceCorner');
+                const guestOwnerBadge = document.getElementById('guestOwnerBadge');
+                const hostOwnerBadge = document.getElementById('hostOwnerBadge');
                 
+                // Hide profile buttons and owner badges
                 if (guestProfileBtn) guestProfileBtn.style.display = 'none';
                 if (hostProfileBtn) hostProfileBtn.style.display = 'none';
+                if (guestOwnerBadge) guestOwnerBadge.style.display = 'none';
+                if (hostOwnerBadge) hostOwnerBadge.style.display = 'none';
+                
+                // Show sign-in button, hide device corner (since not logged in)
                 if (guestSignInBtn) guestSignInBtn.style.display = 'inline-flex';
                 if (hostSignInBtn) hostSignInBtn.style.display = 'inline-flex';
                 if (guestDeviceCorner) guestDeviceCorner.style.display = 'none';
@@ -6278,6 +6306,9 @@
                 
                 // Refresh home page to hide tournaments
                 populateHomeRoundsList();
+                
+                // Navigate to guest home page
+                showPage('guestHomePage');
                 
                 showNotification('Signed Out', 'See you next time!');
             } catch (error) {
@@ -6312,7 +6343,12 @@
         // Close Sign In Modal
         function closeSignInModal() {
             const modal = document.getElementById('signInModal');
-            if (modal) modal.style.display = 'none';
+            if (modal) {
+                modal.style.setProperty('display', 'none', 'important');
+                modal.style.visibility = 'hidden';
+                modal.style.opacity = '0';
+                modal.style.pointerEvents = 'none';
+            }
         }
         
         // Show Create Account Modal
@@ -6367,14 +6403,22 @@
             try {
                 errorEl.style.display = 'none';
                 await auth.signInWithEmailAndPassword(email, password);
-                // Force close the modal - multiple methods for reliability
+                
+                // Close modal using proper function
+                closeSignInModal();
+                
+                // Also force close with direct DOM manipulation as backup
                 const modal = document.getElementById('signInModal');
                 if (modal) {
-                    modal.style.setProperty('display', 'none', 'important');
-                    modal.style.visibility = 'hidden';
-                    modal.style.opacity = '0';
-                    modal.style.pointerEvents = 'none';
+                    modal.style.display = 'none';
+                    modal.remove(); // Remove from DOM entirely
                 }
+                
+                // Update UI
+                updateAccountUI();
+                updateHomePageLoginStatus();
+                populateHomeRoundsList();
+                
                 showNotification('✅ Signed In', 'Welcome back!');
             } catch (error) {
                 errorEl.textContent = getAuthErrorMessage(error.code);
@@ -8747,25 +8791,61 @@
             resultsDiv.innerHTML = '<p style="text-align: center; color: #1e3a5f; font-size: 14px; padding: 24px;">🔄 Searching...</p>';
             
             try {
-                const response = await fetch(`https://api.golfcourseapi.com/v1/search?search_query=${encodeURIComponent(searchTerm)}`, {
-                    headers: {
-                        'Authorization': `Key ${GOLF_API_KEY}`
-                    }
-                });
+                // Try multiple search variations for better results
+                let allCourses = [];
+                const searchVariations = [
+                    searchTerm,
+                    searchTerm.replace(/golf club|golf course|gc|cc/gi, '').trim(),
+                    searchTerm.split(' ').slice(0, 2).join(' ') // First two words only
+                ].filter((v, i, arr) => v && arr.indexOf(v) === i); // Remove duplicates and empty
                 
-                if (!response.ok) {
-                    throw new Error(`API Error: ${response.status}`);
+                for (const term of searchVariations) {
+                    if (allCourses.length >= 10) break; // Already have enough results
+                    
+                    try {
+                        const response = await fetch(`https://api.golfcourseapi.com/v1/search?search_query=${encodeURIComponent(term)}`, {
+                            headers: {
+                                'Authorization': `Key ${GOLF_API_KEY}`
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.courses && data.courses.length > 0) {
+                                // Add courses we don't already have
+                                data.courses.forEach(course => {
+                                    if (!allCourses.some(c => c.id === course.id)) {
+                                        allCourses.push(course);
+                                    }
+                                });
+                            }
+                        }
+                    } catch (e) {
+                        console.log('Search variation failed:', term, e);
+                    }
                 }
                 
-                const data = await response.json();
-                
-                if (!data.courses || data.courses.length === 0) {
-                    resultsDiv.innerHTML = '<p style="text-align: center; color: #94a3b8; font-size: 14px; padding: 24px;">No courses found. Try a different search.</p>';
+                if (allCourses.length === 0) {
+                    resultsDiv.innerHTML = `
+                        <div style="text-align: center; padding: 20px;">
+                            <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px;">No courses found for "${searchTerm}"</p>
+                            <p style="color: #64748b; font-size: 12px; margin-bottom: 16px;">
+                                <strong>Search tips:</strong><br>
+                                • Try just the course name (e.g., "Oak Quarry")<br>
+                                • Try the city name (e.g., "Riverside")<br>
+                                • Check spelling
+                            </p>
+                            <button onclick="showManualCourseEntry()" 
+                                style="padding: 12px 20px; background: #d4b896; color: #1e3a5f; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                                ➕ Enter Course Manually
+                            </button>
+                        </div>
+                    `;
                     return;
                 }
                 
                 let html = '';
-                data.courses.slice(0, 10).forEach(course => {
+                allCourses.slice(0, 10).forEach(course => {
                     const isFavorite = favoriteCourses.some(f => f.id === course.id);
                     html += `
                         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; margin-bottom: 8px;">
@@ -8787,15 +8867,165 @@
                     `;
                 });
                 
+                // Add manual entry option at the bottom
+                html += `
+                    <div style="text-align: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
+                        <p style="color: #64748b; font-size: 12px; margin-bottom: 8px;">Don't see your course?</p>
+                        <button onclick="showManualCourseEntry()" 
+                            style="padding: 10px 16px; background: #d4b896; color: #1e3a5f; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px;">
+                            ➕ Enter Manually
+                        </button>
+                    </div>
+                `;
+                
                 resultsDiv.innerHTML = html;
                 
             } catch (error) {
                 console.error('Course search error:', error);
-                resultsDiv.innerHTML = `<p style="text-align: center; color: #a51c30; font-size: 14px; padding: 24px;">
-                    Error: ${error.message}<br><br>
-                    <span style="font-size: 12px; color: #64748b;">Make sure your API key is valid and you have network access.</span>
-                </p>`;
+                resultsDiv.innerHTML = `
+                    <div style="text-align: center; padding: 20px;">
+                        <p style="color: #a51c30; font-size: 14px; margin-bottom: 16px;">
+                            Error: ${error.message}
+                        </p>
+                        <button onclick="showManualCourseEntry()" 
+                            style="padding: 12px 20px; background: #d4b896; color: #1e3a5f; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                            ➕ Enter Course Manually
+                        </button>
+                    </div>
+                `;
             }
+        }
+        
+        // Show manual course entry form
+        function showManualCourseEntry() {
+            const resultsDiv = document.getElementById('courseSearchResults');
+            resultsDiv.innerHTML = `
+                <div style="padding: 8px;">
+                    <h4 style="color: #1e3a5f; margin: 0 0 12px 0; font-size: 15px;">Enter Course Details</h4>
+                    
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 4px;">Course Name *</label>
+                        <input type="text" id="manualCourseName" placeholder="e.g., Oak Quarry Golf Club" 
+                            style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+                        <div>
+                            <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 4px;">City</label>
+                            <input type="text" id="manualCourseCity" placeholder="Riverside" 
+                                style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 4px;">State</label>
+                            <input type="text" id="manualCourseState" placeholder="CA" maxlength="2"
+                                style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box; text-transform: uppercase;">
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+                        <div>
+                            <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 4px;">Slope Rating</label>
+                            <input type="number" id="manualCourseSlope" placeholder="113" min="55" max="155"
+                                style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 4px;">Course Rating</label>
+                            <input type="number" id="manualCourseRating" placeholder="72.0" step="0.1" min="60" max="80"
+                                style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
+                        </div>
+                    </div>
+                    
+                    <p style="font-size: 11px; color: #64748b; margin-bottom: 12px;">
+                        💡 Find slope/rating on the course scorecard or website. Default pars will be used (4-4-3-4-5-4-3-4-5...).
+                    </p>
+                    
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="document.getElementById('courseSearchResults').innerHTML = '<p style=\\'text-align: center; color: #64748b; font-size: 14px; padding: 24px;\\'>Search for a course above</p>';" 
+                            style="flex: 1; padding: 12px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                            ← Back
+                        </button>
+                        <button onclick="saveManualCourse()" 
+                            style="flex: 2; padding: 12px; background: #166534; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                            Save & Select Course
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('manualCourseName').focus();
+        }
+        
+        // Save manually entered course
+        function saveManualCourse() {
+            const name = document.getElementById('manualCourseName').value.trim();
+            const city = document.getElementById('manualCourseCity').value.trim();
+            const state = document.getElementById('manualCourseState').value.trim().toUpperCase();
+            const slope = parseInt(document.getElementById('manualCourseSlope').value) || 113;
+            const rating = parseFloat(document.getElementById('manualCourseRating').value) || 72.0;
+            
+            if (!name) {
+                alert('Please enter a course name');
+                return;
+            }
+            
+            // Create course ID
+            const courseId = 'manual_' + name.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + Date.now();
+            
+            // Default pars for 18 holes
+            const defaultPars = [4, 4, 3, 4, 5, 4, 3, 4, 5, 4, 4, 3, 4, 5, 4, 3, 4, 4];
+            const holes = defaultPars.map((par, i) => ({
+                number: i + 1,
+                par: par,
+                handicap: i + 1
+            }));
+            
+            // Create course object
+            const courseData = {
+                name: name,
+                city: city,
+                state: state,
+                totalPar: 72,
+                holes: holes,
+                tees: {
+                    default: {
+                        name: 'Default',
+                        slope: slope,
+                        rating: rating,
+                        yardage: 6200,
+                        par: 72
+                    }
+                },
+                defaultTee: 'default',
+                isManual: true
+            };
+            
+            // Save to customCourses
+            customCourses[courseId] = courseData;
+            
+            // Save to localStorage for persistence
+            try {
+                const savedCustom = JSON.parse(localStorage.getItem('letsgolf_custom_courses') || '{}');
+                savedCustom[courseId] = courseData;
+                localStorage.setItem('letsgolf_custom_courses', JSON.stringify(savedCustom));
+            } catch (e) {
+                console.error('Error saving custom course:', e);
+            }
+            
+            // Add to course select dropdown
+            const select = document.getElementById('courseSelect');
+            const option = document.createElement('option');
+            option.value = courseId;
+            option.textContent = `${name} (${city || 'Custom'})`;
+            select.appendChild(option);
+            
+            // Select the new course
+            select.value = courseId;
+            updateCourseDetails(courseId);
+            
+            // Close modal
+            closeCourseSearchModal();
+            
+            showNotification('✅ Course Added', `${name} saved successfully`);
         }
         
         // Toggle favorite for currently selected course
@@ -15336,8 +15566,15 @@
                 isHost,
                 isCoHost,
                 canManage: canManageTournament(),
-                activeTournamentId
+                activeTournamentId,
+                isSignedIn: !!currentAuthUser
             });
+            
+            // If user is not signed in, prompt to sign in/sign up
+            if (!currentAuthUser) {
+                showSignInPromptModal();
+                return;
+            }
             
             // Hosts and co-hosts go to host home page
             if (tournamentMode === 'multi' && canManageTournament()) {
@@ -15374,6 +15611,40 @@
                     showPage('setupPage');
                 }
             }
+        }
+        
+        // Show sign-in prompt modal for guests
+        function showSignInPromptModal() {
+            const existingModal = document.getElementById('signInPromptModal');
+            if (existingModal) existingModal.remove();
+            
+            const modal = document.createElement('div');
+            modal.id = 'signInPromptModal';
+            modal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;';
+            modal.innerHTML = `
+                <div style="background: white; border-radius: 12px; max-width: 340px; width: 100%; padding: 24px; text-align: center;">
+                    <div style="font-size: 48px; margin-bottom: 12px;">🔐</div>
+                    <h3 style="color: #1e3a5f; margin: 0 0 8px 0; font-size: 20px;">Sign In Required</h3>
+                    <p style="color: #64748b; margin: 0 0 20px 0; font-size: 14px; line-height: 1.5;">
+                        Sign in to access your home page, view past rounds, and sync across devices.
+                    </p>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <button onclick="document.getElementById('signInPromptModal').remove(); showSignInModal();" 
+                            style="width: 100%; padding: 14px; background: #1e3a5f; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">
+                            Sign In
+                        </button>
+                        <button onclick="document.getElementById('signInPromptModal').remove(); showCreateAccountModal();" 
+                            style="width: 100%; padding: 14px; background: #d4b896; color: #1e3a5f; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">
+                            Create Account
+                        </button>
+                        <button onclick="document.getElementById('signInPromptModal').remove();" 
+                            style="width: 100%; padding: 12px; background: transparent; color: #64748b; border: none; font-size: 14px; cursor: pointer;">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
         }
         
         // Show Host Home Page
@@ -19316,7 +19587,6 @@
                 const deviceDisplay = claimedDevice ? (claimedDevice.initials || claimedDevice.name) : null;
                 const holesPlayed = p.scores ? p.scores.filter(s => s !== null && s !== undefined).length : 0;
                 const totalScore = p.scores ? p.scores.reduce((sum, s) => sum + (s || 0), 0) : 0;
-                const needsConfirmation = p.needsHcpConfirmation;
                 
                 return `
                     <div class="player-swipe-container" data-player-name="${p.name}" style="position: relative; overflow: hidden; margin-bottom: 8px; border-radius: 8px;">
@@ -19345,7 +19615,6 @@
                                     <div style="display: flex; align-items: center; gap: 4px;">
                                         <span style="font-weight: 600; color: #1e293b; font-size: 14px;">${p.name}</span>
                                         <span style="color: #64748b; font-size: 12px;">(${p.handicap})</span>
-                                        ${needsConfirmation ? `<span title="Needs HCP confirmation" style="cursor: help;">⚠️</span>` : ''}
                                     </div>
                                     <!-- Row 2: Holes + Score + Device -->
                                     <div style="font-size: 11px; color: #64748b; margin-top: 2px; display: flex; align-items: center; gap: 6px;">
@@ -19362,9 +19631,6 @@
                                 
                                 <!-- Action Buttons - Release, Edit (pencil), and Reorder arrows -->
                                 <div style="display: flex; gap: 4px; flex-shrink: 0; align-items: center;">
-                                    ${needsConfirmation ? `
-                                        <button onclick="confirmPlayerHcp('${p.name}')" style="padding: 4px 8px; background: white; color: #b45309; border: 1px solid #b45309; border-radius: 4px; font-size: 10px; font-weight: 600; cursor: pointer;">Confirm</button>
-                                    ` : ''}
                                     ${p.claimedBy ? `
                                         <button onclick="unclaimPlayer('${p.name}')" style="padding: 4px 8px; background: transparent; color: #a51c30; border: 1px solid #a51c30; border-radius: 4px; font-size: 10px; font-weight: 600; cursor: pointer;">Release</button>
                                     ` : ''}

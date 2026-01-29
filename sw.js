@@ -5,7 +5,7 @@
  * Provides offline capability and smart caching for the PWA
  */
 
-const CACHE_VERSION = 'letsgolf-v1.0.20';
+const CACHE_VERSION = 'letsgolf-v1.0.24';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 
@@ -90,7 +90,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  // Handle static assets - Cache first, then network
+  // Handle HTML files - Network first to ensure updates are immediate
+  if (request.url.endsWith('.html') || request.url.endsWith('/') || url.pathname === '/') {
+    event.respondWith(networkFirst(request));
+    return;
+  }
+  
+  // Handle other static assets - Cache first, then network
   event.respondWith(cacheFirst(request));
 });
 
