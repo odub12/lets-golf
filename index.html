@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-01-30-v15.9.36-oak-quarry-tee-selection -->
+    <!-- VERSION: 2026-01-30-v15.9.38-tee-selection-fix -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -8542,36 +8542,45 @@
             // Handle favorite course selection (fav_xxx format)
             if (selectedCourse && selectedCourse.startsWith('fav_')) {
                 const favId = selectedCourse.replace('fav_', '');
-                const favorite = favoriteCourses.find(f => String(f.id) === favId);
                 
+                // First check if this is a built-in course (even if not in favorites list)
+                if (courses[favId]) {
+                    courseData = courses[favId];
+                    if (courseData && courseData.tees) {
+                        teeSection.style.display = 'block';
+                        renderTeeButtons(favId);
+                    }
+                    updateFavoriteButton();
+                    return;
+                }
+                
+                // Check if it's a custom course
+                if (customCourses[favId]) {
+                    courseData = customCourses[favId];
+                    if (courseData && courseData.tees) {
+                        teeSection.style.display = 'block';
+                        renderTeeButtons(favId);
+                    }
+                    updateFavoriteButton();
+                    return;
+                }
+                
+                // Check if we already have this course loaded as API course
+                const apiKey = 'api_' + favId;
+                if (customCourses[apiKey]) {
+                    courseData = customCourses[apiKey];
+                    if (courseData && courseData.tees) {
+                        teeSection.style.display = 'block';
+                        renderTeeButtons(apiKey);
+                    }
+                    updateFavoriteButton();
+                    return;
+                }
+                
+                // Check favorites array for API course info
+                const favorite = favoriteCourses.find(f => String(f.id) === favId);
                 if (favorite) {
-                    // First check if this is a built-in course (favId matches a built-in course key)
-                    if (courses[favId]) {
-                        document.getElementById('courseSelect').value = favId;
-                        courseData = courses[favId];
-                        if (courseData && courseData.tees) {
-                            teeSection.style.display = 'block';
-                            renderTeeButtons(favId);
-                        }
-                        updateFavoriteButton();
-                        return;
-                    }
-                    
-                    // Check if we already have this course loaded as API course
-                    const apiKey = 'api_' + favId;
-                    if (customCourses[apiKey]) {
-                        // Already loaded - just use it
-                        document.getElementById('courseSelect').value = apiKey;
-                        courseData = customCourses[apiKey];
-                        if (courseData && courseData.tees) {
-                            teeSection.style.display = 'block';
-                            renderTeeButtons(apiKey);
-                        }
-                        updateFavoriteButton();
-                        return;
-                    }
-                    
-                    // Need to fetch from API - we have hardcoded key now
+                    // Need to fetch from API
                     showNotification('Loading...', `Fetching ${favorite.name} data`);
                     selectSearchedCourse(favId);
                 }
@@ -8649,7 +8658,12 @@
                 gold: '#fbbf24',
                 silver: '#94a3b8',
                 red: '#a51c30',
-                green: '#166534'
+                green: '#166534',
+                // Oak Quarry style tees
+                tournament: '#1e293b',
+                championship: '#1e3a5f',
+                regular: '#64748b',
+                forward: '#fbbf24'
             };
             
             let html = '';
@@ -8659,9 +8673,9 @@
                 const tee = course.tees[teeKey];
                 const isDefault = teeKey === course.defaultTee;
                 const bgColor = teeColors[teeKey] || '#64748b';
-                const textColor = (teeKey === 'white' || teeKey === 'gold' || teeKey === 'silver') ? '#1e293b' : 'white';
+                const textColor = (teeKey === 'white' || teeKey === 'gold' || teeKey === 'silver' || teeKey === 'forward') ? '#1e293b' : 'white';
                 // For white tee, use gray border when not selected so it's visible
-                const defaultBorderColor = teeKey === 'white' ? '#cbd5e1' : bgColor;
+                const defaultBorderColor = (teeKey === 'white' || teeKey === 'forward') ? '#cbd5e1' : bgColor;
                 const isSelected = selectedTee === teeKey || (!selectedTee && isDefault);
                 
                 // Format the display name (shorten combos)
@@ -8674,9 +8688,9 @@
                 
                 html += `
                     <button type="button" onclick="selectTee('${teeKey}')" id="teeBtn_${teeKey}"
-                        style="flex: 1; min-width: 60px; padding: 10px 8px; ${selectedStyle}
-                        background: ${bgColor}; color: ${textColor}; border-radius: 6px; font-size: 12px; font-weight: 600; 
-                        cursor: pointer;"
+                        style="flex: 1; min-width: 60px; padding: 10px 6px; ${selectedStyle}
+                        background: ${bgColor}; color: ${textColor}; border-radius: 6px; font-size: 11px; font-weight: 600; 
+                        cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center;"
                         title="${tee.name}">
                         ${displayName}
                     </button>
@@ -8695,7 +8709,11 @@
         // Select a tee
         function selectTee(teeKey) {
             selectedTee = teeKey;
-            const courseKey = document.getElementById('courseSelect').value;
+            let courseKey = document.getElementById('courseSelect').value;
+            // Strip fav_ prefix if present
+            if (courseKey.startsWith('fav_')) {
+                courseKey = courseKey.substring(4);
+            }
             renderTeeButtons(courseKey);
             // Recalculate all course handicaps with new tee
             updateAllCourseHandicaps();
@@ -8704,7 +8722,11 @@
         // Update tee info display
         function updateTeeInfo() {
             const infoDiv = document.getElementById('teeInfo');
-            const courseKey = document.getElementById('courseSelect').value;
+            let courseKey = document.getElementById('courseSelect').value;
+            // Strip fav_ prefix if present
+            if (courseKey.startsWith('fav_')) {
+                courseKey = courseKey.substring(4);
+            }
             const course = courses[courseKey] || customCourses[courseKey];
             
             if (!course || !selectedTee || !course.tees[selectedTee]) {
@@ -9754,22 +9776,12 @@
                 updateFavoritesDropdown();
             }
             
-            // Ensure the option exists in Favorites
-            const favOptgroup = select.querySelector('#favoritesOptgroup');
-            let existingOption = select.querySelector(`option[value="${courseKey}"]`);
-            if (!existingOption && favOptgroup) {
-                const option = document.createElement('option');
-                option.value = courseKey;
-                option.textContent = course.name;
-                favOptgroup.style.display = 'block';
-                favOptgroup.appendChild(option);
-            }
-            
             // Hide hint
             const hint = document.getElementById('noFavoritesHint');
             if (hint) hint.style.display = 'none';
             
-            select.value = courseKey;
+            // Select using the fav_ prefix to match dropdown options
+            select.value = `fav_${courseKey}`;
             closeCourseSearchModal();
             updateCourse();
             
@@ -15873,6 +15885,13 @@
             if (pageId === 'setupPage') {
                 renderQuickAddButtons();
                 checkForSavedRound(); // Update resume section with share buttons if needed
+                
+                // Reset GHIN toggle to default (unchecked/Course HCP mode)
+                const ghinCheckbox = document.getElementById('setupUseGhinCheckbox');
+                if (ghinCheckbox) {
+                    ghinCheckbox.checked = false;
+                    toggleSetupGhinMode(false);
+                }
                 
                 // Cancel button is always visible - no need to toggle
                 
