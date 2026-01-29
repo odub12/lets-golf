@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-01-29-v15.9.31-zip-distance-filter -->
+    <!-- VERSION: 2026-01-29-v15.9.32-hide-gps-add-ghin-edit -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -8770,15 +8770,17 @@
                         </button>
                     </div>
                     
+                    <!-- GPS Nearby button hidden for now - waiting for paid API
                     <div style="display: flex; justify-content: center; margin-bottom: 16px;">
                         <button onclick="searchNearbyCourses()" style="padding: 10px 20px; background: #166534; color: white; border: none; border-radius: 20px; font-weight: 600; cursor: pointer; font-size: 14px;">
                             📍 Find Nearby Courses
                         </button>
                     </div>
+                    -->
                     
                     <div id="courseSearchResults" style="min-height: 100px;">
                         <p style="text-align: center; color: #94a3b8; font-size: 14px; padding: 24px;">
-                            Enter a course name or use 📍 Nearby to find courses
+                            Enter a course name or city to search
                         </p>
                     </div>
                     
@@ -9124,22 +9126,7 @@
                 resultsDiv.innerHTML = `
                     <div style="text-align: center; padding: 20px;">
                         <p style="color: #a51c30; font-size: 14px; margin-bottom: 12px;">📍 ${errorMsg}</p>
-                        
-                        <div style="margin: 16px 0; padding: 16px; background: #f8fafc; border-radius: 8px;">
-                            <p style="color: #475569; font-size: 13px; margin-bottom: 12px; font-weight: 600;">Search by Zip Code or City instead:</p>
-                            <div style="display: flex; gap: 8px;">
-                                <input type="text" id="locationFallbackInput" placeholder="Zip or City, State" 
-                                    style="flex: 1; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;"
-                                    onkeypress="if(event.key === 'Enter') searchByLocation()">
-                                <button onclick="searchByLocation()" 
-                                    style="padding: 10px 16px; background: #166534; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
-                                    Search
-                                </button>
-                            </div>
-                            <p style="font-size: 11px; color: #64748b; margin-top: 8px;">e.g., "92009" or "Vista, CA"</p>
-                        </div>
-                        
-                        <p style="color: #64748b; font-size: 12px; margin-bottom: 12px;">Or search by course name above</p>
+                        <p style="color: #64748b; font-size: 12px; margin-bottom: 16px;">Try searching by course name above</p>
                         <button onclick="showManualCourseEntry()" 
                             style="padding: 12px 20px; background: #d4b896; color: #1e3a5f; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
                             ➕ Enter Course Manually
@@ -9149,6 +9136,7 @@
             }
         }
         
+        /* ZIP/LOCATION SEARCH - HIDDEN FOR NOW (waiting for paid API)
         // Search courses by zip code or city name (geocode then search nearby)
         async function searchByLocation() {
             const input = document.getElementById('locationFallbackInput');
@@ -9380,6 +9368,7 @@
                 `;
             }
         }
+        END OF ZIP/LOCATION SEARCH - HIDDEN FOR NOW */
         
         // Calculate distance between two lat/lng points in miles
         function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -22790,6 +22779,11 @@
             const cancelBtn = document.getElementById('confirmCancel');
             const okBtn = document.getElementById('confirmOk');
             
+            // Get player's current data
+            const player = tournamentData?.players?.find(p => p.name === playerName);
+            const currentIndex = player?.handicapIndex || null;
+            const isGhinMode = player?.hcpMode === 'index' || currentIndex !== null;
+            
             titleEl.textContent = `Edit ${playerName}`;
             messageEl.innerHTML = `
                 <div style="margin: 16px 0;">
@@ -22797,18 +22791,56 @@
                     <input type="text" id="editPlayerName" value="${playerName}" 
                         style="width: 100%; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
                     
-                    <label style="display: block; margin: 16px 0 8px; font-weight: 600;">Handicap:</label>
+                    <label id="editHcpLabel" style="display: block; margin: 16px 0 8px; font-weight: 600;">Course Handicap:</label>
                     <input type="number" id="editPlayerHandicap" value="${currentHandicap}" 
                         style="width: 100%; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 14px; box-sizing: border-box;"
-                        min="-10" max="54">
+                        min="-10" max="54" step="1" oninput="updateEditModalHcp()">
+                    <p id="editCalcHcp" style="font-size: 12px; color: #166534; margin-top: 4px; font-weight: 600; display: none;"></p>
+                    
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 12px;">
+                        <input type="checkbox" id="editUseGhinCheckbox" ${isGhinMode ? 'checked' : ''} onchange="toggleEditGhinMode(this.checked)" style="width: 18px; height: 18px; cursor: pointer;">
+                        <span style="color: #475569; font-weight: 600; font-size: 13px;">Use GHIN Handicap Index</span>
+                    </label>
                 </div>
             `;
             
             dialog.style.display = 'flex';
             
+            // Initialize the display based on current mode
+            setTimeout(() => {
+                toggleEditGhinMode(isGhinMode);
+                if (isGhinMode && currentIndex !== null) {
+                    document.getElementById('editPlayerHandicap').value = currentIndex;
+                }
+            }, 50);
+            
             const handleOk = async () => {
                 const newName = document.getElementById('editPlayerName').value.trim();
-                const newHandicap = parseInt(document.getElementById('editPlayerHandicap').value) || 0;
+                const useGhin = document.getElementById('editUseGhinCheckbox').checked;
+                const inputValue = parseFloat(document.getElementById('editPlayerHandicap').value) || 0;
+                
+                let newHandicap, handicapIndex, hcpMode;
+                
+                if (useGhin) {
+                    // Calculate course handicap from index
+                    handicapIndex = Math.round(inputValue * 10) / 10;
+                    hcpMode = 'index';
+                    if (courseData && courseData.tees) {
+                        const tee = tournamentData?.tee || Object.keys(courseData.tees)[0];
+                        const teeData = courseData.tees[tee];
+                        if (teeData) {
+                            newHandicap = calculateCourseHandicap(handicapIndex, teeData.slope, teeData.rating, courseData.totalPar);
+                        } else {
+                            newHandicap = Math.round(handicapIndex);
+                        }
+                    } else {
+                        newHandicap = Math.round(handicapIndex);
+                    }
+                } else {
+                    newHandicap = Math.round(inputValue);
+                    handicapIndex = null;
+                    hcpMode = 'course';
+                }
                 
                 if (!newName) {
                     alert('Name cannot be empty');
@@ -22824,6 +22856,8 @@
                     if (playerIndex > -1) {
                         tournament.players[playerIndex].name = newName;
                         tournament.players[playerIndex].handicap = newHandicap;
+                        tournament.players[playerIndex].handicapIndex = handicapIndex;
+                        tournament.players[playerIndex].hcpMode = hcpMode;
                         
                         await tournamentRef.update({
                             players: tournament.players,
@@ -22857,6 +22891,48 @@
             
             okBtn.onclick = handleOk;
             cancelBtn.onclick = hideConfirmDialog;
+        }
+        
+        // Toggle GHIN mode in edit modal
+        function toggleEditGhinMode(useGhin) {
+            const label = document.getElementById('editHcpLabel');
+            const input = document.getElementById('editPlayerHandicap');
+            const calcDisplay = document.getElementById('editCalcHcp');
+            
+            if (useGhin) {
+                label.textContent = 'GHIN Handicap Index:';
+                input.step = '0.1';
+                input.placeholder = '12.4';
+                calcDisplay.style.display = 'block';
+                updateEditModalHcp();
+            } else {
+                label.textContent = 'Course Handicap:';
+                input.step = '1';
+                input.placeholder = '12';
+                calcDisplay.style.display = 'none';
+            }
+        }
+        
+        // Update calculated HCP in edit modal
+        function updateEditModalHcp() {
+            const useGhin = document.getElementById('editUseGhinCheckbox')?.checked;
+            const calcDisplay = document.getElementById('editCalcHcp');
+            const input = document.getElementById('editPlayerHandicap');
+            
+            if (!useGhin || !calcDisplay) return;
+            
+            const index = parseFloat(input.value) || 0;
+            
+            if (courseData && courseData.tees) {
+                const tee = tournamentData?.tee || Object.keys(courseData.tees)[0];
+                const teeData = courseData.tees[tee];
+                if (teeData) {
+                    const courseHcp = calculateCourseHandicap(index, teeData.slope, teeData.rating, courseData.totalPar);
+                    calcDisplay.textContent = `= Course HCP ${courseHcp} (${tee} tees)`;
+                    return;
+                }
+            }
+            calcDisplay.textContent = `= Course HCP ${Math.round(index)}`;
         }
         
         function getOrderedPlayers() {
@@ -22928,6 +23004,11 @@
             const cancelBtn = document.getElementById('confirmCancel');
             const okBtn = document.getElementById('confirmOk');
             
+            // Get player's current data
+            const player = tournamentData?.players?.find(p => p.name === playerName);
+            const currentIndex = player?.handicapIndex || null;
+            const isGhinMode = player?.hcpMode === 'index' || currentIndex !== null;
+            
             titleEl.textContent = `Edit ${playerName}`;
             messageEl.innerHTML = `
                 <div style="margin: 16px 0;">
@@ -22935,18 +23016,56 @@
                     <input type="text" id="editPlayerName" value="${playerName}" 
                         style="width: 100%; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
                     
-                    <label style="display: block; margin: 16px 0 8px; font-weight: 600;">Handicap:</label>
+                    <label id="editHcpLabel" style="display: block; margin: 16px 0 8px; font-weight: 600;">Course Handicap:</label>
                     <input type="number" id="editPlayerHandicap" value="${currentHandicap}" 
                         style="width: 100%; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 14px; box-sizing: border-box;"
-                        min="-10" max="54">
+                        min="-10" max="54" step="1" oninput="updateEditModalHcp()">
+                    <p id="editCalcHcp" style="font-size: 12px; color: #166534; margin-top: 4px; font-weight: 600; display: none;"></p>
+                    
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 12px;">
+                        <input type="checkbox" id="editUseGhinCheckbox" ${isGhinMode ? 'checked' : ''} onchange="toggleEditGhinMode(this.checked)" style="width: 18px; height: 18px; cursor: pointer;">
+                        <span style="color: #475569; font-weight: 600; font-size: 13px;">Use GHIN Handicap Index</span>
+                    </label>
                 </div>
             `;
             
             dialog.style.display = 'flex';
             
+            // Initialize the display based on current mode
+            setTimeout(() => {
+                toggleEditGhinMode(isGhinMode);
+                if (isGhinMode && currentIndex !== null) {
+                    document.getElementById('editPlayerHandicap').value = currentIndex;
+                }
+            }, 50);
+            
             const handleOk = async () => {
                 const newName = document.getElementById('editPlayerName').value.trim();
-                const newHandicap = parseInt(document.getElementById('editPlayerHandicap').value) || 0;
+                const useGhin = document.getElementById('editUseGhinCheckbox').checked;
+                const inputValue = parseFloat(document.getElementById('editPlayerHandicap').value) || 0;
+                
+                let newHandicap, handicapIndex, hcpMode;
+                
+                if (useGhin) {
+                    // Calculate course handicap from index
+                    handicapIndex = Math.round(inputValue * 10) / 10;
+                    hcpMode = 'index';
+                    if (courseData && courseData.tees) {
+                        const tee = tournamentData?.tee || Object.keys(courseData.tees)[0];
+                        const teeData = courseData.tees[tee];
+                        if (teeData) {
+                            newHandicap = calculateCourseHandicap(handicapIndex, teeData.slope, teeData.rating, courseData.totalPar);
+                        } else {
+                            newHandicap = Math.round(handicapIndex);
+                        }
+                    } else {
+                        newHandicap = Math.round(handicapIndex);
+                    }
+                } else {
+                    newHandicap = Math.round(inputValue);
+                    handicapIndex = null;
+                    hcpMode = 'course';
+                }
                 
                 if (!newName) {
                     alert('Name cannot be empty');
@@ -22962,6 +23081,8 @@
                     if (playerIndex > -1) {
                         tournament.players[playerIndex].name = newName;
                         tournament.players[playerIndex].handicap = newHandicap;
+                        tournament.players[playerIndex].handicapIndex = handicapIndex;
+                        tournament.players[playerIndex].hcpMode = hcpMode;
                         
                         await tournamentRef.update({
                             players: tournament.players,
