@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-01-29-v15.9.32-hide-gps-add-ghin-edit -->
+    <!-- VERSION: 2026-01-29-v15.9.35-oak-quarry-favorites-only -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -412,7 +412,7 @@
 
         .player-row {
             display: grid;
-            grid-template-columns: 1fr 50px 50px;
+            grid-template-columns: 1fr 70px;
             gap: 6px;
             align-items: center;
             position: relative;
@@ -454,7 +454,7 @@
         }
 
         .player-hcp-input {
-            width: 50px;
+            width: 70px;
             padding: 8px 4px;
             border: 2px solid #e2e8f0;
             border-radius: 6px;
@@ -469,23 +469,9 @@
             font-size: 12px;
         }
         
+        /* P.H. input - no longer used but kept for compatibility */
         .player-ph-input {
-            width: 50px;
-            padding: 8px 4px;
-            border: 2px solid #dbeafe;
-            border-radius: 6px;
-            font-size: 16px;
-            text-align: center;
-            background: #eff6ff;
-            color: #1e3a5f;
-            font-weight: 600;
-            flex-shrink: 0;
-        }
-        
-        .player-ph-input::placeholder {
-            color: #94a3b8;
-            font-size: 12px;
-            font-weight: 400;
+            display: none;
         }
         
         .course-hcp-display {
@@ -3400,15 +3386,8 @@
                 <div style="display: flex; gap: 8px; align-items: center;">
                     <select id="courseSelect" onchange="updateCourse()" style="flex: 1;">
                         <option value="" selected>Select a Course</option>
-                        <optgroup label="⭐ Favorites" id="favoritesOptgroup" style="display: none;"></optgroup>
-                        <optgroup label="📍 Local Courses" id="localCoursesOptgroup">
-                            <option value="indian_hills">Indian Hills Golf Club</option>
-                            <option value="jurupa_hills">Jurupa Hills Country Club</option>
-                            <option value="hidden_valley">Hidden Valley Golf Club</option>
-                            <option value="green_river">Green River Golf Club</option>
-                            <option value="shandin_hills">Shandin Hills Golf Club</option>
-                        </optgroup>
-                        <optgroup label="➕ Other">
+                        <optgroup label="⭐ Favorites" id="favoritesOptgroup"></optgroup>
+                        <optgroup label="➕ Find Course">
                             <option value="search_course">🔍 Search for a Course...</option>
                             <option value="custom_course">✏️ Add Custom Course...</option>
                         </optgroup>
@@ -3417,6 +3396,7 @@
                         style="width: 40px; height: 40px; border: 1px solid #d1d5db; border-radius: 6px; background: white; font-size: 18px; cursor: pointer; display: none;"
                         title="Add to favorites">☆</button>
                 </div>
+                <p id="noFavoritesHint" style="font-size: 11px; color: #64748b; margin-top: 6px; display: none;">💡 Search for courses and ⭐ star them to add to your favorites</p>
             </div>
             
             <!-- Tee Selection (shown after course is selected) -->
@@ -3683,11 +3663,17 @@
                     </button>
                 </div>
                 
+                <!-- GHIN Toggle -->
+                <label id="setupGhinToggle" style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
+                    <input type="checkbox" id="setupUseGhinCheckbox" onchange="toggleSetupGhinMode(this.checked)" style="width: 18px; height: 18px; cursor: pointer;">
+                    <span style="color: #475569; font-weight: 600; font-size: 13px;">Use GHIN Handicap Index</span>
+                    <span id="setupGhinHint" style="font-size: 11px; color: #64748b; margin-left: auto;">Enter Course HCP</span>
+                </label>
+                
                 <!-- Column Headers -->
-                <div style="display: grid; grid-template-columns: 1fr 50px 50px; gap: 6px; margin-bottom: 6px; padding: 0 4px;">
+                <div style="display: grid; grid-template-columns: 1fr 70px; gap: 6px; margin-bottom: 6px; padding: 0 4px;">
                     <div style="font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase;">Name</div>
-                    <div style="font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; text-align: center;">H.I.</div>
-                    <div style="font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; text-align: center;">P.H.</div>
+                    <div id="setupHcpHeader" style="font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; text-align: center;">HCP</div>
                 </div>
                 
                 <div class="player-list" id="playerList">
@@ -3695,8 +3681,7 @@
                         <div class="player-row-delete" onclick="removePlayer(1)">Delete</div>
                         <div class="player-row" data-player="1">
                             <input type="text" class="player-name-input" placeholder="Player Name" id="player1">
-                            <input type="text" class="player-hcp-input" placeholder="H.I." id="hcp1" pattern="-?[0-9.]*" inputmode="decimal" oninput="calculatePlayingHandicap(1)">
-                            <input type="text" class="player-ph-input" placeholder="P.H." id="ph1" pattern="-?[0-9]*" inputmode="numeric">
+                            <input type="text" class="player-hcp-input" placeholder="HCP" id="hcp1" pattern="-?[0-9.]*" inputmode="decimal">
                         </div>
                     </div>
                 </div>
@@ -8085,6 +8070,29 @@
             deletePlayerRow(playerId);
         }
         
+        // Toggle GHIN mode on setup page
+        function toggleSetupGhinMode(useGhin) {
+            const header = document.getElementById('setupHcpHeader');
+            const hint = document.getElementById('setupGhinHint');
+            const hcpInputs = document.querySelectorAll('.player-hcp-input');
+            
+            if (useGhin) {
+                if (header) header.textContent = 'H.I.';
+                if (hint) hint.textContent = 'Enter GHIN Index';
+                hcpInputs.forEach(input => {
+                    input.placeholder = 'H.I.';
+                    input.step = '0.1';
+                });
+            } else {
+                if (header) header.textContent = 'HCP';
+                if (hint) hint.textContent = 'Enter Course HCP';
+                hcpInputs.forEach(input => {
+                    input.placeholder = 'HCP';
+                    input.step = '1';
+                });
+            }
+        }
+        
         // Swipe-to-delete DISABLED - causing issues with page scrolling
         // Using visible delete button instead
         let swipeStartX = 0;
@@ -8823,10 +8831,41 @@
                 return;
             }
             
-            resultsDiv.innerHTML = '<p style="text-align: center; color: #1e3a5f; font-size: 14px; padding: 24px;">🔄 Searching GolfCourseAPI...</p>';
+            resultsDiv.innerHTML = '<p style="text-align: center; color: #1e3a5f; font-size: 14px; padding: 24px;">🔄 Searching...</p>';
             
             try {
                 let allCourses = [];
+                const searchLower = searchTerm.toLowerCase();
+                
+                // === STEP 0: Search built-in courses first ===
+                Object.keys(courses).forEach(key => {
+                    const course = courses[key];
+                    if (course.name.toLowerCase().includes(searchLower) || 
+                        course.city?.toLowerCase().includes(searchLower)) {
+                        allCourses.push({
+                            id: key,
+                            club_name: course.name,
+                            location: { city: course.city, state: course.state },
+                            _source: 'builtin',
+                            _builtin: true
+                        });
+                    }
+                });
+                
+                // Also search custom courses
+                Object.keys(customCourses).forEach(key => {
+                    const course = customCourses[key];
+                    if (course.name.toLowerCase().includes(searchLower) || 
+                        course.city?.toLowerCase().includes(searchLower)) {
+                        allCourses.push({
+                            id: key,
+                            club_name: course.name,
+                            location: { city: course.city, state: course.state },
+                            _source: 'custom',
+                            _builtin: true
+                        });
+                    }
+                });
                 
                 // === STEP 1: Try GolfCourseAPI.com (primary) ===
                 const searchVariations = [
@@ -8932,11 +8971,13 @@
                     const courseName = course.club_name || course.course_name || 'Unknown Course';
                     const city = course.location?.city || course.city || '';
                     const state = course.location?.state || course.state || '';
-                    const isFavorite = favoriteCourses.some(f => f.id === course.id);
-                    const sourceIcon = course._source === 'rapidapi' ? ' 🌐' : '';
+                    const isFavorite = favoriteCourses.some(f => String(f.id) === String(course.id));
+                    const isBuiltin = course._builtin === true;
+                    const sourceIcon = isBuiltin ? ' ✓' : (course._source === 'rapidapi' ? ' 🌐' : '');
+                    const selectFn = isBuiltin ? `selectBuiltinCourse('${course.id}')` : `selectSearchedCourse('${course.id}')`;
                     
                     html += `
-                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; margin-bottom: 8px;">
+                        <div style="background: ${isBuiltin ? '#f0fdf4' : '#f8fafc'}; border: 1px solid ${isBuiltin ? '#bbf7d0' : '#e2e8f0'}; border-radius: 6px; padding: 12px; margin-bottom: 8px;">
                             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                                 <div style="flex: 1;">
                                     <div style="font-weight: 700; color: #1e293b; font-size: 14px;">${courseName}${sourceIcon}</div>
@@ -8947,7 +8988,7 @@
                                     ${isFavorite ? '⭐' : '☆'}
                                 </button>
                             </div>
-                            <button onclick="selectSearchedCourse('${course.id}')" 
+                            <button onclick="${selectFn}" 
                                 style="width: 100%; margin-top: 8px; padding: 8px; background: #166534; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
                                 Select Course
                             </button>
@@ -9642,13 +9683,59 @@
             if (favoriteCourses.length === 0) {
                 optgroup.style.display = 'none';
                 optgroup.innerHTML = '';
+                // Show hint
+                const hint = document.getElementById('noFavoritesHint');
+                if (hint) hint.style.display = 'block';
                 return;
             }
+            
+            // Hide hint
+            const hint = document.getElementById('noFavoritesHint');
+            if (hint) hint.style.display = 'none';
             
             optgroup.style.display = 'block';
             optgroup.innerHTML = favoriteCourses.map(fav => 
                 `<option value="fav_${fav.id}">${fav.name}</option>`
             ).join('');
+        }
+        
+        // Select a built-in or custom course (no API call needed)
+        function selectBuiltinCourse(courseKey) {
+            const select = document.getElementById('courseSelect');
+            const course = courses[courseKey] || customCourses[courseKey];
+            
+            if (!course) {
+                showNotification('Error', 'Course not found');
+                return;
+            }
+            
+            // Add to favorites if not already
+            if (!favoriteCourses.some(f => String(f.id) === String(courseKey))) {
+                favoriteCourses.push({ id: courseKey, name: course.name, city: course.city || '', state: course.state || '' });
+                localStorage.setItem('golf_favorite_courses', JSON.stringify(favoriteCourses));
+                updateFavoritesDropdown();
+            }
+            
+            // Ensure the option exists in Favorites
+            const favOptgroup = select.querySelector('#favoritesOptgroup');
+            let existingOption = select.querySelector(`option[value="${courseKey}"]`);
+            if (!existingOption && favOptgroup) {
+                const option = document.createElement('option');
+                option.value = courseKey;
+                option.textContent = course.name;
+                favOptgroup.style.display = 'block';
+                favOptgroup.appendChild(option);
+            }
+            
+            // Hide hint
+            const hint = document.getElementById('noFavoritesHint');
+            if (hint) hint.style.display = 'none';
+            
+            select.value = courseKey;
+            closeCourseSearchModal();
+            updateCourse();
+            
+            showNotification('Course Selected', `${course.name}`);
         }
         
         // Select a searched course
@@ -9766,7 +9853,20 @@
                     const option = document.createElement('option');
                     option.value = courseKey;
                     option.textContent = convertedCourse.name;
-                    select.querySelector('optgroup[label="📍 Local Courses"]').appendChild(option);
+                    // Add to Favorites optgroup
+                    const favOptgroup = select.querySelector('#favoritesOptgroup');
+                    if (favOptgroup) {
+                        favOptgroup.style.display = 'block';
+                        favOptgroup.appendChild(option);
+                    }
+                    // Also add to favoriteCourses
+                    if (!favoriteCourses.some(f => f.id === courseKey)) {
+                        favoriteCourses.push({ id: courseKey, name: convertedCourse.name, city: convertedCourse.city, state: convertedCourse.state });
+                        localStorage.setItem('golf_favorite_courses', JSON.stringify(favoriteCourses));
+                    }
+                    // Hide hint
+                    const hint = document.getElementById('noFavoritesHint');
+                    if (hint) hint.style.display = 'none';
                 }
                 
                 select.value = courseKey;
@@ -9899,12 +9999,28 @@
             customCourses[courseKey] = customCourse;
             localStorage.setItem('golf_custom_courses', JSON.stringify(customCourses));
             
-            // Add to dropdown
+            // Add to dropdown and favorites
             const select = document.getElementById('courseSelect');
             const option = document.createElement('option');
             option.value = courseKey;
             option.textContent = name;
-            select.querySelector('optgroup[label="📍 Local Courses"]').appendChild(option);
+            
+            // Add to Favorites optgroup
+            const favOptgroup = select.querySelector('#favoritesOptgroup');
+            if (favOptgroup) {
+                favOptgroup.style.display = 'block';
+                favOptgroup.appendChild(option);
+            }
+            
+            // Also add to favoriteCourses
+            if (!favoriteCourses.some(f => f.id === courseKey)) {
+                favoriteCourses.push({ id: courseKey, name: name, city: '', state: '' });
+                localStorage.setItem('golf_favorite_courses', JSON.stringify(favoriteCourses));
+            }
+            
+            // Hide hint
+            const hint = document.getElementById('noFavoritesHint');
+            if (hint) hint.style.display = 'none';
             
             select.value = courseKey;
             closeCustomCourseModal();
@@ -9917,16 +10033,22 @@
         function initializeCourseDropdown() {
             updateFavoritesDropdown();
             
-            // Add custom courses to dropdown
+            // Add custom courses to Favorites optgroup
             const select = document.getElementById('courseSelect');
-            const localGroup = select.querySelector('optgroup[label="📍 Local Courses"]');
+            const favOptgroup = select.querySelector('#favoritesOptgroup');
             
             Object.keys(customCourses).forEach(key => {
                 const course = customCourses[key];
-                const option = document.createElement('option');
-                option.value = key;
-                option.textContent = course.name;
-                localGroup.appendChild(option);
+                // Check if already in favorites
+                if (!favoriteCourses.some(f => f.id === key)) {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.textContent = course.name;
+                    if (favOptgroup) {
+                        favOptgroup.style.display = 'block';
+                        favOptgroup.appendChild(option);
+                    }
+                }
             });
         }
 
@@ -19753,28 +19875,48 @@
             // Get tee data for course handicap calculation
             const teeData = (courseData && selectedTee && courseData.tees) ? courseData.tees[selectedTee] : null;
             
+            // Check if GHIN mode is enabled
+            const useGhinMode = document.getElementById('setupUseGhinCheckbox')?.checked || false;
+            
             const players = [];
             // Loop through all player rows (they may not be sequential)
             const playerRows = document.querySelectorAll('.player-row');
             playerRows.forEach(row => {
                 const playerId = row.getAttribute('data-player');
                 const nameInput = document.getElementById(`player${playerId}`);
-                const hcpInput = document.getElementById(`hcp${playerId}`);  // Course Handicap
+                const hcpInput = document.getElementById(`hcp${playerId}`);
                 
                 if (nameInput) {
                     const name = nameInput.value.trim();
-                    const hcpValue = parseFloat(hcpInput?.value);
+                    const inputValue = parseFloat(hcpInput?.value);
                     
-                    // Just use the entered handicap directly
                     let handicap = 0;
-                    if (!isNaN(hcpValue)) {
-                        handicap = Math.round(hcpValue); // Round to whole number
+                    let handicapIndex = null;
+                    let hcpMode = 'course';
+                    
+                    if (!isNaN(inputValue)) {
+                        if (useGhinMode) {
+                            // GHIN mode: input is handicap index, calculate course handicap
+                            handicapIndex = Math.round(inputValue * 10) / 10;
+                            hcpMode = 'index';
+                            
+                            if (teeData) {
+                                handicap = calculateCourseHandicap(handicapIndex, teeData.slope, teeData.rating, courseData.totalPar);
+                            } else {
+                                handicap = Math.round(handicapIndex);
+                            }
+                        } else {
+                            // Course HCP mode: input is direct course handicap
+                            handicap = Math.round(inputValue);
+                        }
                     }
                     
                     if (name) {
                         players.push({
                             name: name,
                             handicap: handicap,
+                            handicapIndex: handicapIndex,
+                            hcpMode: hcpMode,
                             scores: new Array(18).fill(0)
                         });
                     }
@@ -21630,10 +21772,16 @@
                             style="width: 100%; padding: 10px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
                     </div>
                     <div>
-                        <label style="font-size: 12px; color: #64748b; display: block; margin-bottom: 4px;">Handicap</label>
-                        <input type="number" id="newPlayerHandicapInput" value="0" min="-10" max="54" 
-                            style="width: 100%; padding: 10px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                        <label id="addPlayerHcpLabel" style="font-size: 12px; color: #64748b; display: block; margin-bottom: 4px;">Course Handicap</label>
+                        <input type="number" id="newPlayerHandicapInput" value="0" min="-10" max="54" step="1"
+                            style="width: 100%; padding: 10px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box;"
+                            oninput="updateAddPlayerHcp()">
+                        <p id="addPlayerCalcHcp" style="font-size: 11px; color: #166534; margin-top: 4px; font-weight: 600; display: none;"></p>
                     </div>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <input type="checkbox" id="addPlayerGhinCheckbox" onchange="toggleAddPlayerGhinMode(this.checked)" style="width: 18px; height: 18px; cursor: pointer;">
+                        <span style="color: #475569; font-weight: 600; font-size: 13px;">Use GHIN Handicap Index</span>
+                    </label>
                     <div style="display: flex; gap: 8px; margin-top: 8px;">
                         <button onclick="closeModal()" style="flex: 1; padding: 12px; background: #94a3b8; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;">
                             Cancel
@@ -21658,13 +21806,78 @@
             }, 100);
         }
         
+        // Toggle GHIN mode in Add Player modal
+        function toggleAddPlayerGhinMode(useGhin) {
+            const label = document.getElementById('addPlayerHcpLabel');
+            const input = document.getElementById('newPlayerHandicapInput');
+            const calcDisplay = document.getElementById('addPlayerCalcHcp');
+            
+            if (useGhin) {
+                label.textContent = 'GHIN Handicap Index';
+                input.step = '0.1';
+                input.placeholder = '12.4';
+                calcDisplay.style.display = 'block';
+                updateAddPlayerHcp();
+            } else {
+                label.textContent = 'Course Handicap';
+                input.step = '1';
+                input.placeholder = '0';
+                calcDisplay.style.display = 'none';
+            }
+        }
+        
+        // Update calculated HCP in Add Player modal
+        function updateAddPlayerHcp() {
+            const useGhin = document.getElementById('addPlayerGhinCheckbox')?.checked;
+            const calcDisplay = document.getElementById('addPlayerCalcHcp');
+            const input = document.getElementById('newPlayerHandicapInput');
+            
+            if (!useGhin || !calcDisplay) return;
+            
+            const index = parseFloat(input.value) || 0;
+            
+            if (courseData && courseData.tees) {
+                const tee = tournamentData?.tee || Object.keys(courseData.tees)[0];
+                const teeData = courseData.tees[tee];
+                if (teeData) {
+                    const courseHcp = calculateCourseHandicap(index, teeData.slope, teeData.rating, courseData.totalPar);
+                    calcDisplay.textContent = `= Course HCP ${courseHcp} (${tee} tees)`;
+                    return;
+                }
+            }
+            calcDisplay.textContent = `= Course HCP ${Math.round(index)}`;
+        }
+        
         // Add player from My Players dialog and claim them
         async function addPlayerFromMyPlayersDialog() {
             const nameInput = document.getElementById('newPlayerNameInput');
             const handicapInput = document.getElementById('newPlayerHandicapInput');
+            const useGhin = document.getElementById('addPlayerGhinCheckbox')?.checked;
             
             const playerName = nameInput?.value?.trim();
-            const handicap = parseInt(handicapInput?.value) || 0;
+            const inputValue = parseFloat(handicapInput?.value) || 0;
+            
+            let handicap, handicapIndex, hcpMode;
+            
+            if (useGhin) {
+                handicapIndex = Math.round(inputValue * 10) / 10;
+                hcpMode = 'index';
+                if (courseData && courseData.tees) {
+                    const tee = tournamentData?.tee || Object.keys(courseData.tees)[0];
+                    const teeData = courseData.tees[tee];
+                    if (teeData) {
+                        handicap = calculateCourseHandicap(handicapIndex, teeData.slope, teeData.rating, courseData.totalPar);
+                    } else {
+                        handicap = Math.round(handicapIndex);
+                    }
+                } else {
+                    handicap = Math.round(handicapIndex);
+                }
+            } else {
+                handicap = Math.round(inputValue);
+                handicapIndex = null;
+                hcpMode = 'course';
+            }
             
             if (!playerName) {
                 showNotification('Error', 'Please enter a player name');
@@ -21684,8 +21897,11 @@
                 const newPlayer = {
                     name: playerName,
                     handicap: handicap,
+                    handicapIndex: handicapIndex,
+                    hcpMode: hcpMode,
                     scores: new Array(18).fill(null),
-                    claimedBy: getClaimIdentifier() // Claim immediately
+                    claimedBy: getClaimIdentifier(),
+                    claimerDisplayName: currentAuthUser?.displayName || 'Player'
                 };
                 
                 // Update Firebase
@@ -21842,6 +22058,11 @@
             const cancelBtn = document.getElementById('confirmCancel');
             const okBtn = document.getElementById('confirmOk');
             
+            // Get player's current data
+            const player = tournamentData?.players?.find(p => p.name === playerName);
+            const currentIndex = player?.handicapIndex || null;
+            const isGhinMode = player?.hcpMode === 'index' || currentIndex !== null;
+            
             titleEl.textContent = `Edit Player`;
             messageEl.innerHTML = `
                 <div style="margin: 12px 0;">
@@ -21851,30 +22072,66 @@
                         maxlength="30">
                 </div>
                 <div style="margin: 12px 0;">
-                    <label style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 14px;">Handicap:</label>
+                    <label id="editPageHcpLabel" style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 14px;">Course Handicap:</label>
                     <input type="number" id="editPlayerHcpInput" value="${currentHandicap}" 
                         style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 16px; text-align: center;"
-                        min="-10" max="54">
+                        min="-10" max="54" step="1" oninput="updateEditPageHcp()">
+                    <p id="editPageCalcHcp" style="font-size: 12px; color: #166534; margin-top: 4px; font-weight: 600; display: none;"></p>
                 </div>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <input type="checkbox" id="editPageGhinCheckbox" ${isGhinMode ? 'checked' : ''} onchange="toggleEditPageGhinMode(this.checked)" style="width: 18px; height: 18px; cursor: pointer;">
+                    <span style="color: #475569; font-weight: 600; font-size: 13px;">Use GHIN Handicap Index</span>
+                </label>
             `;
             
             cancelBtn.textContent = 'Cancel';
             okBtn.textContent = 'Save';
             okBtn.style.background = '#1e3a5f';
             
+            // Initialize the display based on current mode
+            setTimeout(() => {
+                toggleEditPageGhinMode(isGhinMode);
+                if (isGhinMode && currentIndex !== null) {
+                    document.getElementById('editPlayerHcpInput').value = currentIndex;
+                }
+            }, 50);
+            
             const newCancelHandler = () => {
                 dialog.style.display = 'none';
             };
             const newOkHandler = async () => {
                 const newName = document.getElementById('editPlayerNameInput').value.trim();
-                const newHandicap = parseInt(document.getElementById('editPlayerHcpInput').value) || 0;
+                const useGhin = document.getElementById('editPageGhinCheckbox').checked;
+                const inputValue = parseFloat(document.getElementById('editPlayerHcpInput').value) || 0;
+                
+                let newHandicap, handicapIndex, hcpMode;
+                
+                if (useGhin) {
+                    handicapIndex = Math.round(inputValue * 10) / 10;
+                    hcpMode = 'index';
+                    if (courseData && courseData.tees) {
+                        const tee = tournamentData?.tee || Object.keys(courseData.tees)[0];
+                        const teeData = courseData.tees[tee];
+                        if (teeData) {
+                            newHandicap = calculateCourseHandicap(handicapIndex, teeData.slope, teeData.rating, courseData.totalPar);
+                        } else {
+                            newHandicap = Math.round(handicapIndex);
+                        }
+                    } else {
+                        newHandicap = Math.round(handicapIndex);
+                    }
+                } else {
+                    newHandicap = Math.round(inputValue);
+                    handicapIndex = null;
+                    hcpMode = 'course';
+                }
                 
                 if (!newName) {
                     showNotification('Error', 'Player name cannot be empty');
                     return;
                 }
                 
-                await updateClaimedPlayer(playerName, newName, newHandicap);
+                await updateClaimedPlayer(playerName, newName, newHandicap, handicapIndex, hcpMode);
                 dialog.style.display = 'none';
                 showMyPlayersPage();
             };
@@ -21887,8 +22144,48 @@
             dialog.style.display = 'flex';
         }
         
+        // Toggle GHIN mode in Edit Page modal
+        function toggleEditPageGhinMode(useGhin) {
+            const label = document.getElementById('editPageHcpLabel');
+            const input = document.getElementById('editPlayerHcpInput');
+            const calcDisplay = document.getElementById('editPageCalcHcp');
+            
+            if (useGhin) {
+                label.textContent = 'GHIN Handicap Index:';
+                input.step = '0.1';
+                calcDisplay.style.display = 'block';
+                updateEditPageHcp();
+            } else {
+                label.textContent = 'Course Handicap:';
+                input.step = '1';
+                calcDisplay.style.display = 'none';
+            }
+        }
+        
+        // Update calculated HCP in Edit Page modal
+        function updateEditPageHcp() {
+            const useGhin = document.getElementById('editPageGhinCheckbox')?.checked;
+            const calcDisplay = document.getElementById('editPageCalcHcp');
+            const input = document.getElementById('editPlayerHcpInput');
+            
+            if (!useGhin || !calcDisplay) return;
+            
+            const index = parseFloat(input.value) || 0;
+            
+            if (courseData && courseData.tees) {
+                const tee = tournamentData?.tee || Object.keys(courseData.tees)[0];
+                const teeData = courseData.tees[tee];
+                if (teeData) {
+                    const courseHcp = calculateCourseHandicap(index, teeData.slope, teeData.rating, courseData.totalPar);
+                    calcDisplay.textContent = `= Course HCP ${courseHcp} (${tee} tees)`;
+                    return;
+                }
+            }
+            calcDisplay.textContent = `= Course HCP ${Math.round(index)}`;
+        }
+        
         // Update claimed player name and handicap
-        async function updateClaimedPlayer(oldName, newName, newHandicap) {
+        async function updateClaimedPlayer(oldName, newName, newHandicap, handicapIndex = null, hcpMode = 'course') {
             try {
                 // Find the player in local data
                 const playerIdx = tournamentData.players.findIndex(p => p.name === oldName);
@@ -21900,6 +22197,8 @@
                 // Update local data
                 tournamentData.players[playerIdx].name = newName;
                 tournamentData.players[playerIdx].handicap = newHandicap;
+                tournamentData.players[playerIdx].handicapIndex = handicapIndex;
+                tournamentData.players[playerIdx].hcpMode = hcpMode;
                 
                 // Update player order if name changed
                 if (oldName !== newName) {
@@ -21923,6 +22222,8 @@
                     if (fbPlayerIdx > -1) {
                         tournament.players[fbPlayerIdx].name = newName;
                         tournament.players[fbPlayerIdx].handicap = newHandicap;
+                        tournament.players[fbPlayerIdx].handicapIndex = handicapIndex;
+                        tournament.players[fbPlayerIdx].hcpMode = hcpMode;
                         
                         await tournamentRef.update({
                             players: tournament.players,
