@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-01-28-v15.9.18-fix-recursion -->
+    <!-- VERSION: 2026-01-28-v15.9.19-fix-claim-recognition -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -7069,13 +7069,23 @@
         function isClaimedByMe(player) {
             if (!player || !player.claimedBy) return false;
             
-            // Check if claimed by current user (account-based)
+            // Check if claimed by current user (account-based with user_ prefix)
             if (currentAuthUser && currentAuthUser.uid) {
                 if (player.claimedBy === 'user_' + currentAuthUser.uid) return true;
+                // Also check by display name (for backward compatibility)
+                if (currentAuthUser.displayName && player.claimedBy === currentAuthUser.displayName) return true;
+                // Also check by email prefix
+                if (currentAuthUser.email) {
+                    const emailPrefix = currentAuthUser.email.split('@')[0];
+                    if (player.claimedBy === emailPrefix) return true;
+                }
             }
             
             // Check if claimed by current device (legacy/guest)
             if (player.claimedBy === currentDeviceId) return true;
+            
+            // Check device initials
+            if (deviceInitials && player.claimedBy === deviceInitials) return true;
             
             return false;
         }
@@ -13306,7 +13316,7 @@
                 const player = tournament.players[playerIndex];
                 
                 // Check if already claimed
-                if (player.claimedBy && player.claimedBy !== currentDeviceId) {
+                if (player.claimedBy && !isClaimedByMe(player)) {
                     alert(`${playerName} is already being scored by another device!`);
                     return false;
                 }
@@ -13362,7 +13372,7 @@
                     console.log('   Found player at index:', playerIndex);
                     
                     // Check permissions - hosts and co-hosts can edit any player
-                    if (!canManageTournament() && tournament.players[playerIndex].claimedBy !== currentDeviceId) {
+                    if (!canManageTournament() && !isClaimedByMe(tournament.players[playerIndex])) {
                         throw new Error('Permission denied - not your player');
                     }
                     
@@ -20630,7 +20640,7 @@
                 const claimedPlayers = tournament.players.filter(p => isClaimedByMe(p));
                 const watchedPlayerNames = playerOrder.watching || [];
                 const watchedPlayers = tournament.players.filter(p => 
-                    watchedPlayerNames.includes(p.name) && p.claimedBy !== currentDeviceId
+                    watchedPlayerNames.includes(p.name) && !isClaimedByMe(p)
                 );
                 const availablePlayers = tournament.players.filter(p => 
                     !claimedPlayers.includes(p) && !watchedPlayers.includes(p)
@@ -21885,7 +21895,7 @@
                 // Separate claimed and watched players
                 const claimedPlayers = tournamentData.players.filter(p => isClaimedByMe(p));
                 const watchedPlayers = tournamentData.players.filter(p => 
-                    playerOrder.watching && playerOrder.watching.includes(p.name) && p.claimedBy !== currentDeviceId
+                    playerOrder.watching && playerOrder.watching.includes(p.name) && !isClaimedByMe(p)
                 );
                 // Sort each group by their saved order
                 const sortedClaimed = sortPlayersByOrder(claimedPlayers, playerOrder.claimed || []);
@@ -22093,7 +22103,7 @@
             // Show filtered view for non-hosts OR when host is in player mode
             if (tournamentMode === 'multi' && (!canManageTournament() || isHostInPlayerMode())) {
                 const claimed = playersToShow.filter(p => isClaimedByMe(p));
-                const watched = playersToShow.filter(p => playerOrder.watching && playerOrder.watching.includes(p.name) && p.claimedBy !== currentDeviceId);
+                const watched = playersToShow.filter(p => playerOrder.watching && playerOrder.watching.includes(p.name) && !isClaimedByMe(p));
                 
                 const sortedClaimed = sortPlayersByOrder(claimed, playerOrder.claimed);
                 const sortedWatched = sortPlayersByOrder(watched, playerOrder.watching);
@@ -26852,7 +26862,7 @@
             if (tournamentMode === 'multi' && !canManageTournament()) {
                 const player = tournamentData.players[playerIndex];
                 // If player is not claimed by this device, they're being watched - no interaction
-                if (player && player.claimedBy !== currentDeviceId) {
+                if (player && !isClaimedByMe(player)) {
                     // Just viewing - no popup
                     return;
                 }
@@ -27555,7 +27565,7 @@
                 // Non-hosts/non-co-hosts (or host in player mode) only see their claimed players AND watched players
                 const claimedPlayers = tournamentData.players.filter(p => isClaimedByMe(p));
                 const watchedPlayers = tournamentData.players.filter(p => 
-                    playerOrder.watching && playerOrder.watching.includes(p.name) && p.claimedBy !== currentDeviceId
+                    playerOrder.watching && playerOrder.watching.includes(p.name) && !isClaimedByMe(p)
                 );
                 
                 // Sort each group by their saved order
