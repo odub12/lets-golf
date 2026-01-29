@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-01-29-v15.9.35-oak-quarry-favorites-only -->
+    <!-- VERSION: 2026-01-30-v15.9.36-oak-quarry-tee-selection -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -7259,6 +7259,39 @@
         
         // Course data with tee information for course handicap calculation
         const courses = {
+            oak_quarry: {
+                name: "Oak Quarry Golf Club",
+                city: "Riverside",
+                state: "CA",
+                totalPar: 72,
+                tees: {
+                    tournament: { name: "Tournament", rating: 73.8, slope: 137, yardage: 7002 },
+                    championship: { name: "Championship", rating: 71.8, slope: 131, yardage: 6600 },
+                    regular: { name: "Regular", rating: 69.3, slope: 125, yardage: 6028 },
+                    forward: { name: "Forward", rating: 71.9, slope: 122, yardage: 5408 }
+                },
+                defaultTee: "regular",
+                holes: [
+                    { number: 1, par: 4, handicap: 7 },
+                    { number: 2, par: 4, handicap: 11 },
+                    { number: 3, par: 4, handicap: 1 },
+                    { number: 4, par: 4, handicap: 5 },
+                    { number: 5, par: 5, handicap: 17 },
+                    { number: 6, par: 4, handicap: 15 },
+                    { number: 7, par: 3, handicap: 13 },
+                    { number: 8, par: 4, handicap: 3 },
+                    { number: 9, par: 3, handicap: 9 },
+                    { number: 10, par: 4, handicap: 18 },
+                    { number: 11, par: 4, handicap: 6 },
+                    { number: 12, par: 3, handicap: 12 },
+                    { number: 13, par: 4, handicap: 8 },
+                    { number: 14, par: 5, handicap: 14 },
+                    { number: 15, par: 4, handicap: 4 },
+                    { number: 16, par: 4, handicap: 2 },
+                    { number: 17, par: 3, handicap: 16 },
+                    { number: 18, par: 5, handicap: 10 }
+                ]
+            },
             hidden_valley: {
                 name: "Hidden Valley Golf Club",
                 city: "Norco",
@@ -8037,6 +8070,11 @@
             currentPlayerCount++;
             const playerList = document.getElementById('playerList');
             
+            // Check current GHIN mode
+            const useGhin = document.getElementById('setupUseGhinCheckbox')?.checked || false;
+            const placeholder = useGhin ? 'H.I.' : 'HCP';
+            const step = useGhin ? '0.1' : '1';
+            
             const wrapper = document.createElement('div');
             wrapper.className = 'player-row-wrapper';
             
@@ -8050,7 +8088,7 @@
             newRow.setAttribute('data-player', nextPlayerId);
             newRow.innerHTML = `
                 <input type="text" class="player-name-input" placeholder="Player Name" id="player${nextPlayerId}">
-                <input type="text" class="player-hcp-input" placeholder="HCP" id="hcp${nextPlayerId}" pattern="-?[0-9.]*" inputmode="decimal" title="Course Handicap">
+                <input type="text" class="player-hcp-input" placeholder="${placeholder}" id="hcp${nextPlayerId}" pattern="-?[0-9.]*" inputmode="decimal" step="${step}">
             `;
             
             wrapper.appendChild(deleteBtn);
@@ -21762,6 +21800,32 @@
             // Get username for pre-fill suggestion
             const suggestedName = currentAuthUser?.displayName || '';
             
+            // Build tee buttons HTML
+            let teeButtonsHtml = '';
+            if (courseData && courseData.tees) {
+                const teeColors = {
+                    black: '#1e293b', tournament: '#1e293b',
+                    blue: '#1e3a5f', championship: '#1e3a5f',
+                    white: '#f1f5f9', regular: '#f1f5f9',
+                    gold: '#fbbf24', forward: '#fbbf24',
+                    red: '#a51c30', silver: '#94a3b8'
+                };
+                const tournamentTee = tournamentData?.tee || Object.keys(courseData.tees)[0];
+                
+                teeButtonsHtml = Object.keys(courseData.tees).map(teeKey => {
+                    const tee = courseData.tees[teeKey];
+                    const bgColor = teeColors[teeKey] || '#94a3b8';
+                    const textColor = (teeKey === 'white' || teeKey === 'gold' || teeKey === 'regular' || teeKey === 'forward') ? '#1e293b' : 'white';
+                    const isDefault = teeKey === tournamentTee;
+                    const displayName = tee.name || teeKey;
+                    
+                    return `<button type="button" onclick="selectAddPlayerTee('${teeKey}')" id="addTee_${teeKey}"
+                        style="padding: 6px 12px; background: ${bgColor}; color: ${textColor}; border: 2px solid ${isDefault ? '#166534' : (teeKey === 'white' || teeKey === 'regular' ? '#cbd5e1' : bgColor)}; border-radius: 16px; font-size: 12px; font-weight: 600; cursor: pointer;">
+                        ${displayName}${isDefault ? ' ★' : ''}
+                    </button>`;
+                }).join('');
+            }
+            
             showModal(
                 '➕ Add New Player',
                 `
@@ -21771,6 +21835,15 @@
                         <input type="text" id="newPlayerNameInput" value="${suggestedName}" placeholder="Enter player name" 
                             style="width: 100%; padding: 10px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
                     </div>
+                    ${courseData?.tees ? `
+                    <div id="addPlayerTeeSection">
+                        <label style="font-size: 12px; color: #64748b; display: block; margin-bottom: 4px;">Playing From</label>
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                            ${teeButtonsHtml}
+                        </div>
+                        <p style="font-size: 10px; color: #64748b; margin-top: 4px;">★ = Tournament default</p>
+                    </div>
+                    ` : ''}
                     <div>
                         <label id="addPlayerHcpLabel" style="font-size: 12px; color: #64748b; display: block; margin-bottom: 4px;">Course Handicap</label>
                         <input type="number" id="newPlayerHandicapInput" value="0" min="-10" max="54" step="1"
@@ -21796,6 +21869,9 @@
                 false
             );
             
+            // Set default tee selection
+            window.addPlayerSelectedTee = tournamentData?.tee || (courseData?.tees ? Object.keys(courseData.tees)[0] : null);
+            
             // Focus on name input
             setTimeout(() => {
                 const input = document.getElementById('newPlayerNameInput');
@@ -21804,6 +21880,26 @@
                     input.select();
                 }
             }, 100);
+        }
+        
+        // Select tee for add player modal
+        function selectAddPlayerTee(teeKey) {
+            window.addPlayerSelectedTee = teeKey;
+            
+            // Update button styles
+            if (courseData?.tees) {
+                Object.keys(courseData.tees).forEach(key => {
+                    const btn = document.getElementById(`addTee_${key}`);
+                    if (btn) {
+                        const isSelected = key === teeKey;
+                        btn.style.borderColor = isSelected ? '#166534' : (key === 'white' || key === 'regular' ? '#cbd5e1' : btn.style.backgroundColor);
+                        btn.style.borderWidth = isSelected ? '3px' : '2px';
+                    }
+                });
+            }
+            
+            // Recalculate HCP if in GHIN mode
+            updateAddPlayerHcp();
         }
         
         // Toggle GHIN mode in Add Player modal
@@ -21837,11 +21933,11 @@
             const index = parseFloat(input.value) || 0;
             
             if (courseData && courseData.tees) {
-                const tee = tournamentData?.tee || Object.keys(courseData.tees)[0];
+                const tee = window.addPlayerSelectedTee || tournamentData?.tee || Object.keys(courseData.tees)[0];
                 const teeData = courseData.tees[tee];
                 if (teeData) {
                     const courseHcp = calculateCourseHandicap(index, teeData.slope, teeData.rating, courseData.totalPar);
-                    calcDisplay.textContent = `= Course HCP ${courseHcp} (${tee} tees)`;
+                    calcDisplay.textContent = `= Course HCP ${courseHcp} (${teeData.name || tee} tees)`;
                     return;
                 }
             }
@@ -21857,14 +21953,16 @@
             const playerName = nameInput?.value?.trim();
             const inputValue = parseFloat(handicapInput?.value) || 0;
             
+            // Get selected tee
+            const selectedTee = window.addPlayerSelectedTee || tournamentData?.tee || (courseData?.tees ? Object.keys(courseData.tees)[0] : null);
+            
             let handicap, handicapIndex, hcpMode;
             
             if (useGhin) {
                 handicapIndex = Math.round(inputValue * 10) / 10;
                 hcpMode = 'index';
-                if (courseData && courseData.tees) {
-                    const tee = tournamentData?.tee || Object.keys(courseData.tees)[0];
-                    const teeData = courseData.tees[tee];
+                if (courseData && courseData.tees && selectedTee) {
+                    const teeData = courseData.tees[selectedTee];
                     if (teeData) {
                         handicap = calculateCourseHandicap(handicapIndex, teeData.slope, teeData.rating, courseData.totalPar);
                     } else {
@@ -22063,6 +22161,32 @@
             const currentIndex = player?.handicapIndex || null;
             const isGhinMode = player?.hcpMode === 'index' || currentIndex !== null;
             
+            // Build tee buttons HTML
+            let teeButtonsHtml = '';
+            if (courseData && courseData.tees) {
+                const teeColors = {
+                    black: '#1e293b', tournament: '#1e293b',
+                    blue: '#1e3a5f', championship: '#1e3a5f',
+                    white: '#f1f5f9', regular: '#f1f5f9',
+                    gold: '#fbbf24', forward: '#fbbf24',
+                    red: '#a51c30', silver: '#94a3b8'
+                };
+                const tournamentTee = tournamentData?.tee || Object.keys(courseData.tees)[0];
+                
+                teeButtonsHtml = Object.keys(courseData.tees).map(teeKey => {
+                    const tee = courseData.tees[teeKey];
+                    const bgColor = teeColors[teeKey] || '#94a3b8';
+                    const textColor = (teeKey === 'white' || teeKey === 'gold' || teeKey === 'regular' || teeKey === 'forward') ? '#1e293b' : 'white';
+                    const isDefault = teeKey === tournamentTee;
+                    const displayName = tee.name || teeKey;
+                    
+                    return `<button type="button" onclick="selectEditPageTee('${teeKey}')" id="editPageTee_${teeKey}"
+                        style="padding: 6px 10px; background: ${bgColor}; color: ${textColor}; border: 2px solid ${isDefault ? '#166534' : (teeKey === 'white' || teeKey === 'regular' ? '#cbd5e1' : bgColor)}; border-radius: 14px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                        ${displayName}${isDefault ? ' ★' : ''}
+                    </button>`;
+                }).join('');
+            }
+            
             titleEl.textContent = `Edit Player`;
             messageEl.innerHTML = `
                 <div style="margin: 12px 0;">
@@ -22071,6 +22195,15 @@
                         style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 16px;"
                         maxlength="30">
                 </div>
+                ${courseData?.tees ? `
+                <div style="margin: 12px 0;">
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 14px;">Playing From:</label>
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                        ${teeButtonsHtml}
+                    </div>
+                    <p style="font-size: 10px; color: #64748b; margin-top: 4px;">★ = Tournament default</p>
+                </div>
+                ` : ''}
                 <div style="margin: 12px 0;">
                     <label id="editPageHcpLabel" style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 14px;">Course Handicap:</label>
                     <input type="number" id="editPlayerHcpInput" value="${currentHandicap}" 
@@ -22088,6 +22221,9 @@
             okBtn.textContent = 'Save';
             okBtn.style.background = '#1e3a5f';
             
+            // Set default tee selection
+            window.editPageSelectedTee = tournamentData?.tee || (courseData?.tees ? Object.keys(courseData.tees)[0] : null);
+            
             // Initialize the display based on current mode
             setTimeout(() => {
                 toggleEditPageGhinMode(isGhinMode);
@@ -22104,14 +22240,16 @@
                 const useGhin = document.getElementById('editPageGhinCheckbox').checked;
                 const inputValue = parseFloat(document.getElementById('editPlayerHcpInput').value) || 0;
                 
+                // Get selected tee
+                const selectedTee = window.editPageSelectedTee || tournamentData?.tee || (courseData?.tees ? Object.keys(courseData.tees)[0] : null);
+                
                 let newHandicap, handicapIndex, hcpMode;
                 
                 if (useGhin) {
                     handicapIndex = Math.round(inputValue * 10) / 10;
                     hcpMode = 'index';
-                    if (courseData && courseData.tees) {
-                        const tee = tournamentData?.tee || Object.keys(courseData.tees)[0];
-                        const teeData = courseData.tees[tee];
+                    if (courseData && courseData.tees && selectedTee) {
+                        const teeData = courseData.tees[selectedTee];
                         if (teeData) {
                             newHandicap = calculateCourseHandicap(handicapIndex, teeData.slope, teeData.rating, courseData.totalPar);
                         } else {
@@ -22144,6 +22282,26 @@
             dialog.style.display = 'flex';
         }
         
+        // Select tee for edit page modal
+        function selectEditPageTee(teeKey) {
+            window.editPageSelectedTee = teeKey;
+            
+            // Update button styles
+            if (courseData?.tees) {
+                Object.keys(courseData.tees).forEach(key => {
+                    const btn = document.getElementById(`editPageTee_${key}`);
+                    if (btn) {
+                        const isSelected = key === teeKey;
+                        btn.style.borderColor = isSelected ? '#166534' : (key === 'white' || key === 'regular' ? '#cbd5e1' : btn.style.backgroundColor);
+                        btn.style.borderWidth = isSelected ? '3px' : '2px';
+                    }
+                });
+            }
+            
+            // Recalculate HCP if in GHIN mode
+            updateEditPageHcp();
+        }
+        
         // Toggle GHIN mode in Edit Page modal
         function toggleEditPageGhinMode(useGhin) {
             const label = document.getElementById('editPageHcpLabel');
@@ -22173,11 +22331,11 @@
             const index = parseFloat(input.value) || 0;
             
             if (courseData && courseData.tees) {
-                const tee = tournamentData?.tee || Object.keys(courseData.tees)[0];
+                const tee = window.editPageSelectedTee || tournamentData?.tee || Object.keys(courseData.tees)[0];
                 const teeData = courseData.tees[tee];
                 if (teeData) {
                     const courseHcp = calculateCourseHandicap(index, teeData.slope, teeData.rating, courseData.totalPar);
-                    calcDisplay.textContent = `= Course HCP ${courseHcp} (${tee} tees)`;
+                    calcDisplay.textContent = `= Course HCP ${courseHcp} (${teeData.name || tee} tees)`;
                     return;
                 }
             }
