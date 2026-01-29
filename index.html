@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-01-29-v15.9.26-hcp-checkbox-course-search -->
+    <!-- VERSION: 2026-01-29-v15.9.28-player-view-realtime-update -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -7147,6 +7147,39 @@
             return false;
         }
         
+        // Get display name for a claimedBy value
+        function getClaimerDisplayName(claimedBy, tournament) {
+            if (!claimedBy) return 'Unknown';
+            
+            // If it's a user_ ID, try to find display name from tournament devices
+            if (claimedBy.startsWith('user_')) {
+                // Check tournament devices for this user
+                if (tournament && tournament.devices) {
+                    for (const deviceId in tournament.devices) {
+                        const device = tournament.devices[deviceId];
+                        if (device.name || device.initials) {
+                            // This device might be the user - return its name
+                            // We can't directly match user_ to device, so return first with name
+                        }
+                    }
+                }
+                // If current user matches, use their display name
+                if (currentAuthUser && claimedBy === 'user_' + currentAuthUser.uid) {
+                    return currentAuthUser.displayName || currentAuthUser.email?.split('@')[0] || 'You';
+                }
+                // Fallback: extract some chars from UID
+                return claimedBy.substring(5, 8).toUpperCase();
+            }
+            
+            // If it's a device ID (starts with 'device_'), shorten it
+            if (claimedBy.startsWith('device_')) {
+                return claimedBy.substring(7, 10).toUpperCase();
+            }
+            
+            // Otherwise it's initials or name - use first 3 chars
+            return claimedBy.substring(0, 3).toUpperCase();
+        }
+        
         // Subscription state
         let currentAuthUser = null;  // Firebase auth user
         let userSubscription = {
@@ -9079,9 +9112,15 @@
             } catch (error) {
                 console.error('Nearby search error:', error);
                 let errorMsg = 'Unable to get your location';
-                if (error.code === 1) errorMsg = 'Location access denied. Please enable location permissions.';
+                
+                // Check for geolocation errors
+                if (error.code === 1) errorMsg = 'Location access denied. Please enable location permissions in your browser settings.';
                 else if (error.code === 2) errorMsg = 'Location unavailable. Please try again.';
                 else if (error.code === 3) errorMsg = 'Location request timed out. Please try again.';
+                // Check for network/API errors
+                else if (error.message && error.message.includes('fetch')) errorMsg = 'Network error. Please check your connection.';
+                else if (error.message && error.message.includes('Failed to fetch')) errorMsg = 'Could not reach course database. Try searching by name.';
+                else if (error.message) errorMsg = error.message;
                 
                 resultsDiv.innerHTML = `
                     <div style="text-align: center; padding: 20px;">
@@ -19038,6 +19077,14 @@
                         initials: userInitials,
                         joinedAt: new Date().toISOString()
                     };
+                    // If logged in, also store user ID mapping
+                    if (currentAuthUser) {
+                        tournament.devices['user_' + currentAuthUser.uid] = {
+                            name: userInitials,
+                            initials: userInitials,
+                            displayName: currentAuthUser.displayName || userInitials
+                        };
+                    }
                 }
                 
                 // Handle name change if provided
@@ -19045,6 +19092,9 @@
                 if (options.newName) {
                     tournament.players[playerIndex].name = options.newName;
                 }
+                
+                // Store claimer display name on player for easy lookup
+                tournament.players[playerIndex].claimerDisplayName = userInitials || currentAuthUser?.displayName || 'Unknown';
                 
                 // Update player with handicap and tee info
                 tournament.players[playerIndex].handicap = confirmedHandicap;
@@ -21045,7 +21095,7 @@
                             <div style="font-weight: 700; font-size: 15px;">${player.name}</div>
                             <div style="font-size: 13px; color: #64748b;">Handicap: ${player.handicap}</div>
                             ${type === 'watching' && player.claimedBy ? 
-                                `<div style="font-size: 12px; color: #1e3a5f;">Scored by: ${player.claimedBy.substring(0, 3).toUpperCase()}</div>` : 
+                                `<div style="font-size: 12px; color: #1e3a5f;">Scored by: ${player.claimerDisplayName || getClaimerDisplayName(player.claimedBy, tournamentData)}</div>` : 
                                 ''}
                         </div>
                         <div style="display: flex; gap: 4px; align-items: center;">
@@ -23322,13 +23372,15 @@
                 scoreCell.className = 'score-cell';
                 if (score > 0) {
                     const diff = score - par;
-                    if (diff <= -1) {
-                        scoreCell.classList.add('birdie-better');
+                    if (diff <= -2) {
+                        scoreCell.classList.add('eagle-better');
+                    } else if (diff === -1) {
+                        scoreCell.classList.add('birdie');
                     } else if (diff === 0) {
                         scoreCell.classList.add('par');
                     } else if (diff === 1) {
                         scoreCell.classList.add('bogey');
-                    } else if (diff >= 2) {
+                    } else {
                         scoreCell.classList.add('double-plus');
                     }
                 } else {
@@ -23358,6 +23410,13 @@
             const headerTotal = targetSlide.querySelector('.player-total-compact');
             if (headerTotal) {
                 headerTotal.textContent = `${total > 0 ? total : '-'} (${toParText})`;
+            }
+        }
+        
+        // Fallback: Full re-render of player view when in-place update isn't possible
+        function refreshPlayerView() {
+            if (currentView === 'player') {
+                renderCompactPlayerView(getPlayersToShow());
             }
         }
 
@@ -27578,6 +27637,8 @@
                 } else {
                     // Update only the specific score cell in COMPACT view
                     updateCompactScoreDisplay(playerIndex, holeIndex, score);
+                    // Also refresh the player view to ensure totals and colors are correct
+                    setTimeout(() => refreshPlayerView(), 100);
                 }
             }
         }
@@ -27627,6 +27688,8 @@
                 } else {
                     // Update only the specific score cell in COMPACT view
                     updateCompactScoreDisplay(playerIndex, holeIndex, scoreToSave);
+                    // Also refresh the player view to ensure totals and colors are correct
+                    setTimeout(() => refreshPlayerView(), 100);
                 }
             } else {
                 closeExpandedScore();
