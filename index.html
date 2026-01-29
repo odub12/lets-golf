@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-01-29-v15.9.30-zip-search-fallback -->
+    <!-- VERSION: 2026-01-29-v15.9.31-zip-distance-filter -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -9247,10 +9247,13 @@
                             if (golfData.courses && golfData.courses.length > 0) {
                                 golfData.courses.forEach(course => {
                                     course._source = 'golfcourseapi';
+                                    // Calculate distance if we have coordinates
                                     if (course.location?.latitude && course.location?.longitude) {
                                         course._distance = calculateDistance(lat, lng, 
                                             parseFloat(course.location.latitude), 
                                             parseFloat(course.location.longitude));
+                                    } else {
+                                        course._distance = 999; // No coordinates = unknown distance
                                     }
                                     courses.push(course);
                                 });
@@ -9276,9 +9279,21 @@
                                 const normalizedCourse = {
                                     id: 'rapid_' + (course.id || Math.random().toString(36).substr(2, 9)),
                                     club_name: course.name || course.courseName || course.club_name,
-                                    location: { city: course.city || '', state: course.state || '' },
-                                    _source: 'rapidapi'
+                                    location: { 
+                                        city: course.city || '', 
+                                        state: course.state || '',
+                                        latitude: course.latitude,
+                                        longitude: course.longitude
+                                    },
+                                    _source: 'rapidapi',
+                                    _distance: 999 // Assume far unless we have coords
                                 };
+                                // Calculate distance if we have coordinates
+                                if (course.latitude && course.longitude) {
+                                    normalizedCourse._distance = calculateDistance(lat, lng,
+                                        parseFloat(course.latitude),
+                                        parseFloat(course.longitude));
+                                }
                                 if (!courses.some(c => (c.club_name || c.course_name)?.toLowerCase() === normalizedCourse.club_name?.toLowerCase())) {
                                     courses.push(normalizedCourse);
                                 }
@@ -9289,14 +9304,21 @@
                     }
                 }
                 
-                // Sort by distance if available
-                courses.sort((a, b) => (a._distance || 999) - (b._distance || 999));
+                // Filter to only courses within 30 miles (or without distance = unknown)
+                const maxDistance = 30;
+                const nearbyCourses = courses.filter(c => c._distance && c._distance <= maxDistance);
                 
-                if (courses.length === 0) {
+                // Sort by distance
+                nearbyCourses.sort((a, b) => (a._distance || 999) - (b._distance || 999));
+                
+                if (nearbyCourses.length === 0) {
                     resultsDiv.innerHTML = `
                         <div style="text-align: center; padding: 20px;">
-                            <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px;">No courses found near ${locationName}</p>
-                            <p style="color: #64748b; font-size: 12px; margin-bottom: 16px;">Try searching by course name instead</p>
+                            <p style="color: #94a3b8; font-size: 14px; margin-bottom: 8px;">No courses found within 30 miles of ${cityName}</p>
+                            <p style="color: #64748b; font-size: 12px; margin-bottom: 16px;">
+                                The course database may not have complete coverage for this area.<br>
+                                Try searching by course name above, or enter manually.
+                            </p>
                             <button onclick="showManualCourseEntry()" 
                                 style="padding: 12px 20px; background: #d4b896; color: #1e3a5f; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
                                 ➕ Enter Course Manually
@@ -9306,9 +9328,9 @@
                     return;
                 }
                 
-                let html = `<p style="color: #166534; font-size: 13px; font-weight: 600; margin-bottom: 12px; text-align: center;">📍 ${courses.length} course${courses.length !== 1 ? 's' : ''} in ${cityName}</p>`;
+                let html = `<p style="color: #166534; font-size: 13px; font-weight: 600; margin-bottom: 12px; text-align: center;">📍 ${nearbyCourses.length} course${nearbyCourses.length !== 1 ? 's' : ''} within 30 mi of ${cityName}</p>`;
                 
-                courses.slice(0, 15).forEach(course => {
+                nearbyCourses.slice(0, 15).forEach(course => {
                     const courseName = course.club_name || course.course_name || course.name || course.courseName || 'Unknown Course';
                     const city = course.location?.city || course.city || '';
                     const state = course.location?.state || course.state || '';
