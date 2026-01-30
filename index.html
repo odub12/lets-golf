@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-01-31-v15.9.51-skip-join-page-android-fix -->
+    <!-- VERSION: 2026-01-31-v15.9.52-signin-debug-logging -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -4274,7 +4274,7 @@
                             <input type="password" id="signInPassword" placeholder="••••••••" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 16px; box-sizing: border-box;">
                         </div>
                         <div id="signInError" style="display: none; color: #a51c30; font-size: 13px; margin-bottom: 12px; text-align: center; padding: 8px; background: #fef2f2; border-radius: 6px;"></div>
-                        <button type="button" onclick="doSignIn()" style="width: 100%; padding: 14px; background: #1e3a5f; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; margin-bottom: 12px;">Sign In</button>
+                        <button type="button" onclick="console.log('Sign In clicked'); doSignIn();" style="width: 100%; padding: 14px; background: #1e3a5f; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; margin-bottom: 12px; touch-action: manipulation; -webkit-tap-highlight-color: rgba(30, 58, 95, 0.3);">Sign In</button>
                         <p style="text-align: center; margin: 0;">
                             <a href="#" onclick="closeSignInModal(); showForgotPasswordModal(); return false;" style="color: #1e3a5f; font-size: 13px; text-decoration: none;">Forgot password?</a>
                         </p>
@@ -4305,7 +4305,7 @@
                             <input type="password" id="createPasswordConfirm" placeholder="Re-enter password" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 16px; box-sizing: border-box;">
                         </div>
                         <div id="createError" style="display: none; color: #a51c30; font-size: 13px; margin-bottom: 12px; text-align: center; padding: 8px; background: #fef2f2; border-radius: 6px;"></div>
-                        <button type="button" onclick="doCreateAccount()" style="width: 100%; padding: 14px; background: #166534; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer;">Create Account</button>
+                        <button type="button" onclick="console.log('Create Account clicked'); doCreateAccount();" style="width: 100%; padding: 14px; background: #166534; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: rgba(22, 101, 52, 0.3);">Create Account</button>
                     </div>
                 </div>
             </div>
@@ -6413,9 +6413,12 @@
         
         // Do Sign In
         async function doSignIn() {
+            console.log('🔐 doSignIn() called');
             const email = document.getElementById('signInEmail').value.trim();
             const password = document.getElementById('signInPassword').value;
             const errorEl = document.getElementById('signInError');
+            
+            console.log('🔐 Email:', email, 'Password length:', password?.length);
             
             if (!email || !password) {
                 errorEl.textContent = 'Please enter email and password';
@@ -6425,7 +6428,9 @@
             
             try {
                 errorEl.style.display = 'none';
+                console.log('🔐 Attempting Firebase sign in...');
                 await auth.signInWithEmailAndPassword(email, password);
+                console.log('🔐 Sign in successful!');
                 
                 // Close modal using proper function (do NOT remove from DOM)
                 closeSignInModal();
@@ -6437,6 +6442,7 @@
                 
                 showNotification('✅ Signed In', 'Welcome back!');
             } catch (error) {
+                console.error('🔐 Sign in error:', error);
                 errorEl.textContent = getAuthErrorMessage(error.code);
                 errorEl.style.display = 'block';
             }
@@ -8206,30 +8212,44 @@
         
         // Update course HCP for a single player on setup page
         function updateSetupCourseHcp(playerId) {
+            console.log(`📊 updateSetupCourseHcp called for player ${playerId}`);
+            
             const useGhin = document.getElementById('setupUseGhinCheckbox')?.checked;
-            if (!useGhin) return;
+            if (!useGhin) {
+                console.log(`📊 GHIN mode not enabled, skipping`);
+                return;
+            }
             
             const input = document.getElementById(`hcp${playerId}`);
             const courseHcpSpan = document.getElementById(`courseHcp${playerId}`);
+            
+            console.log(`📊 Input found: ${!!input}, Span found: ${!!courseHcpSpan}`);
+            
             if (!input || !courseHcpSpan) return;
             
             const index = parseFloat(input.value);
+            console.log(`📊 Index value: ${index}`);
+            
             if (isNaN(index)) {
                 courseHcpSpan.textContent = '';
                 return;
             }
             
             // Get tee data for calculation
+            console.log(`📊 courseData: ${!!courseData}, tees: ${!!courseData?.tees}, selectedTee: ${selectedTee}`);
+            
             if (courseData && courseData.tees && selectedTee) {
                 const teeData = courseData.tees[selectedTee];
                 if (teeData) {
                     const courseHcp = calculateCourseHandicap(index, teeData.slope, teeData.rating, courseData.totalPar);
+                    console.log(`📊 Calculated Course HCP: ${courseHcp}`);
                     courseHcpSpan.textContent = courseHcp;
                     return;
                 }
             }
             
             // Fallback - just round the index
+            console.log(`📊 Using fallback, rounded: ${Math.round(index)}`);
             courseHcpSpan.textContent = Math.round(index);
         }
         
