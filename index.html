@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-01-31-v15.9.43-ghin-checkbox-course-hcp-fixes -->
+    <!-- VERSION: 2026-01-31-v15.9.44-ghin-checkbox-width-fix -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -340,7 +340,7 @@
             font-size: 13px;
         }
 
-        .form-group input,
+        .form-group input:not([type="checkbox"]),
         .form-group select {
             width: 100%;
             max-width: 100%;
@@ -555,14 +555,19 @@
         .ghin-checkbox {
             appearance: none;
             -webkit-appearance: none;
-            width: 20px;
-            height: 20px;
+            width: 20px !important;
+            height: 20px !important;
+            min-width: 20px;
+            max-width: 20px;
+            min-height: 20px;
+            max-height: 20px;
             border: 2px solid #166534;
             border-radius: 4px;
             background: white;
             cursor: pointer;
             position: relative;
             flex-shrink: 0;
+            flex-grow: 0;
         }
         
         .ghin-checkbox:checked {
@@ -578,6 +583,7 @@
             color: white;
             font-size: 14px;
             font-weight: bold;
+            line-height: 1;
         }
 
         /* Autocomplete Suggestions */
