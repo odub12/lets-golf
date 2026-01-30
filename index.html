@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-01-30-v15.9.41-ihmc-player-import -->
+    <!-- VERSION: 2026-01-31-v15.9.42-setup-course-hcp-column -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -422,6 +422,10 @@
             z-index: 1;
             transform: translateX(0);
             transition: transform 0.2s ease-out;
+        }
+        
+        .player-row.ghin-mode {
+            grid-template-columns: 1fr 55px 45px;
         }
         
         .player-row.swiped {
@@ -3670,10 +3674,11 @@
                     <span id="setupGhinHint" style="font-size: 11px; color: #64748b; margin-left: auto;">Enter Course HCP</span>
                 </label>
                 
-                <!-- Column Headers -->
-                <div style="display: grid; grid-template-columns: 1fr 70px; gap: 6px; margin-bottom: 6px; padding: 0 4px;">
+                <!-- Column Headers - 2 column default, 3 column in GHIN mode -->
+                <div id="setupColumnHeaders" style="display: grid; grid-template-columns: 1fr 70px; gap: 6px; margin-bottom: 6px; padding: 0 4px;">
                     <div style="font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase;">Name</div>
                     <div id="setupHcpHeader" style="font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; text-align: center;">HCP</div>
+                    <div id="setupCourseHcpHeader" style="font-size: 10px; color: #166534; font-weight: 600; text-transform: uppercase; text-align: center; display: none;">Course</div>
                 </div>
                 
                 <div class="player-list" id="playerList">
@@ -3681,7 +3686,8 @@
                         <div class="player-row-delete" onclick="removePlayer(1)">Delete</div>
                         <div class="player-row" data-player="1">
                             <input type="text" class="player-name-input" placeholder="Player Name" id="player1">
-                            <input type="text" class="player-hcp-input" placeholder="HCP" id="hcp1" pattern="-?[0-9.]*" inputmode="decimal">
+                            <input type="text" class="player-hcp-input" placeholder="HCP" id="hcp1" pattern="-?[0-9.]*" inputmode="decimal" oninput="updateSetupCourseHcp(1)">
+                            <span class="player-course-hcp" id="courseHcp1" style="display: none; font-size: 14px; font-weight: 600; color: #166534; text-align: center; min-width: 40px;"></span>
                         </div>
                     </div>
                 </div>
@@ -8074,6 +8080,8 @@
             const useGhin = document.getElementById('setupUseGhinCheckbox')?.checked || false;
             const placeholder = useGhin ? 'H.I.' : 'HCP';
             const step = useGhin ? '0.1' : '1';
+            const ghinModeClass = useGhin ? ' ghin-mode' : '';
+            const courseHcpDisplay = useGhin ? 'block' : 'none';
             
             const wrapper = document.createElement('div');
             wrapper.className = 'player-row-wrapper';
@@ -8084,11 +8092,12 @@
             deleteBtn.onclick = () => removePlayer(nextPlayerId);
             
             const newRow = document.createElement('div');
-            newRow.className = 'player-row';
+            newRow.className = 'player-row' + ghinModeClass;
             newRow.setAttribute('data-player', nextPlayerId);
             newRow.innerHTML = `
                 <input type="text" class="player-name-input" placeholder="Player Name" id="player${nextPlayerId}">
-                <input type="text" class="player-hcp-input" placeholder="${placeholder}" id="hcp${nextPlayerId}" pattern="-?[0-9.]*" inputmode="decimal" step="${step}">
+                <input type="text" class="player-hcp-input" placeholder="${placeholder}" id="hcp${nextPlayerId}" pattern="-?[0-9.]*" inputmode="decimal" step="${step}" oninput="updateSetupCourseHcp(${nextPlayerId})">
+                <span class="player-course-hcp" id="courseHcp${nextPlayerId}" style="display: ${courseHcpDisplay}; font-size: 14px; font-weight: 600; color: #166534; text-align: center; min-width: 40px;"></span>
             `;
             
             wrapper.appendChild(deleteBtn);
@@ -8112,23 +8121,88 @@
         function toggleSetupGhinMode(useGhin) {
             const header = document.getElementById('setupHcpHeader');
             const hint = document.getElementById('setupGhinHint');
+            const columnHeaders = document.getElementById('setupColumnHeaders');
+            const courseHcpHeader = document.getElementById('setupCourseHcpHeader');
             const hcpInputs = document.querySelectorAll('.player-hcp-input');
+            const courseHcpSpans = document.querySelectorAll('.player-course-hcp');
+            const playerRows = document.querySelectorAll('.player-row');
             
             if (useGhin) {
                 if (header) header.textContent = 'H.I.';
                 if (hint) hint.textContent = 'Enter GHIN Index';
+                if (columnHeaders) columnHeaders.style.gridTemplateColumns = '1fr 55px 45px';
+                if (courseHcpHeader) courseHcpHeader.style.display = 'block';
+                
                 hcpInputs.forEach(input => {
                     input.placeholder = 'H.I.';
                     input.step = '0.1';
                 });
+                courseHcpSpans.forEach(span => {
+                    span.style.display = 'block';
+                });
+                playerRows.forEach(row => {
+                    row.classList.add('ghin-mode');
+                });
+                
+                // Calculate course HCP for all existing players
+                updateAllSetupCourseHcps();
             } else {
                 if (header) header.textContent = 'HCP';
                 if (hint) hint.textContent = 'Enter Course HCP';
+                if (columnHeaders) columnHeaders.style.gridTemplateColumns = '1fr 70px';
+                if (courseHcpHeader) courseHcpHeader.style.display = 'none';
+                
                 hcpInputs.forEach(input => {
                     input.placeholder = 'HCP';
                     input.step = '1';
                 });
+                courseHcpSpans.forEach(span => {
+                    span.style.display = 'none';
+                });
+                playerRows.forEach(row => {
+                    row.classList.remove('ghin-mode');
+                });
             }
+        }
+        
+        // Update course HCP for a single player on setup page
+        function updateSetupCourseHcp(playerId) {
+            const useGhin = document.getElementById('setupUseGhinCheckbox')?.checked;
+            if (!useGhin) return;
+            
+            const input = document.getElementById(`hcp${playerId}`);
+            const courseHcpSpan = document.getElementById(`courseHcp${playerId}`);
+            if (!input || !courseHcpSpan) return;
+            
+            const index = parseFloat(input.value);
+            if (isNaN(index)) {
+                courseHcpSpan.textContent = '';
+                return;
+            }
+            
+            // Get tee data for calculation
+            if (courseData && courseData.tees && selectedTee) {
+                const teeData = courseData.tees[selectedTee];
+                if (teeData) {
+                    const courseHcp = calculateCourseHandicap(index, teeData.slope, teeData.rating, courseData.totalPar);
+                    courseHcpSpan.textContent = courseHcp;
+                    return;
+                }
+            }
+            
+            // Fallback - just round the index
+            courseHcpSpan.textContent = Math.round(index);
+        }
+        
+        // Update all course HCPs on setup page
+        function updateAllSetupCourseHcps() {
+            const playerRows = document.querySelectorAll('.player-row');
+            playerRows.forEach(row => {
+                const playerId = row.getAttribute('data-player');
+                if (playerId) {
+                    updateSetupCourseHcp(playerId);
+                }
+            });
         }
         
         // Swipe-to-delete DISABLED - causing issues with page scrolling
@@ -8717,6 +8791,8 @@
             renderTeeButtons(courseKey);
             // Recalculate all course handicaps with new tee
             updateAllCourseHandicaps();
+            // Also update setup page course HCPs if in GHIN mode
+            updateAllSetupCourseHcps();
         }
         
         // Update tee info display
@@ -13901,9 +13977,10 @@
                 wrapper.className = 'player-row-wrapper';
                 wrapper.innerHTML = `
                     <div class="player-row-delete" onclick="removePlayer(${playerId})">Delete</div>
-                    <div class="player-row" data-player="${playerId}">
+                    <div class="player-row ghin-mode" data-player="${playerId}">
                         <input type="text" class="player-name-input" placeholder="Player Name" id="player${playerId}" value="${player.name || ''}">
-                        <input type="text" class="player-hcp-input" placeholder="H.I." id="hcp${playerId}" value="${handicapValue}" pattern="-?[0-9.]*" inputmode="decimal" step="0.1">
+                        <input type="text" class="player-hcp-input" placeholder="H.I." id="hcp${playerId}" value="${handicapValue}" pattern="-?[0-9.]*" inputmode="decimal" step="0.1" oninput="updateSetupCourseHcp(${playerId})">
+                        <span class="player-course-hcp" id="courseHcp${playerId}" style="display: block; font-size: 14px; font-weight: 600; color: #166534; text-align: center; min-width: 40px;"></span>
                     </div>
                 `;
                 playerList.appendChild(wrapper);
@@ -13911,6 +13988,12 @@
             
             // Update the global player count
             window.playerCount = registeredPlayers.length;
+            window.nextPlayerId = registeredPlayers.length + 1;
+            
+            // Calculate course HCPs after a short delay (to let course/tee be selected)
+            setTimeout(() => {
+                updateAllSetupCourseHcps();
+            }, 200);
             
             console.log(`✅ Populated ${registeredPlayers.length} players from IHMC`);
         }
