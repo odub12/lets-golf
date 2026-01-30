@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-01-31-v15.9.42-setup-course-hcp-column -->
+    <!-- VERSION: 2026-01-31-v15.9.43-ghin-checkbox-course-hcp-fixes -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -542,13 +542,42 @@
         .player-course-hcp {
             width: 45px;
             padding: 10px 4px;
-            background: rgba(212, 165, 116, 0.2);
-            border: 1px solid var(--tan-border);
+            background: rgba(22, 101, 52, 0.15);
+            border: 1px solid rgba(22, 101, 52, 0.3);
             border-radius: var(--radius-md);
             font-size: 14px;
             font-weight: 700;
             text-align: center;
-            color: #1e3a5f;
+            color: #166534;
+        }
+        
+        /* Custom GHIN Checkbox Styling */
+        .ghin-checkbox {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #166534;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+        }
+        
+        .ghin-checkbox:checked {
+            background: #166534;
+        }
+        
+        .ghin-checkbox:checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
         }
 
         /* Autocomplete Suggestions */
@@ -3669,7 +3698,7 @@
                 
                 <!-- GHIN Toggle -->
                 <label id="setupGhinToggle" style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
-                    <input type="checkbox" id="setupUseGhinCheckbox" onchange="toggleSetupGhinMode(this.checked)" style="width: 18px; height: 18px; cursor: pointer;">
+                    <input type="checkbox" id="setupUseGhinCheckbox" class="ghin-checkbox" onchange="toggleSetupGhinMode(this.checked)">
                     <span style="color: #475569; font-weight: 600; font-size: 13px;">Use GHIN Handicap Index</span>
                     <span id="setupGhinHint" style="font-size: 11px; color: #64748b; margin-left: auto;">Enter Course HCP</span>
                 </label>
@@ -3687,7 +3716,7 @@
                         <div class="player-row" data-player="1">
                             <input type="text" class="player-name-input" placeholder="Player Name" id="player1">
                             <input type="text" class="player-hcp-input" placeholder="HCP" id="hcp1" pattern="-?[0-9.]*" inputmode="decimal" oninput="updateSetupCourseHcp(1)">
-                            <span class="player-course-hcp" id="courseHcp1" style="display: none; font-size: 14px; font-weight: 600; color: #166534; text-align: center; min-width: 40px;"></span>
+                            <span class="player-course-hcp" id="courseHcp1" style="display: none;"></span>
                         </div>
                     </div>
                 </div>
@@ -8097,7 +8126,7 @@
             newRow.innerHTML = `
                 <input type="text" class="player-name-input" placeholder="Player Name" id="player${nextPlayerId}">
                 <input type="text" class="player-hcp-input" placeholder="${placeholder}" id="hcp${nextPlayerId}" pattern="-?[0-9.]*" inputmode="decimal" step="${step}" oninput="updateSetupCourseHcp(${nextPlayerId})">
-                <span class="player-course-hcp" id="courseHcp${nextPlayerId}" style="display: ${courseHcpDisplay}; font-size: 14px; font-weight: 600; color: #166534; text-align: center; min-width: 40px;"></span>
+                <span class="player-course-hcp" id="courseHcp${nextPlayerId}" style="display: ${courseHcpDisplay};"></span>
             `;
             
             wrapper.appendChild(deleteBtn);
@@ -13980,7 +14009,7 @@
                     <div class="player-row ghin-mode" data-player="${playerId}">
                         <input type="text" class="player-name-input" placeholder="Player Name" id="player${playerId}" value="${player.name || ''}">
                         <input type="text" class="player-hcp-input" placeholder="H.I." id="hcp${playerId}" value="${handicapValue}" pattern="-?[0-9.]*" inputmode="decimal" step="0.1" oninput="updateSetupCourseHcp(${playerId})">
-                        <span class="player-course-hcp" id="courseHcp${playerId}" style="display: block; font-size: 14px; font-weight: 600; color: #166534; text-align: center; min-width: 40px;"></span>
+                        <span class="player-course-hcp" id="courseHcp${playerId}" style="display: block;"></span>
                     </div>
                 `;
                 playerList.appendChild(wrapper);
