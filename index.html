@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-01-31-v15.9.52-signin-debug-logging -->
+    <!-- VERSION: 2026-01-31-v15.9.54-scorecard-zoom -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -1864,7 +1864,13 @@
         .scorecard-body {
             padding: 12px;
             max-height: 75vh;
-            overflow-y: auto;
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .scorecard-body-inner {
+            transform-origin: top left;
+            transition: transform 0.2s ease;
         }
 
         .scorecard-footer {
@@ -3719,10 +3725,10 @@
                 <div class="player-list" id="playerList">
                     <div class="player-row-wrapper">
                         <div class="player-row-delete" onclick="removePlayer(1)">Delete</div>
-                        <div class="player-row" data-player="1">
+                        <div class="player-row ghin-mode" data-player="1">
                             <input type="text" class="player-name-input" placeholder="Player Name" id="player1">
-                            <input type="text" class="player-hcp-input" placeholder="HCP" id="hcp1" pattern="-?[0-9.]*" inputmode="decimal" oninput="updateSetupCourseHcp(1)">
-                            <span class="player-course-hcp" id="courseHcp1" style="display: none;"></span>
+                            <input type="text" class="player-hcp-input" placeholder="H.I." id="hcp1" pattern="-?[0-9.]*" inputmode="decimal" step="0.1" oninput="updateSetupCourseHcp(1)">
+                            <span class="player-course-hcp" id="courseHcp1" style="display: block;"></span>
                         </div>
                     </div>
                 </div>
@@ -4123,7 +4129,15 @@
         <div class="scorecard-content">
             <div class="scorecard-header">
                 <h2 style="color: #1e3a5f; margin: 0; display: flex; align-items: center; gap: 8px;">⛳ Scorecards</h2>
-                <button onclick="closeScorecardModal()" style="background: #d4b896; color: #1e3a5f; border: none; border-radius: 4px; padding: 8px 16px; font-weight: 600; cursor: pointer; font-size: 13px;">✕ Close</button>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <!-- Zoom Controls -->
+                    <div id="scorecardZoomControls" style="display: flex; align-items: center; gap: 4px; background: #f1f5f9; border-radius: 6px; padding: 4px;">
+                        <button onclick="zoomScorecard(-1)" style="width: 32px; height: 32px; border: none; background: white; border-radius: 4px; font-size: 18px; font-weight: bold; cursor: pointer; color: #1e3a5f;">−</button>
+                        <span id="scorecardZoomLevel" style="min-width: 45px; text-align: center; font-size: 12px; font-weight: 600; color: #64748b;">100%</span>
+                        <button onclick="zoomScorecard(1)" style="width: 32px; height: 32px; border: none; background: white; border-radius: 4px; font-size: 18px; font-weight: bold; cursor: pointer; color: #1e3a5f;">+</button>
+                    </div>
+                    <button onclick="closeScorecardModal()" style="background: #d4b896; color: #1e3a5f; border: none; border-radius: 4px; padding: 8px 16px; font-weight: 600; cursor: pointer; font-size: 13px;">✕ Close</button>
+                </div>
             </div>
             <div style="padding: 20px; border-bottom: 1px solid #e2e8f0;">
                 <label style="font-weight: 600; color: #1e3a5f; margin-bottom: 8px; display: block;">Select View:</label>
@@ -8168,9 +8182,19 @@
             const hint = document.getElementById('setupGhinHint');
             const columnHeaders = document.getElementById('setupColumnHeaders');
             const courseHcpHeader = document.getElementById('setupCourseHcpHeader');
-            const hcpInputs = document.querySelectorAll('.player-hcp-input');
-            const courseHcpSpans = document.querySelectorAll('.player-course-hcp');
-            const playerRows = document.querySelectorAll('.player-row');
+            
+            // IMPORTANT: Scope to setup page player list only
+            const playerList = document.getElementById('playerList');
+            if (!playerList) {
+                console.log('⚠️ playerList not found');
+                return;
+            }
+            
+            const hcpInputs = playerList.querySelectorAll('.player-hcp-input');
+            const courseHcpSpans = playerList.querySelectorAll('.player-course-hcp');
+            const playerRows = playerList.querySelectorAll('.player-row');
+            
+            console.log(`🔄 toggleSetupGhinMode(${useGhin}): Found ${hcpInputs.length} inputs, ${courseHcpSpans.length} spans, ${playerRows.length} rows`);
             
             if (useGhin) {
                 if (header) header.textContent = 'H.I.';
@@ -8182,11 +8206,13 @@
                     input.placeholder = 'H.I.';
                     input.step = '0.1';
                 });
-                courseHcpSpans.forEach(span => {
+                courseHcpSpans.forEach((span, idx) => {
                     span.style.display = 'block';
+                    console.log(`  Span ${idx}: display set to block, id=${span.id}`);
                 });
-                playerRows.forEach(row => {
+                playerRows.forEach((row, idx) => {
                     row.classList.add('ghin-mode');
+                    console.log(`  Row ${idx}: added ghin-mode class, data-player=${row.getAttribute('data-player')}`);
                 });
                 
                 // Calculate course HCP for all existing players
@@ -26994,6 +27020,8 @@
             }
             
             modal.classList.add('active');
+            resetScorecardZoom();
+            initScorecardPinchZoom();
             updateScorecardView();
         }
 
@@ -27001,6 +27029,102 @@
         function closeScorecardModal() {
             const modal = document.getElementById('scorecardModal');
             modal.classList.remove('active');
+            // Reset zoom when closing
+            scorecardZoomLevel = 100;
+        }
+        
+        // Scorecard zoom functionality
+        let scorecardZoomLevel = 100;
+        const SCORECARD_ZOOM_MIN = 50;
+        const SCORECARD_ZOOM_MAX = 200;
+        const SCORECARD_ZOOM_STEP = 10;
+        
+        function zoomScorecard(direction) {
+            // direction: 1 for zoom in, -1 for zoom out
+            scorecardZoomLevel += direction * SCORECARD_ZOOM_STEP;
+            scorecardZoomLevel = Math.max(SCORECARD_ZOOM_MIN, Math.min(SCORECARD_ZOOM_MAX, scorecardZoomLevel));
+            
+            applyScorecardZoom();
+        }
+        
+        function applyScorecardZoom() {
+            const body = document.getElementById('scorecardBody');
+            const zoomDisplay = document.getElementById('scorecardZoomLevel');
+            
+            if (body) {
+                // Apply zoom transform to body content
+                body.style.transform = `scale(${scorecardZoomLevel / 100})`;
+                body.style.transformOrigin = 'top left';
+                
+                // Adjust container to accommodate zoomed content
+                if (scorecardZoomLevel !== 100) {
+                    body.style.width = `${10000 / scorecardZoomLevel}%`;
+                    body.style.height = 'auto';
+                } else {
+                    body.style.width = '';
+                    body.style.height = '';
+                }
+            }
+            
+            if (zoomDisplay) {
+                zoomDisplay.textContent = `${scorecardZoomLevel}%`;
+            }
+        }
+        
+        // Reset zoom when view changes
+        function resetScorecardZoom() {
+            scorecardZoomLevel = 100;
+            applyScorecardZoom();
+        }
+        
+        // Pinch-to-zoom support for touch devices
+        let scorecardPinchStartDistance = 0;
+        let scorecardPinchStartZoom = 100;
+        
+        function initScorecardPinchZoom() {
+            const body = document.getElementById('scorecardBody');
+            if (!body) return;
+            
+            // Remove existing listeners to avoid duplicates
+            body.removeEventListener('touchstart', handleScorecardTouchStart);
+            body.removeEventListener('touchmove', handleScorecardTouchMove);
+            body.removeEventListener('touchend', handleScorecardTouchEnd);
+            
+            // Add touch listeners
+            body.addEventListener('touchstart', handleScorecardTouchStart, { passive: false });
+            body.addEventListener('touchmove', handleScorecardTouchMove, { passive: false });
+            body.addEventListener('touchend', handleScorecardTouchEnd, { passive: true });
+        }
+        
+        function handleScorecardTouchStart(e) {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                scorecardPinchStartDistance = getPinchDistance(e.touches);
+                scorecardPinchStartZoom = scorecardZoomLevel;
+            }
+        }
+        
+        function handleScorecardTouchMove(e) {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                const currentDistance = getPinchDistance(e.touches);
+                const scale = currentDistance / scorecardPinchStartDistance;
+                
+                scorecardZoomLevel = Math.round(scorecardPinchStartZoom * scale);
+                scorecardZoomLevel = Math.max(SCORECARD_ZOOM_MIN, Math.min(SCORECARD_ZOOM_MAX, scorecardZoomLevel));
+                
+                applyScorecardZoom();
+            }
+        }
+        
+        function handleScorecardTouchEnd(e) {
+            scorecardPinchStartDistance = 0;
+        }
+        
+        function getPinchDistance(touches) {
+            const dx = touches[0].clientX - touches[1].clientX;
+            const dy = touches[0].clientY - touches[1].clientY;
+            return Math.sqrt(dx * dx + dy * dy);
         }
 
         // Update scorecard view based on selection
