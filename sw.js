@@ -5,7 +5,7 @@
  * Provides offline capability and smart caching for the PWA
  */
 
-const CACHE_VERSION = 'letsgolf-v1.0.47';
+const CACHE_VERSION = 'letsgolf-v1.0.49';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 

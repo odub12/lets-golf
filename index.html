@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-01-31-v15.9.47-android-touch-fixes -->
+    <!-- VERSION: 2026-01-31-v15.9.49-team-validation-indicators -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -15147,7 +15147,7 @@
                 padding: 16px 24px;
                 border-radius: 6px;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                z-index: 10000;
+                z-index: 10005;
                 max-width: 90%;
                 text-align: center;
                 animation: slideUp 0.3s ease;
@@ -25428,6 +25428,14 @@
             });
             
             container.innerHTML = teams.map((team, teamIdx) => {
+                // Check if team is valid (has at least one player)
+                const hasPlayers = team.some(name => name && name.trim() !== '');
+                const borderColor = hasPlayers ? '#166534' : '#dc2626';
+                const borderStyle = hasPlayers ? '2px solid #166534' : '2px dashed #dc2626';
+                const bgColor = hasPlayers ? 'rgba(22, 101, 52, 0.05)' : 'rgba(220, 38, 38, 0.05)';
+                const statusIcon = hasPlayers ? '✓' : '!';
+                const statusColor = hasPlayers ? '#166534' : '#dc2626';
+                
                 // Build player dropdown options
                 const playerOptions = players.map(p => {
                     const isAssigned = assignedPlayers.has(p.name);
@@ -25439,9 +25447,10 @@
                 const slots = [];
                 for (let i = 0; i < ppt; i++) {
                     const selectedPlayer = team[i] || '';
+                    const slotEmpty = !selectedPlayer;
                     slots.push(`
                         <select onchange="updateBestBallTeamPlayer(${teamIdx}, ${i}, this.value)" 
-                            style="flex: 1; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; min-width: 0; background: white; color: #1e3a5f;">
+                            style="flex: 1; padding: 8px; border: 1px solid ${slotEmpty ? '#fca5a5' : '#d1d5db'}; border-radius: 6px; font-size: 13px; min-width: 0; background: ${slotEmpty ? '#fef2f2' : 'white'}; color: #1e3a5f;">
                             <option value="">Select Player</option>
                             ${playerOptions.replace(`value="${selectedPlayer}"`, `value="${selectedPlayer}" selected`)}
                         </select>
@@ -25449,20 +25458,30 @@
                 }
                 
                 return `
-                    <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+                    <div style="background: ${bgColor}; border: ${borderStyle}; border-radius: 8px; padding: 12px; margin-bottom: 10px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <span style="font-size: 13px; font-weight: 700; color: #1e3a5f;">Team ${teamIdx + 1}</span>
+                            <span style="font-size: 13px; font-weight: 700; color: #1e3a5f; display: flex; align-items: center; gap: 6px;">
+                                <span style="width: 18px; height: 18px; border-radius: 50%; background: ${statusColor}; color: white; font-size: 11px; display: flex; align-items: center; justify-content: center; font-weight: bold;">${statusIcon}</span>
+                                Team ${teamIdx + 1}
+                            </span>
                             <button type="button" onclick="removeBestBallTeam(${teamIdx})" style="background: none; border: none; color: #a51c30; font-size: 16px; cursor: pointer; padding: 4px;">✕</button>
                         </div>
                         <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                             ${slots.join('')}
                         </div>
+                        ${!hasPlayers ? '<div style="font-size: 11px; color: #dc2626; margin-top: 6px;">⚠️ Select at least one player</div>' : ''}
                     </div>
                 `;
             }).join('');
             
+            // Show summary of valid teams
+            const validCount = teams.filter(team => team.some(name => name && name.trim() !== '')).length;
+            const totalCount = teams.length;
+            
             if (teams.length === 0) {
                 container.innerHTML = '<div style="text-align: center; padding: 16px; color: #64748b; font-size: 13px;">No teams created yet. Click "+ Add Team" to start.</div>';
+            } else if (validCount < 2) {
+                container.innerHTML += `<div style="text-align: center; padding: 8px; color: #dc2626; font-size: 12px; font-weight: 600;">Need at least 2 valid teams (currently ${validCount})</div>`;
             }
         }
         
@@ -25472,6 +25491,7 @@
             
             if (!window.tempBestBallConfig) {
                 console.log('❌ No tempBestBallConfig');
+                showNotification('Error', 'No team configuration found');
                 return;
             }
             
@@ -25480,10 +25500,10 @@
                 team.some(name => name && name.trim() !== '')
             );
             
-            console.log(`📊 Valid teams: ${validTeams.length}`);
+            console.log(`📊 Valid teams: ${validTeams.length} of ${window.tempBestBallConfig.teams.length}`);
             
             if (validTeams.length < 2) {
-                showNotification('Need More Teams', 'Create at least 2 teams with players');
+                showNotification('Incomplete Teams', `Need at least 2 teams with players assigned. You have ${validTeams.length}.`);
                 return;
             }
             
