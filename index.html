@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-01-31-v15.9.44-ghin-checkbox-width-fix -->
+    <!-- VERSION: 2026-01-31-v15.9.47-android-touch-fixes -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -4587,16 +4587,16 @@
     </div>
 
     <!-- Claim Players List Modal -->
-    <div id="claimPlayersModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; overflow-y: auto;">
-        <div style="background: white; border-radius: 8px; padding: 24px; margin: 20px; max-width: 500px; max-height: 80vh; overflow-y: auto; box-shadow: 0 8px 16px rgba(0,0,0,0.3);">
+    <div id="claimPlayersModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y;">
+        <div style="background: white; border-radius: 8px; padding: 24px; margin: 20px; max-width: 500px; max-height: 80vh; overflow-y: auto; box-shadow: 0 8px 16px rgba(0,0,0,0.3); -webkit-overflow-scrolling: touch; touch-action: manipulation;">
             <h3 style="color: #1e3a5f; margin-bottom: 16px; font-size: 20px;">Claim Additional Player</h3>
             <p style="color: #64748b; margin-bottom: 20px; font-size: 14px;">Select an unclaimed player to score for them</p>
             
-            <div id="claimPlayersListContent">
+            <div id="claimPlayersListContent" style="touch-action: manipulation;">
                 <!-- Player list will be populated here -->
             </div>
             
-            <button type="button" onclick="document.getElementById('claimPlayersModal').style.display='none'" style="width: 100%; padding: 12px; background: #d4b896; color: #1e3a5f; border: none; border-radius: 4px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 16px;">
+            <button type="button" onclick="document.getElementById('claimPlayersModal').style.display='none'" style="width: 100%; padding: 12px; background: #d4b896; color: #1e3a5f; border: none; border-radius: 4px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 16px; touch-action: manipulation; -webkit-tap-highlight-color: rgba(212, 184, 150, 0.3);">
                 Cancel
             </button>
         </div>
@@ -8231,7 +8231,10 @@
         
         // Update all course HCPs on setup page
         function updateAllSetupCourseHcps() {
-            const playerRows = document.querySelectorAll('.player-row');
+            const playerList = document.getElementById('playerList');
+            if (!playerList) return;
+            
+            const playerRows = playerList.querySelectorAll('.player-row');
             playerRows.forEach(row => {
                 const playerId = row.getAttribute('data-player');
                 if (playerId) {
@@ -8719,6 +8722,8 @@
             
             // Update all course handicaps when course changes
             updateAllCourseHandicaps();
+            // Also update setup page course HCPs if in GHIN mode
+            updateAllSetupCourseHcps();
         }
         
         // Render tee selection buttons
@@ -18926,9 +18931,12 @@
                                 ];
                                 const color = colors[index % colors.length];
                                 const isClaimed = p.claimedBy;
+                                // Escape player name for safe use in onclick
+                                const safeName = (p.name || 'Unknown').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                                const handicap = p.handicap ?? 0;
                                 
                                 return `
-                                    <div id="playerRow_${index}" class="join-player-row" data-player="${p.name}" data-handicap="${p.handicap}" data-index="${index}"
+                                    <div id="playerRow_${index}" class="join-player-row" data-player="${safeName}" data-handicap="${handicap}" data-index="${index}"
                                         style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
                                         
                                         <!-- Player Info Button -->
@@ -18936,24 +18944,24 @@
                                             <div style="display: flex; align-items: center; justify-content: space-between;">
                                                 <span style="display: flex; align-items: center; gap: 10px; color: ${isClaimed ? '#64748b' : color.text}; font-weight: 600;">
                                                     <span style="font-size: 20px;">${isClaimed ? '🔒' : '⛳'}</span>
-                                                    <span>${p.name}</span>
+                                                    <span>${p.name || 'Unknown'}</span>
                                                 </span>
                                                 <span style="background: white; padding: 3px 10px; border-radius: 8px; font-size: 13px; font-weight: 700; color: ${isClaimed ? '#64748b' : color.text};">
-                                                    ${p.handicap}
+                                                    ${handicap}
                                                 </span>
                                             </div>
                                         </div>
                                         
                                         ${!isClaimed ? `
                                         <!-- Claim Button -->
-                                        <button type="button" onclick="toggleJoinSelection(${index}, 'claim', '${p.name}')" id="claimBtn_${index}"
+                                        <button type="button" onclick="toggleJoinSelection(${index}, 'claim', '${safeName}')" id="claimBtn_${index}"
                                             style="width: 48px; height: 48px; border-radius: 6px; border: 2px solid #166534; background: white; color: #166534; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;"
                                             title="Score for this player">
                                             ✓
                                         </button>
                                         
                                         <!-- Watch Button -->
-                                        <button type="button" onclick="toggleJoinSelection(${index}, 'watch', '${p.name}')" id="watchBtn_${index}"
+                                        <button type="button" onclick="toggleJoinSelection(${index}, 'watch', '${safeName}')" id="watchBtn_${index}"
                                             style="width: 48px; height: 48px; border-radius: 6px; border: 2px solid #64748b; background: white; color: #64748b; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;"
                                             title="Watch this player">
                                             👁
@@ -19793,16 +19801,40 @@
                 return;
             }
             
+            const modal = document.getElementById('claimPlayersModal');
+            const content = document.getElementById('claimPlayersListContent');
+            
+            // Show loading state immediately (helps Android rendering)
+            content.innerHTML = `
+                <div style="text-align: center; padding: 40px 20px;">
+                    <p style="font-size: 24px; margin-bottom: 12px;">⏳</p>
+                    <p style="color: #64748b; font-size: 14px;">Loading players...</p>
+                </div>
+            `;
+            modal.style.display = 'flex';
+            
+            // Small delay to let modal render before heavy processing (Android fix)
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
             try {
                 const tournamentRef = db.collection('tournaments').doc(activeTournamentId);
                 const tournamentDoc = await tournamentRef.get();
                 const tournament = tournamentDoc.data();
                 
-                const modal = document.getElementById('claimPlayersModal');
-                const content = document.getElementById('claimPlayersListContent');
+                if (!tournament || !tournament.players) {
+                    content.innerHTML = `
+                        <div style="text-align: center; padding: 40px 20px;">
+                            <p style="font-size: 40px; margin-bottom: 12px;">⚠️</p>
+                            <p style="color: #64748b; font-size: 16px;">Could not load tournament data</p>
+                        </div>
+                    `;
+                    return;
+                }
                 
-                // Filter unclaimed players
-                const unclaimedPlayers = tournament.players.filter(p => !p.claimedBy);
+                // Filter unclaimed players - check for null, undefined, or empty string
+                const unclaimedPlayers = tournament.players.filter(p => !p.claimedBy || p.claimedBy === '');
+                
+                console.log(`📋 Claim list: ${unclaimedPlayers.length} unclaimed of ${tournament.players.length} total`);
                 
                 if (unclaimedPlayers.length === 0) {
                     content.innerHTML = `
@@ -19821,10 +19853,13 @@
                             { bg: '#e0e7ff', border: '#6366f1', text: '#3730a3' },
                         ];
                         const color = colors[index % colors.length];
+                        // Escape player name for safe use in onclick
+                        const safeName = (p.name || 'Unknown').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                        const handicap = p.handicap ?? 0;
                         
                         return `
                             <button type="button"
-                                onclick="claimAdditionalPlayerFromList('${p.name}', ${p.handicap})"
+                                onclick="claimAdditionalPlayerFromList('${safeName}', ${handicap})"
                                 style="
                                     width: 100%;
                                     padding: 16px;
@@ -19839,24 +19874,29 @@
                                     display: flex;
                                     align-items: center;
                                     justify-content: space-between;
-                                    transition: all 0.2s;
+                                    touch-action: manipulation;
+                                    -webkit-tap-highlight-color: rgba(0,0,0,0.1);
                                 ">
-                                <span style="display: flex; align-items: center; gap: 12px;">
+                                <span style="display: flex; align-items: center; gap: 12px; pointer-events: none;">
                                     <span style="font-size: 24px;">⛳</span>
-                                    <span>${p.name}</span>
+                                    <span>${p.name || 'Unknown'}</span>
                                 </span>
-                                <span style="background: white; padding: 4px 12px; border-radius: 8px; font-size: 14px;">
-                                    HCP ${p.handicap}
+                                <span style="background: white; padding: 4px 12px; border-radius: 8px; font-size: 14px; pointer-events: none;">
+                                    HCP ${handicap}
                                 </span>
                             </button>
                         `;
                     }).join('');
                 }
-                
-                modal.style.display = 'flex';
             } catch (error) {
                 console.error('Error loading players:', error);
-                showNotification('Error', 'Failed to load players');
+                content.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px;">
+                        <p style="font-size: 40px; margin-bottom: 12px;">❌</p>
+                        <p style="color: #64748b; font-size: 16px;">Failed to load players</p>
+                        <p style="color: #94a3b8; font-size: 12px; margin-top: 8px;">${error.message || 'Unknown error'}</p>
+                    </div>
+                `;
             }
         }
         
@@ -22078,7 +22118,7 @@
                         <p id="addPlayerCalcHcp" style="font-size: 11px; color: #166534; margin-top: 4px; font-weight: 600; display: none;"></p>
                     </div>
                     <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
-                        <input type="checkbox" id="addPlayerGhinCheckbox" onchange="toggleAddPlayerGhinMode(this.checked)" style="width: 18px; height: 18px; cursor: pointer;">
+                        <input type="checkbox" id="addPlayerGhinCheckbox" class="ghin-checkbox" onchange="toggleAddPlayerGhinMode(this.checked)">
                         <span style="color: #475569; font-weight: 600; font-size: 13px;">Use GHIN Handicap Index</span>
                     </label>
                     <div style="display: flex; gap: 8px; margin-top: 8px;">
@@ -22118,8 +22158,13 @@
                     const btn = document.getElementById(`addTee_${key}`);
                     if (btn) {
                         const isSelected = key === teeKey;
-                        btn.style.borderColor = isSelected ? '#166534' : (key === 'white' || key === 'regular' ? '#cbd5e1' : btn.style.backgroundColor);
-                        btn.style.borderWidth = isSelected ? '3px' : '2px';
+                        if (isSelected) {
+                            btn.style.border = '3px solid #166534';
+                            btn.style.boxShadow = '0 0 0 2px rgba(22, 101, 52, 0.3)';
+                        } else {
+                            btn.style.border = `2px solid ${(key === 'white' || key === 'regular') ? '#cbd5e1' : btn.style.backgroundColor}`;
+                            btn.style.boxShadow = 'none';
+                        }
                     }
                 });
             }
@@ -22438,7 +22483,7 @@
                     <p id="editPageCalcHcp" style="font-size: 12px; color: #166534; margin-top: 4px; font-weight: 600; display: none;"></p>
                 </div>
                 <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
-                    <input type="checkbox" id="editPageGhinCheckbox" ${isGhinMode ? 'checked' : ''} onchange="toggleEditPageGhinMode(this.checked)" style="width: 18px; height: 18px; cursor: pointer;">
+                    <input type="checkbox" id="editPageGhinCheckbox" class="ghin-checkbox" ${isGhinMode ? 'checked' : ''} onchange="toggleEditPageGhinMode(this.checked)">
                     <span style="color: #475569; font-weight: 600; font-size: 13px;">Use GHIN Handicap Index</span>
                 </label>
             `;
@@ -22518,8 +22563,13 @@
                     const btn = document.getElementById(`editPageTee_${key}`);
                     if (btn) {
                         const isSelected = key === teeKey;
-                        btn.style.borderColor = isSelected ? '#166534' : (key === 'white' || key === 'regular' ? '#cbd5e1' : btn.style.backgroundColor);
-                        btn.style.borderWidth = isSelected ? '3px' : '2px';
+                        if (isSelected) {
+                            btn.style.border = '3px solid #166534';
+                            btn.style.boxShadow = '0 0 0 2px rgba(22, 101, 52, 0.3)';
+                        } else {
+                            btn.style.border = `2px solid ${(key === 'white' || key === 'regular') ? '#cbd5e1' : btn.style.backgroundColor}`;
+                            btn.style.boxShadow = 'none';
+                        }
                     }
                 });
             }
@@ -23483,7 +23533,7 @@
                     <p id="editCalcHcp" style="font-size: 12px; color: #166534; margin-top: 4px; font-weight: 600; display: none;"></p>
                     
                     <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 12px;">
-                        <input type="checkbox" id="editUseGhinCheckbox" ${isGhinMode ? 'checked' : ''} onchange="toggleEditGhinMode(this.checked)" style="width: 18px; height: 18px; cursor: pointer;">
+                        <input type="checkbox" id="editUseGhinCheckbox" class="ghin-checkbox" ${isGhinMode ? 'checked' : ''} onchange="toggleEditGhinMode(this.checked)">
                         <span style="color: #475569; font-weight: 600; font-size: 13px;">Use GHIN Handicap Index</span>
                     </label>
                 </div>
@@ -23628,7 +23678,14 @@
                 Object.keys(courseData.tees).forEach(key => {
                     const btn = document.getElementById(`editMgmtTee_${key}`);
                     if (btn) {
-                        btn.style.border = key === teeKey ? '3px solid #166534' : '2px solid ' + btn.style.backgroundColor;
+                        const isSelected = key === teeKey;
+                        if (isSelected) {
+                            btn.style.border = '3px solid #166534';
+                            btn.style.boxShadow = '0 0 0 2px rgba(22, 101, 52, 0.3)';
+                        } else {
+                            btn.style.border = `2px solid ${(key === 'white' || key === 'regular') ? '#cbd5e1' : btn.style.backgroundColor}`;
+                            btn.style.boxShadow = 'none';
+                        }
                     }
                 });
             }
@@ -23795,7 +23852,7 @@
                     <p id="editCalcHcp" style="font-size: 12px; color: #166534; margin-top: 4px; font-weight: 600; display: none;"></p>
                     
                     <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 12px;">
-                        <input type="checkbox" id="editUseGhinCheckbox" ${isGhinMode ? 'checked' : ''} onchange="toggleEditMgmtGhinMode(this.checked)" style="width: 18px; height: 18px; cursor: pointer;">
+                        <input type="checkbox" id="editUseGhinCheckbox" class="ghin-checkbox" ${isGhinMode ? 'checked' : ''} onchange="toggleEditMgmtGhinMode(this.checked)">
                         <span style="color: #475569; font-weight: 600; font-size: 13px;">Use GHIN Handicap Index</span>
                     </label>
                 </div>
@@ -25204,10 +25261,10 @@
                     
                     <!-- Action Buttons -->
                     <div style="display: flex; flex-direction: column; gap: 10px;">
-                        <button type="button" onclick="saveBestBallAndShowResults()" style="padding: 14px; background: #1e3a5f; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">
+                        <button type="button" onclick="saveBestBallAndShowResults()" style="padding: 14px; background: #1e3a5f; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: rgba(30, 58, 95, 0.3);">
                             ✓ View Results
                         </button>
-                        <button type="button" onclick="clearBestBallTeamsOnSetup()" style="padding: 12px; background: #d4b896; color: #1e3a5f; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">
+                        <button type="button" onclick="clearBestBallTeamsOnSetup()" style="padding: 12px; background: #d4b896; color: #1e3a5f; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; touch-action: manipulation;">
                             🗑 Clear Teams
                         </button>
                     </div>
@@ -25411,12 +25468,19 @@
         
         // Save config and show results
         function saveBestBallAndShowResults() {
-            if (!window.tempBestBallConfig) return;
+            console.log('📊 saveBestBallAndShowResults called');
+            
+            if (!window.tempBestBallConfig) {
+                console.log('❌ No tempBestBallConfig');
+                return;
+            }
             
             // Validate teams have at least some players
             const validTeams = window.tempBestBallConfig.teams.filter(team => 
                 team.some(name => name && name.trim() !== '')
             );
+            
+            console.log(`📊 Valid teams: ${validTeams.length}`);
             
             if (validTeams.length < 2) {
                 showNotification('Need More Teams', 'Create at least 2 teams with players');
@@ -25457,6 +25521,7 @@
             // Update scoring method button color to green for side game
             updateScoringMethodButtonColors('green');
             
+            console.log('📊 Calling updateResultsDisplay');
             updateResultsDisplay();
         }
         
