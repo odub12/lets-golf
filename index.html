@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-01-30-v15.9.39-fav-prefix-fix -->
+    <!-- VERSION: 2026-01-30-v15.9.41-ihmc-player-import -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -13649,6 +13649,11 @@
                 
                 console.log('✅ Found IHMC event:', event.name);
                 
+                // Log registered players if available
+                if (event.registeredPlayers && event.registeredPlayers.length > 0) {
+                    console.log(`📋 IHMC event has ${event.registeredPlayers.length} registered players with handicaps`);
+                }
+                
                 // Return in a format compatible with Let's Golf tournament system
                 return { 
                     success: true, 
@@ -13665,7 +13670,8 @@
                         scoringSettings: event.scoringSettings || { allowPlayerSelfJoin: true, allowGuestScoring: true },
                         ihmcEventId: eventDoc.id,
                         ihmcHostCode: event.hostCode,
-                        ihmcPlayerCode: event.playerCode
+                        ihmcPlayerCode: event.playerCode,
+                        registeredPlayers: event.registeredPlayers || [] // Players with handicaps from IHMC
                     }
                 };
             } catch (error) {
@@ -13809,6 +13815,7 @@
             }
             
             const event = currentIHMCEvent.ihmcEvent;
+            const tournament = currentIHMCEvent.tournament;
             
             // Store IHMC event reference for later publishing
             localStorage.setItem('currentIHMCEvent', JSON.stringify({
@@ -13844,11 +13851,68 @@
                 dateInput.value = event.date;
             }
             
-            // Show notification
-            showNotification('IHMC Event Loaded', `Ready to score: ${event.name}`);
+            // Set tournament name
+            const nameInput = document.getElementById('tournamentName');
+            if (nameInput && event.name) {
+                nameInput.value = event.name;
+            }
             
-            // Go to setup page
+            // Go to setup page first so DOM is ready
             showPage('setupPage');
+            
+            // Pre-populate players from IHMC registered players
+            const registeredPlayers = tournament?.registeredPlayers || event.registeredPlayers || [];
+            if (registeredPlayers.length > 0) {
+                console.log(`📋 Loading ${registeredPlayers.length} players from IHMC event`);
+                
+                // Small delay to ensure DOM is ready
+                setTimeout(() => {
+                    populatePlayersFromIHMC(registeredPlayers);
+                    showNotification('IHMC Event Loaded', `${registeredPlayers.length} players loaded from ${event.name}`);
+                }, 100);
+            } else {
+                showNotification('IHMC Event Loaded', `Ready to score: ${event.name}`);
+            }
+        }
+        
+        // Populate setup page with IHMC registered players
+        function populatePlayersFromIHMC(registeredPlayers) {
+            if (!registeredPlayers || registeredPlayers.length === 0) return;
+            
+            const playerList = document.getElementById('playerList');
+            if (!playerList) return;
+            
+            // Clear existing player rows
+            playerList.innerHTML = '';
+            
+            // Enable GHIN mode since IHMC sends handicap indexes
+            const ghinCheckbox = document.getElementById('setupUseGhinCheckbox');
+            if (ghinCheckbox) {
+                ghinCheckbox.checked = true;
+                toggleSetupGhinMode(true);
+            }
+            
+            // Add each registered player
+            registeredPlayers.forEach((player, index) => {
+                const playerId = index + 1;
+                const handicapValue = player.handicap || player.handicapIndex || 0;
+                
+                const wrapper = document.createElement('div');
+                wrapper.className = 'player-row-wrapper';
+                wrapper.innerHTML = `
+                    <div class="player-row-delete" onclick="removePlayer(${playerId})">Delete</div>
+                    <div class="player-row" data-player="${playerId}">
+                        <input type="text" class="player-name-input" placeholder="Player Name" id="player${playerId}" value="${player.name || ''}">
+                        <input type="text" class="player-hcp-input" placeholder="H.I." id="hcp${playerId}" value="${handicapValue}" pattern="-?[0-9.]*" inputmode="decimal" step="0.1">
+                    </div>
+                `;
+                playerList.appendChild(wrapper);
+            });
+            
+            // Update the global player count
+            window.playerCount = registeredPlayers.length;
+            
+            console.log(`✅ Populated ${registeredPlayers.length} players from IHMC`);
         }
         
         // Publish results to IHMC (called after round ends)
@@ -23438,6 +23502,61 @@
             calcDisplay.textContent = `= Course HCP ${Math.round(index)}`;
         }
         
+        // Management edit modal helpers (with tee selection)
+        function selectEditMgmtTee(teeKey) {
+            window.editMgmtSelectedTee = teeKey;
+            // Update button styles
+            if (courseData?.tees) {
+                Object.keys(courseData.tees).forEach(key => {
+                    const btn = document.getElementById(`editMgmtTee_${key}`);
+                    if (btn) {
+                        btn.style.border = key === teeKey ? '3px solid #166534' : '2px solid ' + btn.style.backgroundColor;
+                    }
+                });
+            }
+            updateEditMgmtHcp();
+        }
+        
+        function toggleEditMgmtGhinMode(useGhin) {
+            const label = document.getElementById('editHcpLabel');
+            const input = document.getElementById('editPlayerHandicap');
+            const calcDisplay = document.getElementById('editCalcHcp');
+            
+            if (useGhin) {
+                label.textContent = 'GHIN Handicap Index:';
+                input.step = '0.1';
+                input.placeholder = '12.4';
+                calcDisplay.style.display = 'block';
+                updateEditMgmtHcp();
+            } else {
+                label.textContent = 'Course Handicap:';
+                input.step = '1';
+                input.placeholder = '12';
+                calcDisplay.style.display = 'none';
+            }
+        }
+        
+        function updateEditMgmtHcp() {
+            const useGhin = document.getElementById('editUseGhinCheckbox')?.checked;
+            const calcDisplay = document.getElementById('editCalcHcp');
+            const input = document.getElementById('editPlayerHandicap');
+            
+            if (!useGhin || !calcDisplay) return;
+            
+            const index = parseFloat(input.value) || 0;
+            const selectedTee = window.editMgmtSelectedTee;
+            
+            if (courseData && courseData.tees && selectedTee) {
+                const teeData = courseData.tees[selectedTee];
+                if (teeData) {
+                    const courseHcp = calculateCourseHandicap(index, teeData.slope, teeData.rating, courseData.totalPar);
+                    calcDisplay.textContent = `= Course HCP ${courseHcp} (${teeData.name || selectedTee} tees)`;
+                    return;
+                }
+            }
+            calcDisplay.textContent = `= Course HCP ${Math.round(index)}`;
+        }
+        
         function getOrderedPlayers() {
             loadPlayerOrder();
             
@@ -23512,6 +23631,30 @@
             const currentIndex = player?.handicapIndex || null;
             const isGhinMode = player?.hcpMode === 'index' || currentIndex !== null;
             
+            // Build tee buttons HTML
+            let teeButtonsHtml = '';
+            const defaultTee = tournamentData?.tee || (courseData?.defaultTee) || (courseData?.tees ? Object.keys(courseData.tees)[0] : null);
+            window.editMgmtSelectedTee = defaultTee;
+            
+            if (courseData?.tees) {
+                const teeColors = {
+                    black: '#1e293b', blue: '#1e3a5f', white: '#f1f5f9', gold: '#fbbf24',
+                    silver: '#94a3b8', red: '#a51c30', green: '#166534',
+                    tournament: '#1e293b', championship: '#1e3a5f', regular: '#64748b', forward: '#fbbf24'
+                };
+                teeButtonsHtml = Object.keys(courseData.tees).map(teeKey => {
+                    const tee = courseData.tees[teeKey];
+                    const bgColor = teeColors[teeKey] || '#64748b';
+                    const textColor = ['white', 'gold', 'silver', 'forward'].includes(teeKey) ? '#1e293b' : 'white';
+                    const isDefault = teeKey === defaultTee;
+                    const borderStyle = isDefault ? '3px solid #166534' : '2px solid ' + bgColor;
+                    return `<button type="button" onclick="selectEditMgmtTee('${teeKey}')" id="editMgmtTee_${teeKey}"
+                        style="padding: 8px 12px; background: ${bgColor}; color: ${textColor}; border: ${borderStyle}; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                        ${tee.name}${isDefault ? ' ★' : ''}
+                    </button>`;
+                }).join('');
+            }
+            
             titleEl.textContent = `Edit ${playerName}`;
             messageEl.innerHTML = `
                 <div style="margin: 16px 0;">
@@ -23519,14 +23662,22 @@
                     <input type="text" id="editPlayerName" value="${playerName}" 
                         style="width: 100%; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
                     
+                    ${courseData?.tees ? `
+                    <label style="display: block; margin: 12px 0 8px; font-weight: 600;">Playing From:</label>
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;">
+                        ${teeButtonsHtml}
+                    </div>
+                    <p style="font-size: 10px; color: #64748b;">★ = Tournament default</p>
+                    ` : ''}
+                    
                     <label id="editHcpLabel" style="display: block; margin: 16px 0 8px; font-weight: 600;">Course Handicap:</label>
                     <input type="number" id="editPlayerHandicap" value="${currentHandicap}" 
                         style="width: 100%; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 14px; box-sizing: border-box;"
-                        min="-10" max="54" step="1" oninput="updateEditModalHcp()">
+                        min="-10" max="54" step="1" oninput="updateEditMgmtHcp()">
                     <p id="editCalcHcp" style="font-size: 12px; color: #166534; margin-top: 4px; font-weight: 600; display: none;"></p>
                     
                     <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 12px;">
-                        <input type="checkbox" id="editUseGhinCheckbox" ${isGhinMode ? 'checked' : ''} onchange="toggleEditGhinMode(this.checked)" style="width: 18px; height: 18px; cursor: pointer;">
+                        <input type="checkbox" id="editUseGhinCheckbox" ${isGhinMode ? 'checked' : ''} onchange="toggleEditMgmtGhinMode(this.checked)" style="width: 18px; height: 18px; cursor: pointer;">
                         <span style="color: #475569; font-weight: 600; font-size: 13px;">Use GHIN Handicap Index</span>
                     </label>
                 </div>
@@ -23536,7 +23687,7 @@
             
             // Initialize the display based on current mode
             setTimeout(() => {
-                toggleEditGhinMode(isGhinMode);
+                toggleEditMgmtGhinMode(isGhinMode);
                 if (isGhinMode && currentIndex !== null) {
                     document.getElementById('editPlayerHandicap').value = currentIndex;
                 }
@@ -23546,16 +23697,16 @@
                 const newName = document.getElementById('editPlayerName').value.trim();
                 const useGhin = document.getElementById('editUseGhinCheckbox').checked;
                 const inputValue = parseFloat(document.getElementById('editPlayerHandicap').value) || 0;
+                const selectedTee = window.editMgmtSelectedTee;
                 
                 let newHandicap, handicapIndex, hcpMode;
                 
                 if (useGhin) {
-                    // Calculate course handicap from index
+                    // Calculate course handicap from index using selected tee
                     handicapIndex = Math.round(inputValue * 10) / 10;
                     hcpMode = 'index';
-                    if (courseData && courseData.tees) {
-                        const tee = tournamentData?.tee || Object.keys(courseData.tees)[0];
-                        const teeData = courseData.tees[tee];
+                    if (courseData && courseData.tees && selectedTee) {
+                        const teeData = courseData.tees[selectedTee];
                         if (teeData) {
                             newHandicap = calculateCourseHandicap(handicapIndex, teeData.slope, teeData.rating, courseData.totalPar);
                         } else {
