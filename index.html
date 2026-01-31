@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-01-31-v15.9.55-scorecard-zoom-fix -->
+    <!-- VERSION: 2026-01-31-v15.9.56-signin-fixes-fullscorecard-preview -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -1868,15 +1868,25 @@
             -webkit-overflow-scrolling: touch;
         }
         
-        .scorecard-body.zoomed {
-            overflow: scroll;
+        /* Sticky header and column for scorecard table */
+        .scorecard-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
         }
         
-        .scorecard-zoom-wrapper {
-            transform-origin: top left;
-            transition: transform 0.15s ease;
-            display: inline-block;
-            min-width: 100%;
+        .scorecard-table thead th:first-child {
+            position: sticky;
+            left: 0;
+            top: 0;
+            z-index: 3;
+        }
+        
+        .scorecard-table tbody td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 1;
+            background: inherit;
         }
 
         .scorecard-footer {
@@ -3716,16 +3726,16 @@
                 
                 <!-- GHIN Toggle -->
                 <label id="setupGhinToggle" style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
-                    <input type="checkbox" id="setupUseGhinCheckbox" class="ghin-checkbox" onchange="toggleSetupGhinMode(this.checked)">
+                    <input type="checkbox" id="setupUseGhinCheckbox" class="ghin-checkbox" onchange="toggleSetupGhinMode(this.checked)" checked>
                     <span style="color: #475569; font-weight: 600; font-size: 13px;">Use GHIN Handicap Index</span>
-                    <span id="setupGhinHint" style="font-size: 11px; color: #64748b; margin-left: auto;">Enter Course HCP</span>
+                    <span id="setupGhinHint" style="font-size: 11px; color: #64748b; margin-left: auto;">Enter GHIN Index</span>
                 </label>
                 
                 <!-- Column Headers - 2 column default, 3 column in GHIN mode -->
-                <div id="setupColumnHeaders" style="display: grid; grid-template-columns: 1fr 70px; gap: 6px; margin-bottom: 6px; padding: 0 4px;">
+                <div id="setupColumnHeaders" style="display: grid; grid-template-columns: 1fr 55px 45px; gap: 6px; margin-bottom: 6px; padding: 0 4px;">
                     <div style="font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase;">Name</div>
-                    <div id="setupHcpHeader" style="font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; text-align: center;">HCP</div>
-                    <div id="setupCourseHcpHeader" style="font-size: 10px; color: #166534; font-weight: 600; text-transform: uppercase; text-align: center; display: none;">Course</div>
+                    <div id="setupHcpHeader" style="font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; text-align: center;">H.I.</div>
+                    <div id="setupCourseHcpHeader" style="font-size: 10px; color: #166534; font-weight: 600; text-transform: uppercase; text-align: center; display: block;">Course</div>
                 </div>
                 
                 <div class="player-list" id="playerList">
@@ -4135,15 +4145,7 @@
         <div class="scorecard-content">
             <div class="scorecard-header">
                 <h2 style="color: #1e3a5f; margin: 0; display: flex; align-items: center; gap: 8px;">⛳ Scorecards</h2>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <!-- Zoom Controls -->
-                    <div id="scorecardZoomControls" style="display: flex; align-items: center; gap: 4px; background: #f1f5f9; border-radius: 6px; padding: 4px;">
-                        <button onclick="zoomScorecard(-1)" style="width: 32px; height: 32px; border: none; background: white; border-radius: 4px; font-size: 18px; font-weight: bold; cursor: pointer; color: #1e3a5f;">−</button>
-                        <span id="scorecardZoomLevel" style="min-width: 45px; text-align: center; font-size: 12px; font-weight: 600; color: #64748b;">100%</span>
-                        <button onclick="zoomScorecard(1)" style="width: 32px; height: 32px; border: none; background: white; border-radius: 4px; font-size: 18px; font-weight: bold; cursor: pointer; color: #1e3a5f;">+</button>
-                    </div>
-                    <button onclick="closeScorecardModal()" style="background: #d4b896; color: #1e3a5f; border: none; border-radius: 4px; padding: 8px 16px; font-weight: 600; cursor: pointer; font-size: 13px;">✕ Close</button>
-                </div>
+                <button onclick="closeScorecardModal()" style="background: #d4b896; color: #1e3a5f; border: none; border-radius: 4px; padding: 8px 16px; font-weight: 600; cursor: pointer; font-size: 13px;">✕ Close</button>
             </div>
             <div style="padding: 20px; border-bottom: 1px solid #e2e8f0;">
                 <label style="font-weight: 600; color: #1e3a5f; margin-bottom: 8px; display: block;">Select View:</label>
@@ -4157,7 +4159,7 @@
                 <!-- Scorecard content will be populated here -->
             </div>
             <div class="scorecard-footer">
-                <button onclick="printScorecard()" class="btn btn-primary" style="background: #1e3a5f; margin: 0; border-radius: 4px;">📤 Share / Print</button>
+                <button onclick="openFullScorecardPreview()" class="btn btn-primary" style="background: #1e3a5f; margin: 0; border-radius: 4px;">👁️ Full Scorecard</button>
             </div>
         </div>
     </div>
@@ -4294,7 +4296,7 @@
                             <input type="password" id="signInPassword" placeholder="••••••••" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 16px; box-sizing: border-box;">
                         </div>
                         <div id="signInError" style="display: none; color: #a51c30; font-size: 13px; margin-bottom: 12px; text-align: center; padding: 8px; background: #fef2f2; border-radius: 6px;"></div>
-                        <button type="button" onclick="console.log('Sign In clicked'); doSignIn();" style="width: 100%; padding: 14px; background: #1e3a5f; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; margin-bottom: 12px; touch-action: manipulation; -webkit-tap-highlight-color: rgba(30, 58, 95, 0.3);">Sign In</button>
+                        <button type="button" onclick="doSignIn();" style="width: 100%; padding: 14px; background: #1e3a5f; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; margin-bottom: 12px; touch-action: manipulation; -webkit-tap-highlight-color: rgba(30, 58, 95, 0.3);">Sign In</button>
                         <p style="text-align: center; margin: 0;">
                             <a href="#" onclick="closeSignInModal(); showForgotPasswordModal(); return false;" style="color: #1e3a5f; font-size: 13px; text-decoration: none;">Forgot password?</a>
                         </p>
@@ -4325,7 +4327,7 @@
                             <input type="password" id="createPasswordConfirm" placeholder="Re-enter password" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 16px; box-sizing: border-box;">
                         </div>
                         <div id="createError" style="display: none; color: #a51c30; font-size: 13px; margin-bottom: 12px; text-align: center; padding: 8px; background: #fef2f2; border-radius: 6px;"></div>
-                        <button type="button" onclick="console.log('Create Account clicked'); doCreateAccount();" style="width: 100%; padding: 14px; background: #166534; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: rgba(22, 101, 52, 0.3);">Create Account</button>
+                        <button type="button" onclick="doCreateAccount();" style="width: 100%; padding: 14px; background: #166534; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: rgba(22, 101, 52, 0.3);">Create Account</button>
                     </div>
                 </div>
             </div>
@@ -6433,38 +6435,42 @@
         
         // Do Sign In
         async function doSignIn() {
-            console.log('🔐 doSignIn() called');
-            const email = document.getElementById('signInEmail').value.trim();
-            const password = document.getElementById('signInPassword').value;
+            const email = document.getElementById('signInEmail')?.value?.trim();
+            const password = document.getElementById('signInPassword')?.value;
             const errorEl = document.getElementById('signInError');
             
-            console.log('🔐 Email:', email, 'Password length:', password?.length);
-            
             if (!email || !password) {
-                errorEl.textContent = 'Please enter email and password';
-                errorEl.style.display = 'block';
+                if (errorEl) {
+                    errorEl.textContent = 'Please enter email and password';
+                    errorEl.style.display = 'block';
+                }
                 return;
             }
             
             try {
-                errorEl.style.display = 'none';
-                console.log('🔐 Attempting Firebase sign in...');
-                await auth.signInWithEmailAndPassword(email, password);
-                console.log('🔐 Sign in successful!');
+                if (errorEl) errorEl.style.display = 'none';
                 
-                // Close modal using proper function (do NOT remove from DOM)
+                await auth.signInWithEmailAndPassword(email, password);
+                
+                // Close modal FIRST using proper function
                 closeSignInModal();
                 
-                // Update UI
-                updateAccountUI();
-                updateHomePageLoginStatus();
-                populateHomeRoundsList();
+                // Small delay before updating UI to ensure modal is gone
+                setTimeout(() => {
+                    // Update UI
+                    updateAccountUI();
+                    updateHomePageLoginStatus();
+                    populateHomeRoundsList();
+                    
+                    showNotification('✅ Signed In', 'Welcome back!');
+                }, 100);
                 
-                showNotification('✅ Signed In', 'Welcome back!');
             } catch (error) {
-                console.error('🔐 Sign in error:', error);
-                errorEl.textContent = getAuthErrorMessage(error.code);
-                errorEl.style.display = 'block';
+                console.error('Sign in error:', error);
+                if (errorEl) {
+                    errorEl.textContent = getAuthErrorMessage(error.code);
+                    errorEl.style.display = 'block';
+                }
             }
         }
         
@@ -8191,16 +8197,11 @@
             
             // IMPORTANT: Scope to setup page player list only
             const playerList = document.getElementById('playerList');
-            if (!playerList) {
-                console.log('⚠️ playerList not found');
-                return;
-            }
+            if (!playerList) return;
             
             const hcpInputs = playerList.querySelectorAll('.player-hcp-input');
             const courseHcpSpans = playerList.querySelectorAll('.player-course-hcp');
             const playerRows = playerList.querySelectorAll('.player-row');
-            
-            console.log(`🔄 toggleSetupGhinMode(${useGhin}): Found ${hcpInputs.length} inputs, ${courseHcpSpans.length} spans, ${playerRows.length} rows`);
             
             if (useGhin) {
                 if (header) header.textContent = 'H.I.';
@@ -8212,13 +8213,11 @@
                     input.placeholder = 'H.I.';
                     input.step = '0.1';
                 });
-                courseHcpSpans.forEach((span, idx) => {
+                courseHcpSpans.forEach(span => {
                     span.style.display = 'block';
-                    console.log(`  Span ${idx}: display set to block, id=${span.id}`);
                 });
-                playerRows.forEach((row, idx) => {
+                playerRows.forEach(row => {
                     row.classList.add('ghin-mode');
-                    console.log(`  Row ${idx}: added ghin-mode class, data-player=${row.getAttribute('data-player')}`);
                 });
                 
                 // Calculate course HCP for all existing players
@@ -8244,44 +8243,34 @@
         
         // Update course HCP for a single player on setup page
         function updateSetupCourseHcp(playerId) {
-            console.log(`📊 updateSetupCourseHcp called for player ${playerId}`);
-            
             const useGhin = document.getElementById('setupUseGhinCheckbox')?.checked;
-            if (!useGhin) {
-                console.log(`📊 GHIN mode not enabled, skipping`);
-                return;
-            }
+            if (!useGhin) return;
             
             const input = document.getElementById(`hcp${playerId}`);
             const courseHcpSpan = document.getElementById(`courseHcp${playerId}`);
             
-            console.log(`📊 Input found: ${!!input}, Span found: ${!!courseHcpSpan}`);
-            
-            if (!input || !courseHcpSpan) return;
+            if (!input || !courseHcpSpan) {
+                console.log(`⚠️ updateSetupCourseHcp(${playerId}): Missing input or span`);
+                return;
+            }
             
             const index = parseFloat(input.value);
-            console.log(`📊 Index value: ${index}`);
-            
-            if (isNaN(index)) {
+            if (isNaN(index) || input.value.trim() === '') {
                 courseHcpSpan.textContent = '';
                 return;
             }
             
             // Get tee data for calculation
-            console.log(`📊 courseData: ${!!courseData}, tees: ${!!courseData?.tees}, selectedTee: ${selectedTee}`);
-            
             if (courseData && courseData.tees && selectedTee) {
                 const teeData = courseData.tees[selectedTee];
-                if (teeData) {
-                    const courseHcp = calculateCourseHandicap(index, teeData.slope, teeData.rating, courseData.totalPar);
-                    console.log(`📊 Calculated Course HCP: ${courseHcp}`);
+                if (teeData && teeData.slope && teeData.rating) {
+                    const courseHcp = calculateCourseHandicap(index, teeData.slope, teeData.rating, courseData.totalPar || 72);
                     courseHcpSpan.textContent = courseHcp;
                     return;
                 }
             }
             
-            // Fallback - just round the index
-            console.log(`📊 Using fallback, rounded: ${Math.round(index)}`);
+            // Fallback - just round the index (always show something)
             courseHcpSpan.textContent = Math.round(index);
         }
         
@@ -16565,7 +16554,7 @@
             
             const modal = document.createElement('div');
             modal.id = 'signInPromptModal';
-            modal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;';
+            modal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10003; display: flex; align-items: center; justify-content: center; padding: 20px;';
             modal.innerHTML = `
                 <div style="background: white; border-radius: 12px; max-width: 340px; width: 100%; padding: 24px; text-align: center;">
                     <div style="font-size: 48px; margin-bottom: 12px;">🔐</div>
@@ -16574,22 +16563,43 @@
                         Sign in to access your home page, view past rounds, and sync across devices.
                     </p>
                     <div style="display: flex; flex-direction: column; gap: 10px;">
-                        <button onclick="document.getElementById('signInPromptModal').remove(); showSignInModal();" 
-                            style="width: 100%; padding: 14px; background: #1e3a5f; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">
+                        <button type="button" id="promptSignInBtn"
+                            style="width: 100%; padding: 14px; background: #1e3a5f; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; touch-action: manipulation;">
                             Sign In
                         </button>
-                        <button onclick="document.getElementById('signInPromptModal').remove(); showCreateAccountModal();" 
-                            style="width: 100%; padding: 14px; background: #d4b896; color: #1e3a5f; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">
+                        <button type="button" id="promptCreateAccountBtn"
+                            style="width: 100%; padding: 14px; background: #d4b896; color: #1e3a5f; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; touch-action: manipulation;">
                             Create Account
                         </button>
-                        <button onclick="document.getElementById('signInPromptModal').remove();" 
-                            style="width: 100%; padding: 12px; background: transparent; color: #64748b; border: none; font-size: 14px; cursor: pointer;">
+                        <button type="button" id="promptCancelBtn"
+                            style="width: 100%; padding: 12px; background: transparent; color: #64748b; border: none; font-size: 14px; cursor: pointer; touch-action: manipulation;">
                             Cancel
                         </button>
                     </div>
                 </div>
             `;
             document.body.appendChild(modal);
+            
+            // Add event listeners after appending to DOM
+            document.getElementById('promptSignInBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                modal.remove();
+                setTimeout(() => showSignInModal(), 50);
+            });
+            
+            document.getElementById('promptCreateAccountBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                modal.remove();
+                setTimeout(() => showCreateAccountModal(), 50);
+            });
+            
+            document.getElementById('promptCancelBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                modal.remove();
+            });
         }
         
         // Show Host Home Page
@@ -26965,6 +26975,140 @@
             // Print the current scorecard view
             window.print();
         }
+        
+        // Full Scorecard Preview - full screen with pinch-to-zoom
+        function openFullScorecardPreview() {
+            // Get the current scorecard content
+            const body = document.getElementById('scorecardBody');
+            if (!body) return;
+            
+            // Create full-screen preview modal
+            const existingPreview = document.getElementById('fullScorecardPreview');
+            if (existingPreview) existingPreview.remove();
+            
+            const preview = document.createElement('div');
+            preview.id = 'fullScorecardPreview';
+            preview.style.cssText = `
+                position: fixed;
+                inset: 0;
+                background: #1a1a2e;
+                z-index: 10010;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+            `;
+            
+            preview.innerHTML = `
+                <div style="padding: 12px 16px; background: #1e3a5f; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+                    <button onclick="closeFullScorecardPreview()" style="padding: 8px 16px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; touch-action: manipulation;">
+                        ← Back
+                    </button>
+                    <h3 style="color: white; margin: 0; font-size: 16px;">📋 Full Scorecard</h3>
+                    <button onclick="shareFullScorecard()" style="padding: 8px 16px; background: #166534; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; touch-action: manipulation;">
+                        📤 Share
+                    </button>
+                </div>
+                <div style="padding: 8px 16px; text-align: center; background: rgba(255,255,255,0.05); flex-shrink: 0; display: flex; justify-content: center; align-items: center; gap: 16px;">
+                    <span style="color: #94a3b8; font-size: 12px;">📱 Pinch to zoom • Swipe to scroll</span>
+                    <button onclick="resetScorecardPreviewZoom()" style="padding: 6px 12px; background: rgba(255,255,255,0.15); color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; touch-action: manipulation;">
+                        ↺ Reset Zoom
+                    </button>
+                </div>
+                <div id="scorecardPreviewContainer" style="flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; padding: 16px;">
+                    <div id="scorecardPreviewContent" style="background: white; border-radius: 8px; padding: 16px; transform-origin: top left; min-width: fit-content;">
+                        ${body.innerHTML}
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(preview);
+            
+            // Initialize pinch-to-zoom
+            initPreviewPinchZoom();
+        }
+        
+        // Preview zoom state
+        let previewZoomLevel = 1;
+        let previewPinchStartDistance = 0;
+        let previewPinchStartZoom = 1;
+        
+        function initPreviewPinchZoom() {
+            const container = document.getElementById('scorecardPreviewContainer');
+            if (!container) return;
+            
+            container.addEventListener('touchstart', handlePreviewTouchStart, { passive: false });
+            container.addEventListener('touchmove', handlePreviewTouchMove, { passive: false });
+            container.addEventListener('touchend', handlePreviewTouchEnd, { passive: true });
+        }
+        
+        function handlePreviewTouchStart(e) {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                previewPinchStartDistance = getPreviewPinchDistance(e.touches);
+                previewPinchStartZoom = previewZoomLevel;
+            }
+        }
+        
+        function handlePreviewTouchMove(e) {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                const currentDistance = getPreviewPinchDistance(e.touches);
+                const scale = currentDistance / previewPinchStartDistance;
+                
+                previewZoomLevel = previewPinchStartZoom * scale;
+                previewZoomLevel = Math.max(0.5, Math.min(4, previewZoomLevel));
+                
+                applyPreviewZoom();
+            }
+        }
+        
+        function handlePreviewTouchEnd(e) {
+            previewPinchStartDistance = 0;
+        }
+        
+        function getPreviewPinchDistance(touches) {
+            const dx = touches[0].clientX - touches[1].clientX;
+            const dy = touches[0].clientY - touches[1].clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+        
+        function applyPreviewZoom() {
+            const content = document.getElementById('scorecardPreviewContent');
+            if (content) {
+                content.style.transform = `scale(${previewZoomLevel})`;
+            }
+        }
+        
+        function resetScorecardPreviewZoom() {
+            previewZoomLevel = 1;
+            applyPreviewZoom();
+        }
+        
+        function closeFullScorecardPreview() {
+            const preview = document.getElementById('fullScorecardPreview');
+            if (preview) {
+                preview.remove();
+                previewZoomLevel = 1;
+            }
+        }
+        
+        function shareFullScorecard() {
+            // Use Web Share API if available (includes Print option on iOS)
+            if (navigator.share) {
+                navigator.share({
+                    title: `${tournamentData.name || 'Golf'} Scorecard`,
+                    text: `Scorecard from ${courseData?.name || 'Golf Round'} - ${formatDateDisplay(tournamentData.date)}`,
+                    url: window.location.href
+                }).catch(err => {
+                    console.log('Share cancelled or failed:', err);
+                    // Fallback to print
+                    window.print();
+                });
+            } else {
+                // Fallback to print dialog
+                window.print();
+            }
+        }
 
         // Open scorecard modal
         function openScorecardModal() {
@@ -27026,8 +27170,6 @@
             }
             
             modal.classList.add('active');
-            resetScorecardZoom();
-            initScorecardPinchZoom();
             updateScorecardView();
         }
 
@@ -27035,111 +27177,6 @@
         function closeScorecardModal() {
             const modal = document.getElementById('scorecardModal');
             modal.classList.remove('active');
-            // Reset zoom when closing
-            scorecardZoomLevel = 100;
-        }
-        
-        // Scorecard zoom functionality
-        let scorecardZoomLevel = 100;
-        const SCORECARD_ZOOM_MIN = 50;
-        const SCORECARD_ZOOM_MAX = 200;
-        const SCORECARD_ZOOM_STEP = 10;
-        
-        function zoomScorecard(direction) {
-            // direction: 1 for zoom in, -1 for zoom out
-            scorecardZoomLevel += direction * SCORECARD_ZOOM_STEP;
-            scorecardZoomLevel = Math.max(SCORECARD_ZOOM_MIN, Math.min(SCORECARD_ZOOM_MAX, scorecardZoomLevel));
-            
-            applyScorecardZoom();
-        }
-        
-        function applyScorecardZoom() {
-            const body = document.getElementById('scorecardBody');
-            const zoomDisplay = document.getElementById('scorecardZoomLevel');
-            
-            if (body) {
-                // Wrap content if not already wrapped
-                let wrapper = body.querySelector('.scorecard-zoom-wrapper');
-                if (!wrapper) {
-                    wrapper = document.createElement('div');
-                    wrapper.className = 'scorecard-zoom-wrapper';
-                    // Move all children into wrapper
-                    while (body.firstChild) {
-                        wrapper.appendChild(body.firstChild);
-                    }
-                    body.appendChild(wrapper);
-                }
-                
-                // Apply zoom transform to wrapper
-                wrapper.style.transform = `scale(${scorecardZoomLevel / 100})`;
-                
-                // Add/remove zoomed class for styling
-                if (scorecardZoomLevel !== 100) {
-                    body.classList.add('zoomed');
-                } else {
-                    body.classList.remove('zoomed');
-                }
-            }
-            
-            if (zoomDisplay) {
-                zoomDisplay.textContent = `${scorecardZoomLevel}%`;
-            }
-        }
-        
-        // Reset zoom when view changes
-        function resetScorecardZoom() {
-            scorecardZoomLevel = 100;
-            applyScorecardZoom();
-        }
-        
-        // Pinch-to-zoom support for touch devices
-        let scorecardPinchStartDistance = 0;
-        let scorecardPinchStartZoom = 100;
-        
-        function initScorecardPinchZoom() {
-            const body = document.getElementById('scorecardBody');
-            if (!body) return;
-            
-            // Remove existing listeners to avoid duplicates
-            body.removeEventListener('touchstart', handleScorecardTouchStart);
-            body.removeEventListener('touchmove', handleScorecardTouchMove);
-            body.removeEventListener('touchend', handleScorecardTouchEnd);
-            
-            // Add touch listeners
-            body.addEventListener('touchstart', handleScorecardTouchStart, { passive: false });
-            body.addEventListener('touchmove', handleScorecardTouchMove, { passive: false });
-            body.addEventListener('touchend', handleScorecardTouchEnd, { passive: true });
-        }
-        
-        function handleScorecardTouchStart(e) {
-            if (e.touches.length === 2) {
-                e.preventDefault();
-                scorecardPinchStartDistance = getPinchDistance(e.touches);
-                scorecardPinchStartZoom = scorecardZoomLevel;
-            }
-        }
-        
-        function handleScorecardTouchMove(e) {
-            if (e.touches.length === 2) {
-                e.preventDefault();
-                const currentDistance = getPinchDistance(e.touches);
-                const scale = currentDistance / scorecardPinchStartDistance;
-                
-                scorecardZoomLevel = Math.round(scorecardPinchStartZoom * scale);
-                scorecardZoomLevel = Math.max(SCORECARD_ZOOM_MIN, Math.min(SCORECARD_ZOOM_MAX, scorecardZoomLevel));
-                
-                applyScorecardZoom();
-            }
-        }
-        
-        function handleScorecardTouchEnd(e) {
-            scorecardPinchStartDistance = 0;
-        }
-        
-        function getPinchDistance(touches) {
-            const dx = touches[0].clientX - touches[1].clientX;
-            const dy = touches[0].clientY - touches[1].clientY;
-            return Math.sqrt(dx * dx + dy * dy);
         }
 
         // Update scorecard view based on selection
@@ -27191,11 +27228,6 @@
             } else if (viewType.startsWith('player-')) {
                 const playerIndex = parseInt(viewType.split('-')[1]);
                 body.innerHTML = generateIndividualCard(playerIndex);
-            }
-            
-            // Re-apply current zoom level after content update
-            if (scorecardZoomLevel !== 100) {
-                applyScorecardZoom();
             }
         }
 
