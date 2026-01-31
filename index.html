@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-01-31-v15.9.57-add-player-modal-signin-fixes -->
+    <!-- VERSION: 2026-01-31-v15.9.58-signin-ghin-css-fixes -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -202,6 +202,14 @@
         #hostContentArea,
         #playerContentArea {
             background: transparent !important;
+        }
+        
+        /* Hidden modal class - ensures modals stay hidden */
+        .modal-hidden {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
         }
         
         /* Small screen fallback - allow scroll if content doesn't fit */
@@ -540,12 +548,12 @@
         }
         
         .player-course-hcp {
-            display: block;
+            display: block !important;
             width: 45px;
             min-width: 45px;
             padding: 10px 4px;
-            background: rgba(22, 101, 52, 0.15);
-            border: 1px solid rgba(22, 101, 52, 0.3);
+            background: rgba(22, 101, 52, 0.15) !important;
+            border: 1px solid rgba(22, 101, 52, 0.3) !important;
             border-radius: var(--radius-md);
             font-size: 14px;
             font-weight: 700;
@@ -555,6 +563,10 @@
         
         .player-row:not(.ghin-mode) .player-course-hcp {
             display: none !important;
+        }
+        
+        .player-row.ghin-mode .player-course-hcp {
+            display: block !important;
         }
         
         /* Custom GHIN Checkbox Styling */
@@ -3720,7 +3732,7 @@
                 
                 <!-- Add Player and Quick Add Side by Side - Swapped positions -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
-                    <button type="button" onclick="showSetupAddPlayerModal()" id="addPlayerBtn" 
+                    <button type="button" onclick="addPlayerRow()" id="addPlayerBtn" 
                         style="padding: 8px 10px; background: #1e3a5f; border: none; border-radius: 6px; color: white; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 6px;">
                         <span style="font-size: 14px; font-weight: 700;">+</span> Add Player
                     </button>
@@ -6380,7 +6392,8 @@
         function showSignInModal() {
             const modal = document.getElementById('signInModal');
             if (modal) {
-                modal.style.setProperty('display', 'flex', 'important');
+                modal.classList.remove('modal-hidden');
+                modal.style.display = 'flex';
                 modal.style.visibility = 'visible';
                 modal.style.opacity = '1';
                 modal.style.pointerEvents = 'auto';
@@ -6395,9 +6408,13 @@
         function closeSignInModal() {
             const modal = document.getElementById('signInModal');
             if (modal) {
-                // Force hide with multiple approaches
-                modal.style.cssText = 'display: none !important; visibility: hidden; opacity: 0; pointer-events: none;';
-                modal.setAttribute('aria-hidden', 'true');
+                // Hide the modal completely
+                modal.style.display = 'none';
+                modal.style.visibility = 'hidden';
+                modal.style.opacity = '0';
+                modal.style.pointerEvents = 'none';
+                // Also remove any flex display
+                modal.classList.add('modal-hidden');
             }
         }
         
@@ -8133,200 +8150,7 @@
         }
 
 
-        // Show Add Player Modal for setup page
-        function showSetupAddPlayerModal() {
-            // Gate check: Free tier limited to 4 players
-            if (!hasActiveSubscription() && currentPlayerCount >= FREE_PLAYER_LIMIT) {
-                showPaywall(`Free plan allows ${FREE_PLAYER_LIMIT} players. Upgrade for unlimited players!`);
-                return;
-            }
-            
-            if (currentPlayerCount >= maxPlayers) {
-                showNotification('Maximum Players', `Maximum of ${maxPlayers} players reached`);
-                return;
-            }
-            
-            const existingModal = document.getElementById('setupAddPlayerModal');
-            if (existingModal) existingModal.remove();
-            
-            const useGhin = document.getElementById('setupUseGhinCheckbox')?.checked || false;
-            
-            // Build tee options if course is selected
-            let teeOptionsHtml = '<option value="">Use default tee</option>';
-            if (courseData && courseData.tees) {
-                Object.keys(courseData.tees).forEach(teeName => {
-                    const tee = courseData.tees[teeName];
-                    const selected = teeName === selectedTee ? 'selected' : '';
-                    teeOptionsHtml += `<option value="${teeName}" ${selected}>${teeName} (${tee.rating}/${tee.slope})</option>`;
-                });
-            }
-            
-            const modal = document.createElement('div');
-            modal.id = 'setupAddPlayerModal';
-            modal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10001; display: flex; align-items: center; justify-content: center; padding: 20px;';
-            modal.innerHTML = `
-                <div style="background: white; border-radius: 12px; max-width: 360px; width: 100%; padding: 24px;">
-                    <h3 style="color: #1e3a5f; margin: 0 0 16px 0; text-align: center;">➕ Add Player</h3>
-                    
-                    <div style="margin-bottom: 16px;">
-                        <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 4px; font-weight: 600;">Player Name</label>
-                        <input type="text" id="setupModalPlayerName" placeholder="Enter name" 
-                            style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 16px; box-sizing: border-box;">
-                    </div>
-                    
-                    <div style="margin-bottom: 16px;">
-                        <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 4px; font-weight: 600;">${useGhin ? 'Handicap Index (H.I.)' : 'Course Handicap'}</label>
-                        <input type="number" id="setupModalPlayerHcp" placeholder="${useGhin ? 'e.g., 14.2' : 'e.g., 15'}" 
-                            step="${useGhin ? '0.1' : '1'}" min="-10" max="54"
-                            style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 16px; box-sizing: border-box;"
-                            oninput="updateSetupModalCourseHcp()">
-                    </div>
-                    
-                    ${courseData ? `
-                    <div style="margin-bottom: 16px;">
-                        <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 4px; font-weight: 600;">Playing Tee</label>
-                        <select id="setupModalPlayerTee" onchange="updateSetupModalCourseHcp()"
-                            style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 16px; box-sizing: border-box;">
-                            ${teeOptionsHtml}
-                        </select>
-                    </div>
-                    ` : ''}
-                    
-                    ${useGhin ? `
-                    <div id="setupModalCourseHcpDisplay" style="margin-bottom: 16px; padding: 12px; background: rgba(22, 101, 52, 0.1); border-radius: 6px; text-align: center; display: none;">
-                        <span style="font-size: 12px; color: #166534;">Course HCP: </span>
-                        <span id="setupModalCourseHcpValue" style="font-size: 18px; font-weight: 700; color: #166534;">--</span>
-                    </div>
-                    ` : ''}
-                    
-                    <div style="display: flex; gap: 12px;">
-                        <button type="button" onclick="closeSetupAddPlayerModal()" 
-                            style="flex: 1; padding: 14px; background: #f1f5f9; border: none; border-radius: 6px; color: #475569; font-size: 15px; font-weight: 600; cursor: pointer;">
-                            Cancel
-                        </button>
-                        <button type="button" onclick="submitSetupAddPlayer()" 
-                            style="flex: 1; padding: 14px; background: #166534; border: none; border-radius: 6px; color: white; font-size: 15px; font-weight: 600; cursor: pointer;">
-                            Add Player
-                        </button>
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
-            setTimeout(() => document.getElementById('setupModalPlayerName')?.focus(), 100);
-            
-            // Close on background click
-            modal.onclick = (e) => {
-                if (e.target === modal) closeSetupAddPlayerModal();
-            };
-        }
-        
-        function closeSetupAddPlayerModal() {
-            const modal = document.getElementById('setupAddPlayerModal');
-            if (modal) modal.remove();
-        }
-        
-        function updateSetupModalCourseHcp() {
-            const useGhin = document.getElementById('setupUseGhinCheckbox')?.checked || false;
-            if (!useGhin) return;
-            
-            const hcpInput = document.getElementById('setupModalPlayerHcp');
-            const teeSelect = document.getElementById('setupModalPlayerTee');
-            const display = document.getElementById('setupModalCourseHcpDisplay');
-            const valueSpan = document.getElementById('setupModalCourseHcpValue');
-            
-            if (!hcpInput || !display || !valueSpan) return;
-            
-            const index = parseFloat(hcpInput.value);
-            if (isNaN(index)) {
-                display.style.display = 'none';
-                return;
-            }
-            
-            // Get tee data
-            const teeName = teeSelect?.value || selectedTee;
-            if (courseData && courseData.tees && teeName && courseData.tees[teeName]) {
-                const tee = courseData.tees[teeName];
-                const courseHcp = calculateCourseHandicap(index, tee.slope, tee.rating, courseData.totalPar || 72);
-                valueSpan.textContent = courseHcp;
-                display.style.display = 'block';
-            } else {
-                valueSpan.textContent = Math.round(index);
-                display.style.display = 'block';
-            }
-        }
-        
-        function submitSetupAddPlayer() {
-            const nameInput = document.getElementById('setupModalPlayerName');
-            const hcpInput = document.getElementById('setupModalPlayerHcp');
-            const teeSelect = document.getElementById('setupModalPlayerTee');
-            
-            const name = nameInput?.value?.trim();
-            if (!name) {
-                showNotification('Error', 'Please enter a player name');
-                return;
-            }
-            
-            const hcp = parseFloat(hcpInput?.value) || 0;
-            const playerTee = teeSelect?.value || selectedTee;
-            
-            // Add the player row with data
-            currentPlayerCount++;
-            const playerList = document.getElementById('playerList');
-            
-            const useGhin = document.getElementById('setupUseGhinCheckbox')?.checked || false;
-            const placeholder = useGhin ? 'H.I.' : 'HCP';
-            const step = useGhin ? '0.1' : '1';
-            const ghinModeClass = useGhin ? ' ghin-mode' : '';
-            const courseHcpDisplay = useGhin ? 'block' : 'none';
-            
-            // Calculate course HCP if in GHIN mode
-            let courseHcpValue = '';
-            if (useGhin && courseData && courseData.tees && playerTee && courseData.tees[playerTee]) {
-                const tee = courseData.tees[playerTee];
-                courseHcpValue = calculateCourseHandicap(hcp, tee.slope, tee.rating, courseData.totalPar || 72);
-            } else if (useGhin) {
-                courseHcpValue = Math.round(hcp);
-            }
-            
-            const wrapper = document.createElement('div');
-            wrapper.className = 'player-row-wrapper';
-            
-            const deleteBtn = document.createElement('div');
-            deleteBtn.className = 'player-row-delete';
-            deleteBtn.textContent = 'Delete';
-            deleteBtn.onclick = () => removePlayer(nextPlayerId);
-            
-            const newRow = document.createElement('div');
-            newRow.className = 'player-row' + ghinModeClass;
-            newRow.setAttribute('data-player', nextPlayerId);
-            newRow.innerHTML = `
-                <input type="text" class="player-name-input" placeholder="Player Name" id="player${nextPlayerId}" value="${name}">
-                <input type="text" class="player-hcp-input" placeholder="${placeholder}" id="hcp${nextPlayerId}" value="${hcp}" pattern="-?[0-9.]*" inputmode="decimal" step="${step}" oninput="updateSetupCourseHcp(${nextPlayerId})">
-                <span class="player-course-hcp" id="courseHcp${nextPlayerId}" style="display: ${courseHcpDisplay};">${courseHcpValue}</span>
-            `;
-            
-            // Store player's tee selection if different from default
-            if (playerTee && playerTee !== selectedTee) {
-                newRow.setAttribute('data-tee', playerTee);
-            }
-            
-            wrapper.appendChild(deleteBtn);
-            wrapper.appendChild(newRow);
-            playerList.appendChild(wrapper);
-            nextPlayerId++;
-            
-            // Disable button if at max
-            if (currentPlayerCount >= maxPlayers) {
-                document.getElementById('addPlayerBtn').disabled = true;
-                document.getElementById('addPlayerBtn').textContent = `Maximum ${maxPlayers} Players`;
-            }
-            
-            closeSetupAddPlayerModal();
-            showNotification('Added', `${name} added`);
-        }
-
-        // Add new player row (now called internally or for legacy purposes)
+        // Add new player row
         function addPlayerRow() {
             console.log('addPlayerRow called, currentPlayerCount:', currentPlayerCount, 'FREE_PLAYER_LIMIT:', FREE_PLAYER_LIMIT);
             
