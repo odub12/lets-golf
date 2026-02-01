@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-02-01-v15.9.64-host-code-cohost-flow -->
+    <!-- VERSION: 2026-02-01-v15.9.66-signin-prompt-transform -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -4705,7 +4705,7 @@
             <div id="coHostsSection" style="background: white; border-radius: 6px; padding: 12px; margin-bottom: 10px; display: none;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                     <h3 style="color: #1e3a5f; font-size: 12px; margin: 0;">👑 Co-Hosts</h3>
-                    <button type="button" onclick="showHostCodeModal()" style="padding: 4px 10px; background: #1e3a5f; color: white; border: none; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">📋 Host Code</button>
+                    <button type="button" onclick="showHostCodeModal()" style="padding: 4px 10px; background: #d4b896; color: #1e3a5f; border: none; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">🔑 Host Code</button>
                 </div>
                 <div id="coHostsContent">
                     <p style="font-size: 11px; color: #9ca3af; margin: 0;">Share the Host Code to add co-hosts who can manage the tournament.</p>
@@ -16646,34 +16646,142 @@
             `;
             document.body.appendChild(modal);
             
-            // Add event listeners after appending to DOM
-            document.getElementById('promptSignInBtn').addEventListener('click', function(e) {
+            // Sign In button - transform this modal into sign-in form
+            document.getElementById('promptSignInBtn').onclick = function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Prompt Sign In clicked');
-                modal.remove();
-                setTimeout(() => {
-                    console.log('Opening Sign In modal');
-                    showSignInModal();
-                }, 200);
-            });
+                transformToSignInForm(modal);
+            };
             
-            document.getElementById('promptCreateAccountBtn').addEventListener('click', function(e) {
+            // Create Account button - transform this modal into create account form
+            document.getElementById('promptCreateAccountBtn').onclick = function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Prompt Create Account clicked');
-                modal.remove();
-                setTimeout(() => {
-                    console.log('Opening Create Account modal');
-                    showCreateAccountModal();
-                }, 200);
-            });
+                transformToCreateAccountForm(modal);
+            };
             
-            document.getElementById('promptCancelBtn').addEventListener('click', function(e) {
+            // Cancel button
+            document.getElementById('promptCancelBtn').onclick = function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 modal.remove();
-            });
+            };
+        }
+        
+        // Transform prompt modal into sign-in form
+        function transformToSignInForm(modal) {
+            const content = modal.querySelector('div');
+            content.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h3 style="color: #1e3a5f; margin: 0; font-size: 20px;">Sign In</h3>
+                    <button type="button" onclick="this.closest('#signInPromptModal').remove()" 
+                        style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;">✕</button>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <input type="email" id="promptSignInEmail" placeholder="Email" 
+                        style="width: 100%; padding: 14px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 16px; box-sizing: border-box; margin-bottom: 12px;">
+                    <input type="password" id="promptSignInPassword" placeholder="Password" 
+                        style="width: 100%; padding: 14px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 16px; box-sizing: border-box;">
+                </div>
+                <div id="promptSignInError" style="color: #dc2626; font-size: 14px; margin-bottom: 12px; display: none;"></div>
+                <button type="button" id="promptDoSignInBtn"
+                    style="width: 100%; padding: 14px; background: #1e3a5f; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; margin-bottom: 12px;">
+                    Sign In
+                </button>
+                <button type="button" onclick="showForgotPasswordModal(); this.closest('#signInPromptModal').remove();"
+                    style="width: 100%; padding: 10px; background: transparent; color: #64748b; border: none; font-size: 14px; cursor: pointer;">
+                    Forgot Password?
+                </button>
+            `;
+            
+            document.getElementById('promptDoSignInBtn').onclick = async function() {
+                const email = document.getElementById('promptSignInEmail').value.trim();
+                const password = document.getElementById('promptSignInPassword').value;
+                const errorEl = document.getElementById('promptSignInError');
+                
+                if (!email || !password) {
+                    errorEl.textContent = 'Please enter email and password';
+                    errorEl.style.display = 'block';
+                    return;
+                }
+                
+                try {
+                    errorEl.style.display = 'none';
+                    await auth.signInWithEmailAndPassword(email, password);
+                    modal.remove();
+                    updateAccountUI();
+                    updateHomePageLoginStatus();
+                    populateHomeRoundsList();
+                    showNotification('✅ Signed In', 'Welcome back!');
+                } catch (error) {
+                    errorEl.textContent = getAuthErrorMessage(error.code);
+                    errorEl.style.display = 'block';
+                }
+            };
+            
+            setTimeout(() => document.getElementById('promptSignInEmail')?.focus(), 100);
+        }
+        
+        // Transform prompt modal into create account form
+        function transformToCreateAccountForm(modal) {
+            const content = modal.querySelector('div');
+            content.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h3 style="color: #1e3a5f; margin: 0; font-size: 20px;">Create Account</h3>
+                    <button type="button" onclick="this.closest('#signInPromptModal').remove()" 
+                        style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;">✕</button>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <input type="email" id="promptCreateEmail" placeholder="Email" 
+                        style="width: 100%; padding: 14px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 16px; box-sizing: border-box; margin-bottom: 12px;">
+                    <input type="password" id="promptCreatePassword" placeholder="Password (6+ characters)" 
+                        style="width: 100%; padding: 14px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 16px; box-sizing: border-box; margin-bottom: 12px;">
+                    <input type="password" id="promptCreatePasswordConfirm" placeholder="Confirm Password" 
+                        style="width: 100%; padding: 14px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 16px; box-sizing: border-box;">
+                </div>
+                <div id="promptCreateError" style="color: #dc2626; font-size: 14px; margin-bottom: 12px; display: none;"></div>
+                <button type="button" id="promptDoCreateBtn"
+                    style="width: 100%; padding: 14px; background: #d4b896; color: #1e3a5f; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">
+                    Create Account
+                </button>
+            `;
+            
+            document.getElementById('promptDoCreateBtn').onclick = async function() {
+                const email = document.getElementById('promptCreateEmail').value.trim();
+                const password = document.getElementById('promptCreatePassword').value;
+                const confirmPassword = document.getElementById('promptCreatePasswordConfirm').value;
+                const errorEl = document.getElementById('promptCreateError');
+                
+                if (!email || !password || !confirmPassword) {
+                    errorEl.textContent = 'Please fill in all fields';
+                    errorEl.style.display = 'block';
+                    return;
+                }
+                
+                if (password !== confirmPassword) {
+                    errorEl.textContent = 'Passwords do not match';
+                    errorEl.style.display = 'block';
+                    return;
+                }
+                
+                if (password.length < 6) {
+                    errorEl.textContent = 'Password must be at least 6 characters';
+                    errorEl.style.display = 'block';
+                    return;
+                }
+                
+                try {
+                    errorEl.style.display = 'none';
+                    await auth.createUserWithEmailAndPassword(email, password);
+                    modal.remove();
+                    showNotification('✅ Account Created', 'Welcome to Let\'s Golf!');
+                } catch (error) {
+                    errorEl.textContent = getAuthErrorMessage(error.code);
+                    errorEl.style.display = 'block';
+                }
+            };
+            
+            setTimeout(() => document.getElementById('promptCreateEmail')?.focus(), 100);
         }
         
         // Show Host Home Page
@@ -21572,37 +21680,79 @@
                 const coHosts = tournament.coHosts || [];
                 if (coHosts.includes(currentDeviceId)) {
                     showNotification('Already Co-Host', 'You already have co-host access to this tournament');
-                    // Still join the tournament
-                    showJoinTournamentScreen(tournamentId);
-                    return;
                 }
                 
                 // Check if this is the original host
                 if (tournament.hostDevice === currentDeviceId) {
                     showNotification('You\'re the Host', 'You created this tournament');
-                    showJoinTournamentScreen(tournamentId);
-                    return;
                 }
                 
-                // Add this device to co-hosts
-                const tournamentRef = db.collection('tournaments').doc(tournamentId);
-                await tournamentRef.update({
-                    coHosts: firebase.firestore.FieldValue.arrayUnion(currentDeviceId),
-                    [`devices.${currentDeviceId}`]: {
-                        initials: deviceInitials || 'CO',
-                        joinedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        isCoHost: true
-                    }
+                // Add this device to co-hosts (if not already)
+                if (!coHosts.includes(currentDeviceId) && tournament.hostDevice !== currentDeviceId) {
+                    const tournamentRef = db.collection('tournaments').doc(tournamentId);
+                    await tournamentRef.update({
+                        coHosts: firebase.firestore.FieldValue.arrayUnion(currentDeviceId),
+                        [`devices.${currentDeviceId}`]: {
+                            initials: deviceInitials || 'CO',
+                            joinedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            isCoHost: true
+                        }
+                    });
+                    
+                    console.log('👑 Granted co-host access to device:', currentDeviceId);
+                    showNotification('🎉 Co-Host Access', 'You now have co-host privileges!');
+                }
+                
+                // Set up tournament data locally (same as host would have)
+                tournamentData = {
+                    id: tournamentId,
+                    name: tournament.name || '',
+                    date: tournament.date,
+                    gameType: tournament.gameType,
+                    course: tournament.course,
+                    players: tournament.players || [],
+                    teams: tournament.teams || [],
+                    courseData: tournament.courseData
+                };
+                
+                // Set globals
+                activeTournamentId = tournamentId;
+                tournamentMode = 'multi';
+                isHost = false; // Not the original host
+                isCoHost = true; // But is a co-host
+                hasJoinedTournament = true;
+                
+                // Set up course data
+                if (tournament.courseData) {
+                    courseData = tournament.courseData;
+                    customCourses[tournament.course] = tournament.courseData;
+                } else if (tournament.course && courses[tournament.course]) {
+                    courseData = courses[tournament.course];
+                } else if (customCourses[tournament.course]) {
+                    courseData = customCourses[tournament.course];
+                }
+                
+                // Save to localStorage
+                saveToLocalStorage();
+                
+                // Subscribe to real-time updates
+                subscribToTournamentUpdates(tournamentId);
+                
+                // Add to tournament history
+                addToTournamentHistory({
+                    id: tournamentId,
+                    joinCode: tournament.joinCode,
+                    name: tournament.name,
+                    course: tournament.course,
+                    date: tournament.date,
+                    gameType: tournament.gameType,
+                    playerCount: tournament.players?.length || 0,
+                    role: 'co-host'
                 });
                 
-                console.log('👑 Granted co-host access to device:', currentDeviceId);
-                showNotification('🎉 Co-Host Access', 'You now have co-host privileges!');
-                
-                // Set co-host status locally
-                isCoHost = true;
-                
-                // Join the tournament
-                showJoinTournamentScreen(tournamentId);
+                // Go directly to Host Home Page (co-hosts see same view as host)
+                updateHostHomePage();
+                showPage('hostHomePage');
                 
             } catch (error) {
                 console.error('Error granting co-host access:', error);
