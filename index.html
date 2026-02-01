@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-02-01-v15.9.62-fix-all-default-player-rows -->
+    <!-- VERSION: 2026-02-01-v15.9.64-host-code-cohost-flow -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -4704,11 +4704,11 @@
             <!-- BOX 1: Co-hosts - Standalone white box -->
             <div id="coHostsSection" style="background: white; border-radius: 6px; padding: 12px; margin-bottom: 10px; display: none;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <h3 style="color: #1e3a5f; font-size: 12px; margin: 0;">👑 Co-hosts</h3>
-                    <span style="font-size: 10px; color: #9ca3af;">Can manage tournament</span>
+                    <h3 style="color: #1e3a5f; font-size: 12px; margin: 0;">👑 Co-Hosts</h3>
+                    <button type="button" onclick="showHostCodeModal()" style="padding: 4px 10px; background: #1e3a5f; color: white; border: none; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">📋 Host Code</button>
                 </div>
                 <div id="coHostsContent">
-                    <p style="font-size: 11px; color: #9ca3af; margin: 0;">No other devices connected yet. Share the link to add co-hosts.</p>
+                    <p style="font-size: 11px; color: #9ca3af; margin: 0;">Share the Host Code to add co-hosts who can manage the tournament.</p>
                 </div>
             </div>
             
@@ -13783,28 +13783,46 @@
                     return await findIHMCEventByCode(normalizedCode);
                 }
                 
-                // Validate format: 4 letters + 2 numbers (standard Let's Golf code)
-                if (!/^[A-Z]{4}[0-9]{2}$/.test(normalizedCode)) {
-                    return { success: false, error: 'Invalid code format. Use 4 letters + 2 numbers (e.g., GOLF42) or IHMC code' };
+                // Validate format: 4-6 alphanumeric characters
+                if (!/^[A-Z0-9]{4,6}$/.test(normalizedCode)) {
+                    return { success: false, error: 'Invalid code format. Use 4-6 letters/numbers (e.g., GOLF42)' };
                 }
                 
-                const snapshot = await db.collection('tournaments')
+                // First try to find by joinCode (standard player join)
+                let snapshot = await db.collection('tournaments')
                     .where('joinCode', '==', normalizedCode)
                     .limit(1)
                     .get();
                 
-                if (snapshot.empty) {
-                    return { success: false, error: 'Tournament not found. Check the code and try again.' };
+                if (!snapshot.empty) {
+                    const tournamentDoc = snapshot.docs[0];
+                    const tournament = tournamentDoc.data();
+                    
+                    if (tournament.status === 'ended') {
+                        return { success: false, error: 'This tournament has ended.' };
+                    }
+                    
+                    return { success: true, tournamentId: tournamentDoc.id, tournament: tournament, isHostCode: false };
                 }
                 
-                const tournamentDoc = snapshot.docs[0];
-                const tournament = tournamentDoc.data();
+                // If not found by joinCode, try hostCode (co-host access)
+                snapshot = await db.collection('tournaments')
+                    .where('hostCode', '==', normalizedCode)
+                    .limit(1)
+                    .get();
                 
-                if (tournament.status === 'ended') {
-                    return { success: false, error: 'This tournament has ended.' };
+                if (!snapshot.empty) {
+                    const tournamentDoc = snapshot.docs[0];
+                    const tournament = tournamentDoc.data();
+                    
+                    if (tournament.status === 'ended') {
+                        return { success: false, error: 'This tournament has ended.' };
+                    }
+                    
+                    return { success: true, tournamentId: tournamentDoc.id, tournament: tournament, isHostCode: true };
                 }
                 
-                return { success: true, tournamentId: tournamentDoc.id, tournament: tournament };
+                return { success: false, error: 'Tournament not found. Check the code and try again.' };
             } catch (error) {
                 console.error('Error finding tournament by code:', error);
                 return { success: false, error: 'Failed to look up tournament. Please try again.' };
@@ -16632,15 +16650,23 @@
             document.getElementById('promptSignInBtn').addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
+                console.log('Prompt Sign In clicked');
                 modal.remove();
-                setTimeout(() => showSignInModal(), 50);
+                setTimeout(() => {
+                    console.log('Opening Sign In modal');
+                    showSignInModal();
+                }, 200);
             });
             
             document.getElementById('promptCreateAccountBtn').addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
+                console.log('Prompt Create Account clicked');
                 modal.remove();
-                setTimeout(() => showCreateAccountModal(), 50);
+                setTimeout(() => {
+                    console.log('Opening Create Account modal');
+                    showCreateAccountModal();
+                }, 200);
             });
             
             document.getElementById('promptCancelBtn').addEventListener('click', function(e) {
@@ -17326,6 +17352,9 @@
                     // Check if this is an IHMC event
                     if (result.isIHMCEvent) {
                         showIHMCJoinScreen(result);
+                    } else if (result.isHostCode) {
+                        // Host code - grant co-host access
+                        await grantCoHostAccess(result.tournamentId, result.tournament);
                     } else {
                         // Navigate to join tournament screen
                         showJoinTournamentScreen(result.tournamentId);
@@ -17393,6 +17422,9 @@
                     validateGuestJoinCode();
                     if (result.isIHMCEvent) {
                         showIHMCJoinScreen(result);
+                    } else if (result.isHostCode) {
+                        // Host code - grant co-host access
+                        await grantCoHostAccess(result.tournamentId, result.tournament);
                     } else {
                         showJoinTournamentScreen(result.tournamentId);
                     }
@@ -17453,6 +17485,9 @@
                     validateHostJoinCode();
                     if (result.isIHMCEvent) {
                         showIHMCJoinScreen(result);
+                    } else if (result.isHostCode) {
+                        // Host code - grant co-host access
+                        await grantCoHostAccess(result.tournamentId, result.tournament);
                     } else {
                         showJoinTournamentScreen(result.tournamentId);
                     }
@@ -21419,12 +21454,15 @@
                         
                         <p style="color: #64748b; font-size: 12px; margin-bottom: 20px;">Share this code with trusted people to grant them co-host access.</p>
                         
-                        <div id="hostCodeActions" style="display: flex; gap: 12px;">
-                            <button onclick="editHostCode()" style="flex: 1; padding: 12px; background: #f1f5f9; border: none; border-radius: 6px; color: #475569; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                        <div id="hostCodeActions" style="display: flex; gap: 8px;">
+                            <button onclick="editHostCode()" style="flex: 1; padding: 12px; background: #f1f5f9; border: none; border-radius: 6px; color: #475569; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
                                 ✏️ Edit
                             </button>
-                            <button onclick="copyHostCode()" style="flex: 1; padding: 12px; background: #1e3a5f; border: none; border-radius: 6px; color: white; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                            <button onclick="copyHostCode()" style="flex: 1; padding: 12px; background: #1e3a5f; border: none; border-radius: 6px; color: white; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
                                 📋 Copy
+                            </button>
+                            <button onclick="shareHostCode()" style="flex: 1; padding: 12px; background: #166534; border: none; border-radius: 6px; color: white; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                                📤 Share
                             </button>
                         </div>
                         
@@ -21501,6 +21539,75 @@
             }).catch(() => {
                 showNotification('Error', 'Could not copy to clipboard');
             });
+        }
+        
+        async function shareHostCode() {
+            const code = document.getElementById('hostCodeValue').textContent;
+            const tournamentName = tournamentData?.name || 'Tournament';
+            
+            const shareData = {
+                title: 'Co-Host Code for ' + tournamentName,
+                text: `Join as co-host for "${tournamentName}"\n\nHost Code: ${code}\n\nEnter this code in "Join by Code" to get co-host access.`
+            };
+            
+            if (navigator.share) {
+                try {
+                    await navigator.share(shareData);
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        // Fallback to copy
+                        copyHostCode();
+                    }
+                }
+            } else {
+                // Fallback to copy
+                copyHostCode();
+            }
+        }
+        
+        // Grant co-host access when joining with host code
+        async function grantCoHostAccess(tournamentId, tournament) {
+            try {
+                // Check if already a co-host
+                const coHosts = tournament.coHosts || [];
+                if (coHosts.includes(currentDeviceId)) {
+                    showNotification('Already Co-Host', 'You already have co-host access to this tournament');
+                    // Still join the tournament
+                    showJoinTournamentScreen(tournamentId);
+                    return;
+                }
+                
+                // Check if this is the original host
+                if (tournament.hostDevice === currentDeviceId) {
+                    showNotification('You\'re the Host', 'You created this tournament');
+                    showJoinTournamentScreen(tournamentId);
+                    return;
+                }
+                
+                // Add this device to co-hosts
+                const tournamentRef = db.collection('tournaments').doc(tournamentId);
+                await tournamentRef.update({
+                    coHosts: firebase.firestore.FieldValue.arrayUnion(currentDeviceId),
+                    [`devices.${currentDeviceId}`]: {
+                        initials: deviceInitials || 'CO',
+                        joinedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        isCoHost: true
+                    }
+                });
+                
+                console.log('👑 Granted co-host access to device:', currentDeviceId);
+                showNotification('🎉 Co-Host Access', 'You now have co-host privileges!');
+                
+                // Set co-host status locally
+                isCoHost = true;
+                
+                // Join the tournament
+                showJoinTournamentScreen(tournamentId);
+                
+            } catch (error) {
+                console.error('Error granting co-host access:', error);
+                showNotification('Error', 'Could not grant co-host access. Try again.');
+            }
         }
         
         // Verify host code to become co-host
@@ -21745,13 +21852,34 @@
             const existingModal = document.getElementById('managementAddPlayerModal');
             if (existingModal) existingModal.remove();
             
-            // Build tee options if course is selected
-            let teeOptionsHtml = '';
+            // Build tee buttons if course is selected
+            let teeButtonsHtml = '';
+            let mgmtSelectedTee = selectedTee; // Track selected tee for this modal
+            
             if (courseData && courseData.tees) {
+                const teeColors = {
+                    black: '#1e293b', blue: '#1e3a5f', white: '#e2e8f0', gold: '#fbbf24',
+                    silver: '#94a3b8', red: '#a51c30', green: '#166534',
+                    tournament: '#1e293b', championship: '#1e3a5f', regular: '#64748b', forward: '#fbbf24'
+                };
+                
                 Object.keys(courseData.tees).forEach(teeName => {
                     const tee = courseData.tees[teeName];
-                    const selected = teeName === selectedTee ? 'selected' : '';
-                    teeOptionsHtml += `<option value="${teeName}" ${selected}>${teeName} (${tee.rating}/${tee.slope})</option>`;
+                    const bgColor = teeColors[teeName.toLowerCase()] || '#64748b';
+                    const textColor = ['white', 'gold', 'silver', 'forward'].includes(teeName.toLowerCase()) ? '#1e293b' : 'white';
+                    const isSelected = teeName === selectedTee;
+                    const selectedStyle = isSelected 
+                        ? 'border: 3px solid white; box-shadow: 0 0 0 3px #1e3a5f;' 
+                        : `border: 3px solid ${bgColor};`;
+                    
+                    teeButtonsHtml += `
+                        <button type="button" onclick="selectMgmtModalTee('${teeName}')" id="mgmtTeeBtn_${teeName}"
+                            style="flex: 1; min-width: 60px; padding: 10px 6px; ${selectedStyle}
+                            background: ${bgColor}; color: ${textColor}; border-radius: 6px; font-size: 11px; font-weight: 600; 
+                            cursor: pointer; text-align: center;">
+                            ${tee.name || teeName}
+                        </button>
+                    `;
                 });
             }
             
@@ -21776,15 +21904,17 @@
                             oninput="updateMgmtModalCourseHcp()">
                     </div>
                     
-                    ${courseData && teeOptionsHtml ? `
-                    <div style="margin-bottom: 16px;">
-                        <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 4px; font-weight: 600;">Playing Tee</label>
-                        <select id="mgmtModalPlayerTee" onchange="updateMgmtModalCourseHcp()"
-                            style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 16px; box-sizing: border-box;">
-                            ${teeOptionsHtml}
-                        </select>
+                    ${courseData && teeButtonsHtml ? `
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 6px; font-weight: 600;">Playing Tee</label>
+                        <div id="mgmtModalTeeButtons" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            ${teeButtonsHtml}
+                        </div>
+                        <div id="mgmtModalTeeInfo" style="margin-top: 6px; font-size: 11px; color: #6b7280; text-align: center;"></div>
                     </div>
                     ` : ''}
+                    
+                    <input type="hidden" id="mgmtModalPlayerTee" value="${selectedTee || ''}">
                     
                     <div id="mgmtModalCourseHcpDisplay" style="margin-bottom: 16px; padding: 12px; background: rgba(22, 101, 52, 0.1); border-radius: 6px; text-align: center; display: none;">
                         <span style="font-size: 12px; color: #166534;">Course HCP: </span>
@@ -21805,12 +21935,58 @@
             `;
             
             document.body.appendChild(modal);
+            
+            // Update tee info display
+            updateMgmtModalTeeInfo();
+            
             setTimeout(() => document.getElementById('mgmtModalPlayerName')?.focus(), 100);
             
             // Close on background click
             modal.onclick = (e) => {
                 if (e.target === modal) closeMgmtAddPlayerModal();
             };
+        }
+        
+        // Select tee in management modal
+        function selectMgmtModalTee(teeName) {
+            // Update hidden input
+            document.getElementById('mgmtModalPlayerTee').value = teeName;
+            
+            // Update button styles
+            const teeColors = {
+                black: '#1e293b', blue: '#1e3a5f', white: '#e2e8f0', gold: '#fbbf24',
+                silver: '#94a3b8', red: '#a51c30', green: '#166534',
+                tournament: '#1e293b', championship: '#1e3a5f', regular: '#64748b', forward: '#fbbf24'
+            };
+            
+            document.querySelectorAll('[id^="mgmtTeeBtn_"]').forEach(btn => {
+                const btnTee = btn.id.replace('mgmtTeeBtn_', '');
+                const bgColor = teeColors[btnTee.toLowerCase()] || '#64748b';
+                if (btnTee === teeName) {
+                    btn.style.border = '3px solid white';
+                    btn.style.boxShadow = '0 0 0 3px #1e3a5f';
+                } else {
+                    btn.style.border = `3px solid ${bgColor}`;
+                    btn.style.boxShadow = 'none';
+                }
+            });
+            
+            // Update tee info and recalculate HCP
+            updateMgmtModalTeeInfo();
+            updateMgmtModalCourseHcp();
+        }
+        
+        // Update tee info display in modal
+        function updateMgmtModalTeeInfo() {
+            const infoDiv = document.getElementById('mgmtModalTeeInfo');
+            const teeName = document.getElementById('mgmtModalPlayerTee')?.value;
+            
+            if (!infoDiv || !courseData || !courseData.tees || !teeName) return;
+            
+            const tee = courseData.tees[teeName];
+            if (tee) {
+                infoDiv.innerHTML = `${tee.yardage || ''} yds • Rating: ${tee.rating} • Slope: ${tee.slope}`;
+            }
         }
         
         function closeMgmtAddPlayerModal() {
@@ -21820,7 +21996,7 @@
         
         function updateMgmtModalCourseHcp() {
             const hcpInput = document.getElementById('mgmtModalPlayerHcp');
-            const teeSelect = document.getElementById('mgmtModalPlayerTee');
+            const teeInput = document.getElementById('mgmtModalPlayerTee');
             const display = document.getElementById('mgmtModalCourseHcpDisplay');
             const valueSpan = document.getElementById('mgmtModalCourseHcpValue');
             
