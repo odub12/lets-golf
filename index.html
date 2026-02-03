@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-02-01-v15.9.68-android-scroll-scorecard-grossnet -->
+    <!-- VERSION: 2026-02-02-v15.9.69-cohost-signin-skins-android -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -119,6 +119,10 @@
             padding: 0;
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
+        }
+        
+        /* Allow scrolling everywhere, disable double-tap zoom on interactive elements */
+        button, a, input, select, textarea, [onclick] {
             touch-action: manipulation;
         }
 
@@ -4861,8 +4865,16 @@
             </button>
         </div>
         
+        <!-- Return to Tournament Button (shown when guest has active tournament) -->
+        <div id="homeReturnToTournament" style="display: none; margin-bottom: 10px;">
+            <button type="button" onclick="returnToActiveTournament()" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 16px 12px; background: white; border: none; border-radius: 6px; cursor: pointer;">
+                <span style="font-size: 24px;">🏌️</span>
+                <span style="font-size: 15px; font-weight: 700; color: #1e3a5f;">Return to Tournament</span>
+            </button>
+        </div>
+        
         <!-- HOST | JOIN Buttons - No wrapper, float on navy -->
-        <div style="display: flex; gap: 12px; margin-bottom: 10px;">
+        <div id="homeActionButtons" style="display: flex; gap: 12px; margin-bottom: 10px;">
             <button type="button" onclick="startNewTournament()" style="flex: 1; display: flex; flex-direction: column; align-items: center; padding: 16px 12px; background: white; border: none; border-radius: 6px; cursor: pointer;">
                 <span style="font-size: 24px; margin-bottom: 4px;">👑</span>
                 <span style="font-size: 15px; font-weight: 700; color: #1e3a5f;">HOST</span>
@@ -6498,18 +6510,16 @@
                 
                 await auth.signInWithEmailAndPassword(email, password);
                 
-                // Close modal FIRST using proper function
+                // Close ALL modals - signInModal is nested inside accountModal
                 closeSignInModal();
+                hideAccountModal();
                 
-                // Small delay before updating UI to ensure modal is gone
-                setTimeout(() => {
-                    // Update UI
-                    updateAccountUI();
-                    updateHomePageLoginStatus();
-                    populateHomeRoundsList();
-                    
-                    showNotification('✅ Signed In', 'Welcome back!');
-                }, 100);
+                // Update UI
+                updateAccountUI();
+                updateHomePageLoginStatus();
+                populateHomeRoundsList();
+                
+                showNotification('✅ Signed In', 'Welcome back!');
                 
             } catch (error) {
                 console.error('Sign in error:', error);
@@ -6549,6 +6559,13 @@
                 errorEl.style.display = 'none';
                 await auth.createUserWithEmailAndPassword(email, password);
                 closeCreateAccountModal();
+                hideAccountModal();
+                
+                // Update UI
+                updateAccountUI();
+                updateHomePageLoginStatus();
+                populateHomeRoundsList();
+                
                 showNotification('✅ Account Created', 'Welcome to Let\'s Golf!');
             } catch (error) {
                 errorEl.textContent = getAuthErrorMessage(error.code);
@@ -13780,6 +13797,7 @@
         async function findTournamentByCode(code) {
             try {
                 const normalizedCode = code.toUpperCase().trim();
+                console.log('🔍 findTournamentByCode:', normalizedCode);
                 
                 // Check if this is an IHMC code format: IHMC-MMDD-H### or IHMC-MMDD-P###
                 if (isIHMCCodeFormat(normalizedCode)) {
@@ -13800,6 +13818,7 @@
                 if (!snapshot.empty) {
                     const tournamentDoc = snapshot.docs[0];
                     const tournament = tournamentDoc.data();
+                    console.log('✅ Found by joinCode:', tournamentDoc.id, '| isHostCode: false');
                     
                     if (tournament.status === 'ended') {
                         return { success: false, error: 'This tournament has ended.' };
@@ -13807,6 +13826,8 @@
                     
                     return { success: true, tournamentId: tournamentDoc.id, tournament: tournament, isHostCode: false };
                 }
+                
+                console.log('❌ Not found by joinCode, trying hostCode...');
                 
                 // If not found by joinCode, try hostCode (co-host access)
                 snapshot = await db.collection('tournaments')
@@ -13817,6 +13838,7 @@
                 if (!snapshot.empty) {
                     const tournamentDoc = snapshot.docs[0];
                     const tournament = tournamentDoc.data();
+                    console.log('✅ Found by hostCode:', tournamentDoc.id, '| isHostCode: true');
                     
                     if (tournament.status === 'ended') {
                         return { success: false, error: 'This tournament has ended.' };
@@ -13825,6 +13847,7 @@
                     return { success: true, tournamentId: tournamentDoc.id, tournament: tournament, isHostCode: true };
                 }
                 
+                console.log('❌ Not found by hostCode either');
                 return { success: false, error: 'Tournament not found. Check the code and try again.' };
             } catch (error) {
                 console.error('Error finding tournament by code:', error);
@@ -17113,6 +17136,18 @@
             }
         }
         
+        // Return to active tournament from guest home page
+        function returnToActiveTournament() {
+            if (activeTournamentId && tournamentMode === 'multi') {
+                // Go to My Players page (player's main view)
+                loadMyPlayersPage();
+            } else if (tournamentData && tournamentData.players && tournamentData.players.length > 0) {
+                // Single device mode - go to scoring
+                renderScoringPage();
+                showPage('scoringPage');
+            }
+        }
+        
         // Clear all player stats from localStorage
         function clearAllPlayerStats() {
             playerStats = {};
@@ -17392,14 +17427,18 @@
                     // Hide modal
                     hideJoinByCodeModal();
                     
+                    console.log('🎯 Join routing:', { isIHMCEvent: result.isIHMCEvent, isHostCode: result.isHostCode, tournamentId: result.tournamentId });
+                    
                     // Check if this is an IHMC event
                     if (result.isIHMCEvent) {
                         showIHMCJoinScreen(result);
                     } else if (result.isHostCode) {
                         // Host code - grant co-host access
+                        console.log('👑 Routing to grantCoHostAccess');
                         await grantCoHostAccess(result.tournamentId, result.tournament);
                     } else {
                         // Navigate to join tournament screen
+                        console.log('👤 Routing to showJoinTournamentScreen');
                         showJoinTournamentScreen(result.tournamentId);
                     }
                 } else {
@@ -21679,19 +21718,12 @@
         // Grant co-host access when joining with host code
         async function grantCoHostAccess(tournamentId, tournament) {
             try {
-                // Check if already a co-host
                 const coHosts = tournament.coHosts || [];
-                if (coHosts.includes(currentDeviceId)) {
-                    showNotification('Already Co-Host', 'You already have co-host access to this tournament');
-                }
+                const isOriginalHost = tournament.hostDevice === currentDeviceId;
+                const isAlreadyCoHost = coHosts.includes(currentDeviceId);
                 
-                // Check if this is the original host
-                if (tournament.hostDevice === currentDeviceId) {
-                    showNotification('You\'re the Host', 'You created this tournament');
-                }
-                
-                // Add this device to co-hosts (if not already)
-                if (!coHosts.includes(currentDeviceId) && tournament.hostDevice !== currentDeviceId) {
+                // Add this device to co-hosts if needed
+                if (!isAlreadyCoHost && !isOriginalHost) {
                     const tournamentRef = db.collection('tournaments').doc(tournamentId);
                     await tournamentRef.update({
                         coHosts: firebase.firestore.FieldValue.arrayUnion(currentDeviceId),
@@ -21701,9 +21733,12 @@
                             isCoHost: true
                         }
                     });
-                    
                     console.log('👑 Granted co-host access to device:', currentDeviceId);
                     showNotification('🎉 Co-Host Access', 'You now have co-host privileges!');
+                } else if (isOriginalHost) {
+                    showNotification('Welcome Back', 'Rejoining your tournament');
+                } else {
+                    showNotification('Co-Host Access', 'Rejoining as co-host');
                 }
                 
                 // Set up tournament data locally (same as host would have)
@@ -21721,8 +21756,8 @@
                 // Set globals
                 activeTournamentId = tournamentId;
                 tournamentMode = 'multi';
-                isHost = false; // Not the original host
-                isCoHost = true; // But is a co-host
+                isHost = isOriginalHost;
+                isCoHost = !isOriginalHost; // Co-host if not original host
                 hasJoinedTournament = true;
                 
                 // Set up course data
@@ -21750,10 +21785,10 @@
                     date: tournament.date,
                     gameType: tournament.gameType,
                     playerCount: tournament.players?.length || 0,
-                    role: 'co-host'
+                    role: isOriginalHost ? 'host' : 'co-host'
                 });
                 
-                // Go directly to Host Home Page (co-hosts see same view as host)
+                // Go directly to Host Home Page
                 updateHostHomePage();
                 showPage('hostHomePage');
                 
@@ -23319,6 +23354,21 @@
                 // Current Tournament card is now handled by populateHomeRoundsList()
                 // Keep guestCurrentTournament hidden
                 document.getElementById('guestCurrentTournament').style.display = 'none';
+            }
+            
+            // Show/hide Return to Tournament vs Host/Join buttons
+            const returnBtn = document.getElementById('homeReturnToTournament');
+            const actionBtns = document.getElementById('homeActionButtons');
+            const hasActiveTournament = activeTournamentId && tournamentMode === 'multi' && !isHost && !canManageTournament();
+            
+            if (returnBtn && actionBtns) {
+                if (hasActiveTournament) {
+                    returnBtn.style.display = 'block';
+                    actionBtns.style.display = 'none';
+                } else {
+                    returnBtn.style.display = 'none';
+                    actionBtns.style.display = 'flex';
+                }
             }
             
             // Update device initials display
@@ -27836,11 +27886,17 @@
             const frontPar = courseData.holes.slice(0, 9).reduce((sum, h) => sum + h.par, 0);
             const backPar = courseData.holes.slice(9).reduce((sum, h) => sum + h.par, 0);
             
+            // Build scoring method label for header
+            const scoringLabel = currentScoringMethod === 'gross' ? 'Gross' : 
+                                 currentScoringMethod === 'net' ? 'Net' :
+                                 currentScoringMethod === 'net18' ? 'Net (18 Max)' :
+                                 currentScoringMethod === 'netHalf' ? 'Net (½ Pop)' : 'Gross';
+            
             let html = `
                 <div style="margin-bottom: 8px; text-align: center;">
                     ${tournamentData.name ? `<h2 style="color: #1e3a5f; margin-bottom: 4px; font-size: 18px; font-weight: 700;">${tournamentData.name}</h2>` : ''}
                     <h3 style="color: #1e3a5f; margin-bottom: 2px; font-size: 16px;">${courseData.name}</h3>
-                    <p style="color: #64748b; font-size: 12px; margin: 0;">${currentGameType} - ${formatDateDisplay(tournamentData.date)}${myPlayersOnly ? ' (My Players)' : ''}</p>
+                    <p style="color: #64748b; font-size: 12px; margin: 0;">${currentGameType} - ${scoringLabel} - ${formatDateDisplay(tournamentData.date)}${myPlayersOnly ? ' (My Players)' : ''}</p>
                 </div>
             `;
             
@@ -28104,6 +28160,9 @@
         function calculateSkinsForScorecard(gameType, hcpMethod) {
             const skinWinners = {}; // hole index => array of player indices who won
             
+            // Use currentScoringMethod to determine if net scoring applies
+            const useNet = currentScoringMethod !== 'gross' || gameType.includes('Net');
+            
             for (let holeIdx = 0; holeIdx < 18; holeIdx++) {
                 const hole = courseData.holes[holeIdx];
                 let scores = [];
@@ -28111,7 +28170,7 @@
                 tournamentData.players.forEach((player, pIdx) => {
                     let score = player.scores[holeIdx];
                     if (score > 0) {
-                        if (gameType.includes('Net')) {
+                        if (useNet) {
                             score = getNetScore(score, player.handicap, hole.handicap, hcpMethod);
                         }
                         scores.push({ playerIdx: pIdx, score });
@@ -28164,13 +28223,19 @@
                 hcpMethod = 'half';
             }
             
+            // Build scoring method label
+            const scoringLabel = currentScoringMethod === 'gross' ? 'Gross' : 
+                                 currentScoringMethod === 'net' ? 'Net' :
+                                 currentScoringMethod === 'net18' ? 'Net (18 Max)' :
+                                 currentScoringMethod === 'netHalf' ? 'Net (½ Pop)' : 'Gross';
+            
             let html = `
                 <div class="scorecard-individual">
                     <div class="scorecard-player-header">
                         <div class="scorecard-player-name">${player.name}</div>
                         <div class="scorecard-player-info">
                             ${tournamentData.name ? `<strong>${tournamentData.name}</strong><br>` : ''}
-                            ${courseData.name} • ${currentGameType}<br>
+                            ${courseData.name} • ${currentGameType} • ${scoringLabel}<br>
                             ${formatDateDisplay(tournamentData.date)} • Handicap: ${player.handicap > 0 ? player.handicap : player.handicap < 0 ? '+' + Math.abs(player.handicap) : 'Scratch'}
                         </div>
                     </div>
