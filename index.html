@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-02-01-v15.9.66-signin-prompt-transform -->
+    <!-- VERSION: 2026-02-01-v15.9.68-android-scroll-scorecard-grossnet -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -160,6 +160,9 @@
             overscroll-behavior: none; /* Prevent pull-to-refresh */
             background: transparent;
             overflow-x: hidden;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            touch-action: pan-y; /* Allow vertical scrolling on Android */
         }
 
         .page.active {
@@ -4621,11 +4624,11 @@
 
     <!-- Claim Players List Modal -->
     <div id="claimPlayersModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y;">
-        <div style="background: white; border-radius: 8px; padding: 24px; margin: 20px; max-width: 500px; max-height: 80vh; overflow-y: auto; box-shadow: 0 8px 16px rgba(0,0,0,0.3); -webkit-overflow-scrolling: touch; touch-action: manipulation;">
+        <div style="background: white; border-radius: 8px; padding: 24px; margin: 20px; max-width: 500px; max-height: 80vh; overflow-y: auto; box-shadow: 0 8px 16px rgba(0,0,0,0.3); -webkit-overflow-scrolling: touch; touch-action: pan-y;">
             <h3 style="color: #1e3a5f; margin-bottom: 16px; font-size: 20px;">Claim Additional Player</h3>
             <p style="color: #64748b; margin-bottom: 20px; font-size: 14px;">Select an unclaimed player to score for them</p>
             
-            <div id="claimPlayersListContent" style="touch-action: manipulation;">
+            <div id="claimPlayersListContent" style="touch-action: pan-y;">
                 <!-- Player list will be populated here -->
             </div>
             
@@ -17392,6 +17395,9 @@
                     // Check if this is an IHMC event
                     if (result.isIHMCEvent) {
                         showIHMCJoinScreen(result);
+                    } else if (result.isHostCode) {
+                        // Host code - grant co-host access
+                        await grantCoHostAccess(result.tournamentId, result.tournament);
                     } else {
                         // Navigate to join tournament screen
                         showJoinTournamentScreen(result.tournamentId);
@@ -21569,9 +21575,6 @@
                             <button onclick="copyHostCode()" style="flex: 1; padding: 12px; background: #1e3a5f; border: none; border-radius: 6px; color: white; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
                                 📋 Copy
                             </button>
-                            <button onclick="shareHostCode()" style="flex: 1; padding: 12px; background: #166534; border: none; border-radius: 6px; color: white; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
-                                📤 Share
-                            </button>
                         </div>
                         
                         <div id="hostCodeSaveActions" style="display: none; gap: 12px;">
@@ -25587,6 +25590,18 @@
             
             // Update results display
             updateResultsDisplay();
+            
+            // Also update scorecard view if modal is open
+            const scorecardModal = document.getElementById('scorecardModal');
+            if (scorecardModal && scorecardModal.style.display !== 'none') {
+                updateScorecardView();
+            }
+            
+            // Also update full scorecard preview if open
+            const fullScorecardModal = document.getElementById('fullScorecardModal');
+            if (fullScorecardModal && fullScorecardModal.style.display !== 'none') {
+                updateFullScorecardPreview();
+            }
         }
         
         // Update scoring method buttons based on game type
@@ -27777,18 +27792,24 @@
         function generateSummaryTable(myPlayersOnly = false) {
             const currentGameType = document.getElementById('resultsGameType').value;
             
-            // Determine handicap method based on game type
+            // Determine handicap method based on currentScoringMethod (gross/net buttons)
             let hcpMethod = 'full';
-            if (currentGameType.includes('18 Max')) {
+            if (currentScoringMethod === 'net18') {
                 hcpMethod = '18max';
-            } else if (currentGameType.includes('1/2 Pop')) {
+            } else if (currentScoringMethod === 'netHalf') {
                 hcpMethod = 'half';
             }
             
-            // Check if this is a net or team game (team games use net scores)
-            const isNetOrTeam = currentGameType.includes('Net') || 
-                                currentGameType.includes('Best Ball') || 
-                                currentGameType.includes('Select Shot');
+            // Use currentScoringMethod to determine if showing net scores
+            // (not just based on game type name)
+            const isNet = currentScoringMethod !== 'gross';
+            
+            // Check if this is a team game (always use net for team games)
+            const isTeamGame = currentGameType.includes('Best Ball') || 
+                               currentGameType.includes('Select Shot');
+            
+            // Final decision: show net if scoring method is net OR it's a team game
+            const showNetScores = isNet || isTeamGame;
             
             // Check if this is a skins game
             const isSkinsGame = currentGameType.includes('Skins');
@@ -28135,11 +28156,11 @@
             const player = tournamentData.players[playerIndex];
             const currentGameType = document.getElementById('resultsGameType').value;
             
-            // Determine handicap method based on game type
+            // Determine handicap method based on currentScoringMethod
             let hcpMethod = 'full';
-            if (currentGameType.includes('18 Max')) {
+            if (currentScoringMethod === 'net18') {
                 hcpMethod = '18max';
-            } else if (currentGameType.includes('1/2 Pop')) {
+            } else if (currentScoringMethod === 'netHalf') {
                 hcpMethod = 'half';
             }
             
@@ -28239,12 +28260,13 @@
             const totalGross = frontGross + backGross;
             html += `<td><strong>${backGross || ''}</strong></td><td><strong>${totalGross || ''}</strong></td></tr>`;
             
-            // Net score row (if applicable - for net games OR team games)
-            const isNetOrTeam = currentGameType.includes('Net') || 
-                                currentGameType.includes('Best Ball') || 
-                                currentGameType.includes('Select Shot');
+            // Net score row (if applicable - based on currentScoringMethod)
+            const isNet = currentScoringMethod !== 'gross';
+            const isTeamGame = currentGameType.includes('Best Ball') || 
+                               currentGameType.includes('Select Shot');
+            const showNetRow = (isNet || isTeamGame) && player.handicap !== 0;
             
-            if (isNetOrTeam && player.handicap !== 0) {
+            if (showNetRow) {
                 html += `<tr style="background: #dcfce7;"><td><strong>Net</strong></td>`;
                 let frontNet = 0, backNet = 0;
                 for (let i = 0; i < 9; i++) {
