@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-02-02-v15.9.69-cohost-signin-skins-android -->
+    <!-- VERSION: 2026-02-02-v15.9.70-import-export-roster -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -3436,6 +3436,8 @@
             font-size: 10px;
         }
     </style>
+    <!-- SheetJS for Excel import/export -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
     <!-- Setup Page -->
@@ -3737,8 +3739,8 @@
             <div class="form-group">
                 <label>Players & Handicaps</label>
                 
-                <!-- Add Player and Quick Add Side by Side - Swapped positions -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+                <!-- Add Player, Quick Add, and Import Roster -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
                     <button type="button" onclick="addPlayerRow()" id="addPlayerBtn" 
                         style="padding: 8px 10px; background: #1e3a5f; border: none; border-radius: 6px; color: white; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 6px;">
                         <span style="font-size: 14px; font-weight: 700;">+</span> Add Player
@@ -3746,6 +3748,16 @@
                     <button type="button" id="quickAddBtn" onclick="showQuickAddModal()" 
                         style="padding: 8px 10px; background: white; border: 1px solid #1e3a5f; border-radius: 6px; color: #1e3a5f; font-size: 12px; font-weight: 600; cursor: pointer; display: none; flex-direction: row; align-items: center; justify-content: center; gap: 6px;">
                         👥 Quick Add
+                    </button>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+                    <button type="button" onclick="showImportRosterModal()" 
+                        style="padding: 8px 10px; background: white; border: 1px solid #166534; border-radius: 6px; color: #166534; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                        📥 Import Roster
+                    </button>
+                    <button type="button" onclick="showSavedRosterModal()" id="savedRosterBtn"
+                        style="padding: 8px 10px; background: white; border: 1px solid #1e3a5f; border-radius: 6px; color: #1e3a5f; font-size: 12px; font-weight: 600; cursor: pointer; display: none; align-items: center; justify-content: center; gap: 6px;">
+                        📋 Saved Roster
                     </button>
                 </div>
                 
@@ -4002,6 +4014,7 @@
                     <button type="button" id="resultsManageBtn" onclick="showPlayerManagement()" style="display: none; flex: 1; height: 40px; border-radius: 6px; border: 1.5px solid rgba(180, 130, 80, 0.5); background: rgba(212, 165, 116, 0.7); color: #78350f; font-size: 18px; cursor: pointer; align-items: center; justify-content: center;" title="Manage Tournament">⚙️</button>
                     <button type="button" id="resultsMyPlayersBtn" onclick="showMyPlayersPage()" style="display: none; flex: 1; height: 40px; border-radius: 6px; border: 1.5px solid rgba(180, 130, 80, 0.5); background: rgba(212, 165, 116, 0.7); color: #78350f; font-size: 18px; cursor: pointer; align-items: center; justify-content: center;" title="My Players">👤</button>
                     <button type="button" id="resultsScorecardBtn" onclick="openScorecardModal()" style="flex: 1; height: 40px; border-radius: 6px; border: 1.5px solid #1e3a5f; background: white; color: #1e3a5f; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="View Scorecards">📋</button>
+                    <button type="button" onclick="showExportScoresModal()" style="flex: 1; height: 40px; border-radius: 6px; border: 1.5px solid #166534; background: white; color: #166534; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Export Scores">📤</button>
                     <button type="button" onclick="showPage('scoringPage')" style="flex: 1; height: 40px; border-radius: 6px; border: 1.5px solid #1e3a5f; background: white; color: #1e3a5f; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Scoring">🏌️‍♂️</button>
                 </div>
                 
@@ -4627,6 +4640,102 @@
     </div>
 
     <!-- Claim Players List Modal -->
+    <!-- Import Roster Modal -->
+    <div id="importRosterModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
+        <div style="background: white; border-radius: 8px; padding: 24px; margin: 20px; max-width: 440px; width: 90%; box-shadow: 0 8px 16px rgba(0,0,0,0.3); max-height: 85vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="color: #1e3a5f; margin: 0; font-size: 18px;">📥 Import Roster</h3>
+                <button onclick="hideImportRosterModal()" style="background: none; border: none; font-size: 24px; color: #64748b; cursor: pointer;">×</button>
+            </div>
+            
+            <p style="color: #64748b; font-size: 13px; margin-bottom: 16px;">Upload an Excel (.xlsx) or CSV file with player names and handicaps.</p>
+            
+            <div style="background: #f8fafc; border: 2px dashed #d1d5db; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 16px; cursor: pointer;" onclick="document.getElementById('rosterFileInput').click()" id="rosterDropZone">
+                <div style="font-size: 36px; margin-bottom: 8px;">📄</div>
+                <p style="color: #1e3a5f; font-weight: 600; font-size: 14px; margin: 0 0 4px 0;">Tap to select file</p>
+                <p style="color: #9ca3af; font-size: 11px; margin: 0;">Supports .xlsx, .xls, .csv</p>
+            </div>
+            <input type="file" id="rosterFileInput" accept=".xlsx,.xls,.csv" style="display: none;" onchange="handleRosterFileSelect(event)">
+            
+            <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 12px; margin-bottom: 16px;">
+                <p style="color: #1e3a5f; font-size: 12px; font-weight: 600; margin: 0 0 6px 0;">Expected format:</p>
+                <div style="display: grid; grid-template-columns: 1fr 60px; gap: 4px; font-size: 11px; color: #475569;">
+                    <div style="font-weight: 600; border-bottom: 1px solid #bfdbfe; padding: 2px 0;">Name</div>
+                    <div style="font-weight: 600; border-bottom: 1px solid #bfdbfe; padding: 2px 0; text-align: center;">HCP</div>
+                    <div>John Smith</div><div style="text-align: center;">12</div>
+                    <div>Jane Doe</div><div style="text-align: center;">8</div>
+                </div>
+                <p style="color: #6b7280; font-size: 10px; margin: 6px 0 0 0;">First column = Name, second column = Handicap. Header row is auto-detected.</p>
+            </div>
+            
+            <!-- Preview area (hidden until file selected) -->
+            <div id="rosterPreview" style="display: none; margin-bottom: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <h4 style="color: #1e3a5f; margin: 0; font-size: 14px;">Preview (<span id="rosterPreviewCount">0</span> players)</h4>
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <input type="checkbox" id="rosterSaveCheckbox" checked>
+                        <span style="font-size: 11px; color: #475569;">Save as Club Roster</span>
+                    </label>
+                </div>
+                <div id="rosterPreviewList" style="max-height: 200px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 6px;">
+                </div>
+                <div style="display: flex; gap: 8px; margin-top: 12px;">
+                    <button onclick="hideImportRosterModal()" style="flex: 1; padding: 12px; background: #f1f5f9; border: none; border-radius: 6px; color: #475569; font-size: 14px; font-weight: 600; cursor: pointer;">Cancel</button>
+                    <button onclick="confirmImportRoster()" style="flex: 1; padding: 12px; background: #166534; border: none; border-radius: 6px; color: white; font-size: 14px; font-weight: 600; cursor: pointer;">Import Players</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Saved Roster Modal -->
+    <div id="savedRosterModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
+        <div style="background: white; border-radius: 8px; padding: 24px; margin: 20px; max-width: 440px; width: 90%; box-shadow: 0 8px 16px rgba(0,0,0,0.3); max-height: 85vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="color: #1e3a5f; margin: 0; font-size: 18px;">📋 Saved Roster</h3>
+                <button onclick="hideSavedRosterModal()" style="background: none; border: none; font-size: 24px; color: #64748b; cursor: pointer;">×</button>
+            </div>
+            
+            <p style="color: #64748b; font-size: 13px; margin-bottom: 12px;">Select players to add to this round:</p>
+            
+            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                <button onclick="selectAllRosterPlayers(true)" style="flex: 1; padding: 8px; background: #1e3a5f; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">Select All</button>
+                <button onclick="selectAllRosterPlayers(false)" style="flex: 1; padding: 8px; background: #f1f5f9; color: #475569; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">Deselect All</button>
+            </div>
+            
+            <div id="savedRosterList" style="max-height: 300px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 12px;">
+            </div>
+            
+            <div style="display: flex; gap: 8px;">
+                <button onclick="hideSavedRosterModal()" style="flex: 1; padding: 12px; background: #f1f5f9; border: none; border-radius: 6px; color: #475569; font-size: 14px; font-weight: 600; cursor: pointer;">Cancel</button>
+                <button onclick="addSelectedRosterPlayers()" style="flex: 1; padding: 12px; background: #166534; border: none; border-radius: 6px; color: white; font-size: 14px; font-weight: 600; cursor: pointer;">Add Selected</button>
+            </div>
+            
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb; display: flex; gap: 8px;">
+                <button onclick="showImportRosterModal(); hideSavedRosterModal();" style="flex: 1; padding: 8px; background: white; border: 1px solid #166534; border-radius: 6px; color: #166534; font-size: 12px; font-weight: 600; cursor: pointer;">📥 Re-Import</button>
+                <button onclick="confirmDeleteSavedRoster()" style="flex: 1; padding: 8px; background: white; border: 1px solid #a51c30; border-radius: 6px; color: #a51c30; font-size: 12px; font-weight: 600; cursor: pointer;">🗑 Delete Roster</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Scores Modal -->
+    <div id="exportScoresModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
+        <div style="background: white; border-radius: 8px; padding: 24px; margin: 20px; max-width: 400px; width: 90%; box-shadow: 0 8px 16px rgba(0,0,0,0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="color: #1e3a5f; margin: 0; font-size: 18px;">📤 Export Scores</h3>
+                <button onclick="hideExportScoresModal()" style="background: none; border: none; font-size: 24px; color: #64748b; cursor: pointer;">×</button>
+            </div>
+            <p style="color: #64748b; font-size: 13px; margin-bottom: 16px;">Download tournament scores as a spreadsheet.</p>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button onclick="exportScores('xlsx')" style="padding: 14px; background: #166534; border: none; border-radius: 6px; color: white; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    📊 Download Excel (.xlsx)
+                </button>
+                <button onclick="exportScores('csv')" style="padding: 14px; background: white; border: 1px solid #1e3a5f; border-radius: 6px; color: #1e3a5f; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    📄 Download CSV (.csv)
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div id="claimPlayersModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y;">
         <div style="background: white; border-radius: 8px; padding: 24px; margin: 20px; max-width: 500px; max-height: 80vh; overflow-y: auto; box-shadow: 0 8px 16px rgba(0,0,0,0.3); -webkit-overflow-scrolling: touch; touch-action: pan-y;">
             <h3 style="color: #1e3a5f; margin-bottom: 16px; font-size: 20px;">Claim Additional Player</h3>
@@ -17285,6 +17394,7 @@
             loadNotificationMuteState();
             loadAutoAdvanceSetting();
             loadGolfIdentity(); // Load golf identity for stats tracking
+            updateSavedRosterButton(); // Show saved roster button if roster exists
             
             // Populate home page rounds list
             setTimeout(populateHomeRoundsList, 100);
@@ -28157,6 +28267,336 @@
         }
         
         // Calculate skins winners for scorecard display
+        // ============================================================
+        // ROSTER IMPORT / EXPORT FUNCTIONS
+        // ============================================================
+        
+        let pendingRosterData = []; // Temporarily holds parsed roster data
+        
+        function showImportRosterModal() {
+            document.getElementById('importRosterModal').style.display = 'flex';
+            document.getElementById('rosterPreview').style.display = 'none';
+            document.getElementById('rosterFileInput').value = '';
+            pendingRosterData = [];
+        }
+        
+        function hideImportRosterModal() {
+            document.getElementById('importRosterModal').style.display = 'none';
+            pendingRosterData = [];
+        }
+        
+        function handleRosterFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                    
+                    if (rows.length === 0) {
+                        showNotification('Error', 'File is empty');
+                        return;
+                    }
+                    
+                    // Auto-detect header row
+                    let startRow = 0;
+                    const firstRow = rows[0];
+                    if (firstRow && firstRow.length >= 2) {
+                        const col0 = String(firstRow[0] || '').toLowerCase();
+                        const col1 = String(firstRow[1] || '').toLowerCase();
+                        if (col0.includes('name') || col0.includes('player') || 
+                            col1.includes('hcp') || col1.includes('handicap') || col1.includes('index')) {
+                            startRow = 1; // Skip header
+                        }
+                    }
+                    
+                    // Parse players
+                    pendingRosterData = [];
+                    for (let i = startRow; i < rows.length; i++) {
+                        const row = rows[i];
+                        if (!row || row.length < 1) continue;
+                        
+                        const name = String(row[0] || '').trim();
+                        if (!name || name.length === 0) continue;
+                        
+                        let hcp = 0;
+                        if (row.length >= 2 && row[1] !== null && row[1] !== undefined && row[1] !== '') {
+                            hcp = parseFloat(row[1]) || 0;
+                        }
+                        
+                        pendingRosterData.push({ name, handicap: hcp });
+                    }
+                    
+                    if (pendingRosterData.length === 0) {
+                        showNotification('Error', 'No players found in file');
+                        return;
+                    }
+                    
+                    // Show preview
+                    showRosterPreview();
+                    
+                } catch (err) {
+                    console.error('Error parsing roster file:', err);
+                    showNotification('Error', 'Could not read file. Make sure it\'s a valid Excel or CSV file.');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+        
+        function showRosterPreview() {
+            const preview = document.getElementById('rosterPreview');
+            const list = document.getElementById('rosterPreviewList');
+            const count = document.getElementById('rosterPreviewCount');
+            
+            count.textContent = pendingRosterData.length;
+            
+            let html = '';
+            pendingRosterData.forEach((p, i) => {
+                html += `<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="rosterCheck${i}" checked style="cursor: pointer;">
+                        <span style="color: #1e293b; font-weight: 500;">${p.name}</span>
+                    </div>
+                    <span style="color: #6b7280; font-size: 12px;">HCP ${p.handicap}</span>
+                </div>`;
+            });
+            
+            list.innerHTML = html;
+            preview.style.display = 'block';
+        }
+        
+        function confirmImportRoster() {
+            // Get only checked players
+            const selectedPlayers = pendingRosterData.filter((p, i) => {
+                const checkbox = document.getElementById(`rosterCheck${i}`);
+                return checkbox && checkbox.checked;
+            });
+            
+            if (selectedPlayers.length === 0) {
+                showNotification('No Players', 'Please select at least one player');
+                return;
+            }
+            
+            // Save roster if checkbox checked
+            const saveCheckbox = document.getElementById('rosterSaveCheckbox');
+            if (saveCheckbox && saveCheckbox.checked) {
+                saveClubRoster(pendingRosterData); // Save ALL players, not just selected
+            }
+            
+            // Add players to setup page
+            addPlayersFromRoster(selectedPlayers);
+            
+            hideImportRosterModal();
+            showNotification('✅ Imported', `${selectedPlayers.length} players added`);
+        }
+        
+        function addPlayersFromRoster(players) {
+            players.forEach(p => {
+                addPlayerRow();
+                // Find the last added row
+                const rows = document.querySelectorAll('#playerList .player-row');
+                const lastRow = rows[rows.length - 1];
+                if (lastRow) {
+                    const nameInput = lastRow.querySelector('input[type="text"]');
+                    const hcpInput = lastRow.querySelector('input[type="number"]');
+                    if (nameInput) nameInput.value = p.name;
+                    if (hcpInput) {
+                        hcpInput.value = p.handicap;
+                        hcpInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                }
+            });
+        }
+        
+        // Club Roster - Save/Load from localStorage
+        function saveClubRoster(players) {
+            const roster = {
+                players: players,
+                savedAt: new Date().toISOString()
+            };
+            localStorage.setItem('clubRoster', JSON.stringify(roster));
+            updateSavedRosterButton();
+            console.log('📋 Saved club roster with', players.length, 'players');
+        }
+        
+        function loadClubRoster() {
+            try {
+                const data = localStorage.getItem('clubRoster');
+                if (data) return JSON.parse(data);
+            } catch (e) {}
+            return null;
+        }
+        
+        function updateSavedRosterButton() {
+            const btn = document.getElementById('savedRosterBtn');
+            if (!btn) return;
+            const roster = loadClubRoster();
+            if (roster && roster.players && roster.players.length > 0) {
+                btn.style.display = 'flex';
+            } else {
+                btn.style.display = 'none';
+            }
+        }
+        
+        function showSavedRosterModal() {
+            const roster = loadClubRoster();
+            if (!roster || !roster.players || roster.players.length === 0) {
+                showNotification('No Roster', 'No saved roster found. Import one first.');
+                return;
+            }
+            
+            const list = document.getElementById('savedRosterList');
+            
+            // Get existing player names to pre-check
+            const existingNames = [];
+            document.querySelectorAll('#playerList .player-row input[type="text"]').forEach(input => {
+                if (input.value.trim()) existingNames.push(input.value.trim().toLowerCase());
+            });
+            
+            let html = '';
+            roster.players.forEach((p, i) => {
+                const alreadyAdded = existingNames.includes(p.name.toLowerCase());
+                html += `<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px; ${alreadyAdded ? 'opacity: 0.5;' : ''}">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="savedRosterCheck${i}" ${alreadyAdded ? '' : 'checked'} style="cursor: pointer;">
+                        <span style="color: #1e293b; font-weight: 500;">${p.name}</span>
+                        ${alreadyAdded ? '<span style="font-size: 10px; color: #9ca3af;">(already added)</span>' : ''}
+                    </div>
+                    <span style="color: #6b7280; font-size: 12px;">HCP ${p.handicap}</span>
+                </div>`;
+            });
+            
+            list.innerHTML = html;
+            document.getElementById('savedRosterModal').style.display = 'flex';
+        }
+        
+        function hideSavedRosterModal() {
+            document.getElementById('savedRosterModal').style.display = 'none';
+        }
+        
+        function selectAllRosterPlayers(selectAll) {
+            const roster = loadClubRoster();
+            if (!roster) return;
+            roster.players.forEach((p, i) => {
+                const cb = document.getElementById(`savedRosterCheck${i}`);
+                if (cb) cb.checked = selectAll;
+            });
+        }
+        
+        function addSelectedRosterPlayers() {
+            const roster = loadClubRoster();
+            if (!roster) return;
+            
+            const selected = roster.players.filter((p, i) => {
+                const cb = document.getElementById(`savedRosterCheck${i}`);
+                return cb && cb.checked;
+            });
+            
+            if (selected.length === 0) {
+                showNotification('No Players', 'Please select at least one player');
+                return;
+            }
+            
+            addPlayersFromRoster(selected);
+            hideSavedRosterModal();
+            showNotification('✅ Added', `${selected.length} players from roster`);
+        }
+        
+        function confirmDeleteSavedRoster() {
+            if (confirm('Delete saved club roster? This cannot be undone.')) {
+                localStorage.removeItem('clubRoster');
+                hideSavedRosterModal();
+                updateSavedRosterButton();
+                showNotification('Deleted', 'Club roster removed');
+            }
+        }
+        
+        // Export Scores
+        function showExportScoresModal() {
+            if (!tournamentData || !tournamentData.players || tournamentData.players.length === 0) {
+                showNotification('No Data', 'No scores to export');
+                return;
+            }
+            document.getElementById('exportScoresModal').style.display = 'flex';
+        }
+        
+        function hideExportScoresModal() {
+            document.getElementById('exportScoresModal').style.display = 'none';
+        }
+        
+        function exportScores(format) {
+            try {
+                const players = tournamentData.players;
+                const rows = [];
+                
+                // Header row
+                const header = ['Name', 'HCP'];
+                for (let i = 1; i <= 18; i++) header.push(`Hole ${i}`);
+                header.push('Front 9', 'Back 9', 'Total');
+                rows.push(header);
+                
+                // Player rows
+                players.forEach(p => {
+                    const row = [p.name, p.handicap];
+                    let front = 0, back = 0;
+                    for (let i = 0; i < 18; i++) {
+                        const score = (p.scores && p.scores[i]) ? p.scores[i] : '';
+                        row.push(score);
+                        if (score && i < 9) front += score;
+                        if (score && i >= 9) back += score;
+                    }
+                    row.push(front || '', back || '', (front + back) || '');
+                    rows.push(row);
+                });
+                
+                // Build filename
+                const courseName = (courseData?.name || tournamentData.course || 'Tournament').replace(/[^a-zA-Z0-9]/g, '_');
+                const date = tournamentData.date || new Date().toISOString().split('T')[0];
+                const filename = `${courseName}_${date}`;
+                
+                if (format === 'xlsx') {
+                    const wb = XLSX.utils.book_new();
+                    const ws = XLSX.utils.aoa_to_sheet(rows);
+                    
+                    // Set column widths
+                    ws['!cols'] = [
+                        { wch: 18 }, // Name
+                        { wch: 6 },  // HCP
+                        ...Array(18).fill({ wch: 7 }), // Holes
+                        { wch: 8 }, { wch: 8 }, { wch: 8 } // Totals
+                    ];
+                    
+                    XLSX.utils.book_append_sheet(wb, ws, 'Scores');
+                    XLSX.writeFile(wb, `${filename}.xlsx`);
+                } else {
+                    const ws = XLSX.utils.aoa_to_sheet(rows);
+                    const csv = XLSX.utils.sheet_to_csv(ws);
+                    const blob = new Blob([csv], { type: 'text/csv' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${filename}.csv`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                }
+                
+                hideExportScoresModal();
+                showNotification('✅ Exported', `Scores saved as .${format}`);
+                
+            } catch (err) {
+                console.error('Export error:', err);
+                showNotification('Error', 'Failed to export scores');
+            }
+        }
+        
+        // ============================================================
+        // END ROSTER IMPORT / EXPORT
+        // ============================================================
+
         function calculateSkinsForScorecard(gameType, hcpMethod) {
             const skinWinners = {}; // hole index => array of player indices who won
             
