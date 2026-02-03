@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-02-02-v15.9.70-import-export-roster -->
+    <!-- VERSION: 2026-02-02-v15.9.71-fix-guest-host-btn -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -4974,20 +4974,12 @@
             </button>
         </div>
         
-        <!-- Return to Tournament Button (shown when guest has active tournament) -->
-        <div id="homeReturnToTournament" style="display: none; margin-bottom: 10px;">
-            <button type="button" onclick="returnToActiveTournament()" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 16px 12px; background: white; border: none; border-radius: 6px; cursor: pointer;">
-                <span style="font-size: 24px;">🏌️</span>
-                <span style="font-size: 15px; font-weight: 700; color: #1e3a5f;">Return to Tournament</span>
-            </button>
-        </div>
-        
         <!-- HOST | JOIN Buttons - No wrapper, float on navy -->
         <div id="homeActionButtons" style="display: flex; gap: 12px; margin-bottom: 10px;">
-            <button type="button" onclick="startNewTournament()" style="flex: 1; display: flex; flex-direction: column; align-items: center; padding: 16px 12px; background: white; border: none; border-radius: 6px; cursor: pointer;">
-                <span style="font-size: 24px; margin-bottom: 4px;">👑</span>
-                <span style="font-size: 15px; font-weight: 700; color: #1e3a5f;">HOST</span>
-                <span style="color: #1e3a5f; font-size: 11px; font-weight: 400; margin-top: 2px;">New Round</span>
+            <button type="button" id="homeHostBtn" onclick="startNewTournament()" style="flex: 1; display: flex; flex-direction: column; align-items: center; padding: 16px 12px; background: white; border: none; border-radius: 6px; cursor: pointer;">
+                <span id="homeHostBtnIcon" style="font-size: 24px; margin-bottom: 4px;">👑</span>
+                <span id="homeHostBtnText" style="font-size: 15px; font-weight: 700; color: #1e3a5f;">HOST</span>
+                <span id="homeHostBtnSub" style="color: #1e3a5f; font-size: 11px; font-weight: 400; margin-top: 2px;">New Round</span>
             </button>
             <button type="button" onclick="showJoinByCodeModal()" style="flex: 1; display: flex; flex-direction: column; align-items: center; padding: 16px 12px; background: white; border: none; border-radius: 6px; cursor: pointer;">
                 <span style="font-size: 24px; margin-bottom: 4px;">🏌️</span>
@@ -23466,18 +23458,27 @@
                 document.getElementById('guestCurrentTournament').style.display = 'none';
             }
             
-            // Show/hide Return to Tournament vs Host/Join buttons
-            const returnBtn = document.getElementById('homeReturnToTournament');
-            const actionBtns = document.getElementById('homeActionButtons');
-            const hasActiveTournament = activeTournamentId && tournamentMode === 'multi' && !isHost && !canManageTournament();
+            // Swap HOST button to "Return to Tournament" for guests (not signed in) with active tournament
+            const hostBtn = document.getElementById('homeHostBtn');
+            const hostIcon = document.getElementById('homeHostBtnIcon');
+            const hostText = document.getElementById('homeHostBtnText');
+            const hostSub = document.getElementById('homeHostBtnSub');
+            const isGuest = !currentAuthUser;
+            const hasActiveTournament = activeTournamentId && tournamentMode === 'multi';
             
-            if (returnBtn && actionBtns) {
-                if (hasActiveTournament) {
-                    returnBtn.style.display = 'block';
-                    actionBtns.style.display = 'none';
+            if (hostBtn && hostIcon && hostText && hostSub) {
+                if (isGuest && hasActiveTournament) {
+                    // Swap to Return to Tournament
+                    hostBtn.onclick = returnToActiveTournament;
+                    hostIcon.textContent = '🏌️';
+                    hostText.textContent = 'RETURN';
+                    hostSub.textContent = 'To Tournament';
                 } else {
-                    returnBtn.style.display = 'none';
-                    actionBtns.style.display = 'flex';
+                    // Normal HOST button
+                    hostBtn.onclick = startNewTournament;
+                    hostIcon.textContent = '👑';
+                    hostText.textContent = 'HOST';
+                    hostSub.textContent = 'New Round';
                 }
             }
             
