@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-02-02-v15.9.71-fix-guest-host-btn -->
+    <!-- VERSION: 2026-02-02-v15.9.72-fix-return-btn -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -5527,6 +5527,9 @@
                 if (hostProfileBtn) hostProfileBtn.style.display = 'none';
                 if (hostOwnerBadge) hostOwnerBadge.style.display = 'none';
             }
+            
+            // Update HOST/RETURN button based on auth state
+            updateHomeHostButton();
         }
         
         // ============================================
@@ -17240,12 +17243,35 @@
         // Return to active tournament from guest home page
         function returnToActiveTournament() {
             if (activeTournamentId && tournamentMode === 'multi') {
-                // Go to My Players page (player's main view)
-                loadMyPlayersPage();
+                showMyPlayersPage();
             } else if (tournamentData && tournamentData.players && tournamentData.players.length > 0) {
-                // Single device mode - go to scoring
                 renderScoringPage();
                 showPage('scoringPage');
+            }
+        }
+        
+        // Update the HOST button on guest home page
+        // Only shows "RETURN" for non-signed-in guests with an active tournament
+        function updateHomeHostButton() {
+            const hostBtn = document.getElementById('homeHostBtn');
+            const hostIcon = document.getElementById('homeHostBtnIcon');
+            const hostText = document.getElementById('homeHostBtnText');
+            const hostSub = document.getElementById('homeHostBtnSub');
+            if (!hostBtn || !hostIcon || !hostText || !hostSub) return;
+            
+            const isSignedIn = !!currentAuthUser;
+            const hasActiveTournament = activeTournamentId && tournamentMode === 'multi';
+            
+            if (!isSignedIn && hasActiveTournament) {
+                hostBtn.onclick = returnToActiveTournament;
+                hostIcon.textContent = '🏌️';
+                hostText.textContent = 'RETURN';
+                hostSub.textContent = 'To Tournament';
+            } else {
+                hostBtn.onclick = startNewTournament;
+                hostIcon.textContent = '👑';
+                hostText.textContent = 'HOST';
+                hostSub.textContent = 'New Round';
             }
         }
         
@@ -23458,29 +23484,8 @@
                 document.getElementById('guestCurrentTournament').style.display = 'none';
             }
             
-            // Swap HOST button to "Return to Tournament" for guests (not signed in) with active tournament
-            const hostBtn = document.getElementById('homeHostBtn');
-            const hostIcon = document.getElementById('homeHostBtnIcon');
-            const hostText = document.getElementById('homeHostBtnText');
-            const hostSub = document.getElementById('homeHostBtnSub');
-            const isGuest = !currentAuthUser;
-            const hasActiveTournament = activeTournamentId && tournamentMode === 'multi';
-            
-            if (hostBtn && hostIcon && hostText && hostSub) {
-                if (isGuest && hasActiveTournament) {
-                    // Swap to Return to Tournament
-                    hostBtn.onclick = returnToActiveTournament;
-                    hostIcon.textContent = '🏌️';
-                    hostText.textContent = 'RETURN';
-                    hostSub.textContent = 'To Tournament';
-                } else {
-                    // Normal HOST button
-                    hostBtn.onclick = startNewTournament;
-                    hostIcon.textContent = '👑';
-                    hostText.textContent = 'HOST';
-                    hostSub.textContent = 'New Round';
-                }
-            }
+            // Update HOST/RETURN button state
+            updateHomeHostButton();
             
             // Update device initials display
             updateDeviceInitialsDisplay();
