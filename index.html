@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-02-02-v15.9.75-android-swipe-scroll-fix -->
+    <!-- VERSION: 2026-02-03-v15.9.77-user-scoped-storage -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -5305,6 +5305,8 @@
             auth.onAuthStateChanged(async (user) => {
                 console.log('🔐 Auth state changed:', user ? user.email : 'signed out');
                 currentAuthUser = user;
+                // Switch storage context BEFORE loading any data
+                setActiveStorageUser(user ? user.uid : null);
                 if (user) {
                     await loadUserSubscription(user.uid);
                     // Load and merge tournament history from Firebase
@@ -5727,8 +5729,8 @@
                 await currentAuthUser.delete();
                 
                 // Clear local data
-                localStorage.removeItem('golfIdentity');
-                localStorage.removeItem('linkedPlayers');
+                userRemove('golfIdentity');
+                userRemove('linkedPlayers');
                 
                 hideAccountModal();
                 showNotification('Account Deleted', 'Your account has been permanently deleted');
@@ -5757,7 +5759,7 @@
         // Load golf identity from localStorage/Firebase
         async function loadGolfIdentity() {
             // Try localStorage first
-            const saved = localStorage.getItem('golfIdentity');
+            const saved = userGet('golfIdentity');
             if (saved) {
                 try {
                     golfIdentityData = JSON.parse(saved);
@@ -5773,7 +5775,7 @@
                     if (doc.exists && doc.data().golfIdentity) {
                         golfIdentityData = doc.data().golfIdentity;
                         // Also save to localStorage for offline access
-                        localStorage.setItem('golfIdentity', JSON.stringify(golfIdentityData));
+                        userSet('golfIdentity', JSON.stringify(golfIdentityData));
                     }
                 } catch (e) {
                     console.error('Error loading golf identity from Firebase:', e);
@@ -5786,7 +5788,7 @@
         // Save golf identity to localStorage and Firebase
         async function saveGolfIdentityToStorage() {
             // Always save to localStorage
-            localStorage.setItem('golfIdentity', JSON.stringify(golfIdentityData));
+            userSet('golfIdentity', JSON.stringify(golfIdentityData));
             
             // If logged in, save to Firebase
             if (currentAuthUser && db) {
@@ -6211,7 +6213,7 @@
             // Store the linked players for this tournament
             if (confirmedMatches.length > 0) {
                 // Save to localStorage which players are linked to tracked identities
-                const linkedPlayers = JSON.parse(localStorage.getItem('linkedPlayers') || '{}');
+                const linkedPlayers = JSON.parse(userGet('linkedPlayers') || '{}');
                 const tournamentKey = activeTournamentId || tournamentData.name || 'local';
                 
                 linkedPlayers[tournamentKey] = confirmedMatches.map(m => ({
@@ -6220,7 +6222,7 @@
                     linkedAt: new Date().toISOString()
                 }));
                 
-                localStorage.setItem('linkedPlayers', JSON.stringify(linkedPlayers));
+                userSet('linkedPlayers', JSON.stringify(linkedPlayers));
                 
                 console.log('✅ Linked players for stat tracking:', linkedPlayers[tournamentKey]);
                 showNotification('Tracking Stats', `Tracking ${confirmedMatches.length} player${confirmedMatches.length > 1 ? 's' : ''} for your profile`);
@@ -6239,7 +6241,7 @@
         
         // Check if a player is linked for stat tracking in current tournament
         function isPlayerLinkedForTracking(playerName) {
-            const linkedPlayers = JSON.parse(localStorage.getItem('linkedPlayers') || '{}');
+            const linkedPlayers = JSON.parse(userGet('linkedPlayers') || '{}');
             const tournamentKey = activeTournamentId || tournamentData?.name || 'local';
             const links = linkedPlayers[tournamentKey] || [];
             
@@ -6258,7 +6260,7 @@
                 return;
             }
             
-            const linkedPlayers = JSON.parse(localStorage.getItem('linkedPlayers') || '{}');
+            const linkedPlayers = JSON.parse(userGet('linkedPlayers') || '{}');
             const tournamentKey = activeTournamentId || tournamentData?.name || 'local';
             let links = linkedPlayers[tournamentKey] || [];
             
@@ -6269,7 +6271,7 @@
                 // Remove link (turning off tracking for this player)
                 links.splice(existingIndex, 1);
                 linkedPlayers[tournamentKey] = links;
-                localStorage.setItem('linkedPlayers', JSON.stringify(linkedPlayers));
+                userSet('linkedPlayers', JSON.stringify(linkedPlayers));
                 showNotification('Tracking Off', `Stopped tracking ${playerName}`);
             } else {
                 // Adding a link
@@ -6287,7 +6289,7 @@
                         linkedAt: new Date().toISOString()
                     });
                     linkedPlayers[tournamentKey] = links;
-                    localStorage.setItem('linkedPlayers', JSON.stringify(linkedPlayers));
+                    userSet('linkedPlayers', JSON.stringify(linkedPlayers));
                     showNotification('Tracking On', `Now tracking ${playerName} as ${trackedName}`);
                 } else {
                     // Multiple tracked players - show picker
@@ -6343,7 +6345,7 @@
         
         // Link a tournament player to a tracked identity
         function linkPlayerToTracked(playerName, trackedName) {
-            const linkedPlayers = JSON.parse(localStorage.getItem('linkedPlayers') || '{}');
+            const linkedPlayers = JSON.parse(userGet('linkedPlayers') || '{}');
             const tournamentKey = activeTournamentId || tournamentData?.name || 'local';
             let links = linkedPlayers[tournamentKey] || [];
             
@@ -6358,7 +6360,7 @@
             });
             
             linkedPlayers[tournamentKey] = links;
-            localStorage.setItem('linkedPlayers', JSON.stringify(linkedPlayers));
+            userSet('linkedPlayers', JSON.stringify(linkedPlayers));
             
             // Close modal
             const modal = document.getElementById('trackingPickerModal');
@@ -6409,6 +6411,7 @@
                 
                 await auth.signOut();
                 currentAuthUser = null;
+                setActiveStorageUser(null);
                 userSubscription = { status: 'free', expiresAt: null, email: null };
                 
                 // Clear active tournament state on sign out
@@ -7296,6 +7299,7 @@
                 
                 // Clear local state
                 currentAuthUser = null;
+                setActiveStorageUser(null);
                 userSubscription = { status: 'free', expiresAt: null, email: null };
                 
                 hideAccountModal();
@@ -7395,6 +7399,80 @@
         
         // Subscription state
         let currentAuthUser = null;  // Firebase auth user
+        
+        // ===== USER-SCOPED LOCALSTORAGE HELPERS =====
+        // Keys that should be isolated per-user account
+        const USER_SCOPED_KEYS = new Set([
+            'golfIdentity', 'linkedPlayers', 'statsHistory', 'statsTrackerConfig', 'playerStats',
+            'tournamentHistory', 'savedTournaments', 'activeTournamentId', 'currentTournamentId',
+            'savedRosters', 'clubRoster',
+            'courseNotes', 'golf_custom_courses', 'golf_favorite_courses', 'letsgolf_custom_courses',
+            'currentIHMCEvent', 'indianHillsScoring', 'indianHillsPlayerHistory',
+            'watchedPlayerNotificationsMuted', 'playerOrder', '_lastLocalSaveTime', 'letsgolf_data'
+        ]);
+        
+        // Track active UID for storage scoping
+        let _activeStorageUid = null;
+        
+        function _getScopedKey(key) {
+            // Only scope user-specific keys when a user is logged in
+            if (_activeStorageUid && USER_SCOPED_KEYS.has(key)) {
+                return key + '_uid_' + _activeStorageUid;
+            }
+            return key;
+        }
+        
+        // Drop-in replacements for localStorage that auto-scope user keys
+        function userGet(key) {
+            return localStorage.getItem(_getScopedKey(key));
+        }
+        
+        function userSet(key, value) {
+            localStorage.setItem(_getScopedKey(key), value);
+        }
+        
+        function userRemove(key) {
+            localStorage.removeItem(_getScopedKey(key));
+        }
+        
+        // Migration: move unscoped data to the user's scoped keys (one-time per user)
+        function migrateLocalStorageToUser(uid) {
+            const migrationFlag = 'migrated_uid_' + uid;
+            if (localStorage.getItem(migrationFlag)) return; // Already migrated
+            
+            console.log('[Storage] Migrating localStorage to user scope for UID:', uid);
+            let migratedCount = 0;
+            
+            USER_SCOPED_KEYS.forEach(key => {
+                const unscopedValue = localStorage.getItem(key);
+                const scopedKey = key + '_uid_' + uid;
+                
+                // Only migrate if unscoped data exists AND scoped data doesn't
+                if (unscopedValue !== null && localStorage.getItem(scopedKey) === null) {
+                    localStorage.setItem(scopedKey, unscopedValue);
+                    migratedCount++;
+                }
+            });
+            
+            // Mark migration complete for this user
+            localStorage.setItem(migrationFlag, Date.now().toString());
+            
+            // Clean up unscoped keys (they now live under the user's scope)
+            if (migratedCount > 0) {
+                USER_SCOPED_KEYS.forEach(key => {
+                    localStorage.removeItem(key);
+                });
+                console.log('[Storage] Migrated', migratedCount, 'keys and cleaned unscoped copies');
+            }
+        }
+        
+        // Called on auth state change to switch storage context
+        function setActiveStorageUser(uid) {
+            _activeStorageUid = uid;
+            if (uid) {
+                migrateLocalStorageToUser(uid);
+            }
+        }
         let userSubscription = {
             status: 'free',  // 'free', 'day', 'week', 'season'
             expiresAt: null,
@@ -7687,10 +7765,10 @@
         };
         
         // Favorite courses stored in localStorage
-        let favoriteCourses = JSON.parse(localStorage.getItem('golf_favorite_courses') || '[]');
+        let favoriteCourses = JSON.parse(userGet('golf_favorite_courses') || '[]');
         
         // Custom courses added by users (also stored in localStorage)
-        let customCourses = JSON.parse(localStorage.getItem('golf_custom_courses') || '{}');
+        let customCourses = JSON.parse(userGet('golf_custom_courses') || '{}');
         
         // Currently selected tee for tournament
         let selectedTee = null;
@@ -8151,7 +8229,7 @@
             });
             
             if (changes > 0) {
-                localStorage.setItem('indianHillsPlayerHistory', JSON.stringify(playerHistory));
+                userSet('indianHillsPlayerHistory', JSON.stringify(playerHistory));
                 showNotification('Saved', `${changes} player${changes !== 1 ? 's' : ''} updated`);
             }
             
@@ -8168,7 +8246,7 @@
         function deleteQuickAddPlayer(playerName) {
             if (confirm(`Remove ${playerName} from roster?`)) {
                 delete playerHistory[playerName];
-                localStorage.setItem('indianHillsPlayerHistory', JSON.stringify(playerHistory));
+                userSet('indianHillsPlayerHistory', JSON.stringify(playerHistory));
                 renderQuickAddButtons();
                 // Refresh the manage roster modal if it's open
                 const manageModal = document.getElementById('manageRosterModal');
@@ -8802,12 +8880,12 @@
         }
 
         // Player history for auto-complete and handicap memory
-        let playerHistory = JSON.parse(localStorage.getItem('indianHillsPlayerHistory') || '{}');
+        let playerHistory = JSON.parse(userGet('indianHillsPlayerHistory') || '{}');
         // Format: { "PlayerName": { name: "PlayerName", handicap: 10, lastUsed: timestamp, usageCount: 5 } }
 
         // Save player history
         function savePlayerHistory() {
-            localStorage.setItem('indianHillsPlayerHistory', JSON.stringify(playerHistory));
+            userSet('indianHillsPlayerHistory', JSON.stringify(playerHistory));
         }
 
         // Update player in history
@@ -9949,9 +10027,9 @@
             
             // Save to localStorage for persistence
             try {
-                const savedCustom = JSON.parse(localStorage.getItem('letsgolf_custom_courses') || '{}');
+                const savedCustom = JSON.parse(userGet('letsgolf_custom_courses') || '{}');
                 savedCustom[courseId] = courseData;
-                localStorage.setItem('letsgolf_custom_courses', JSON.stringify(savedCustom));
+                userSet('letsgolf_custom_courses', JSON.stringify(savedCustom));
             } catch (e) {
                 console.error('Error saving custom course:', e);
             }
@@ -10019,7 +10097,7 @@
                 showNotification('Favorited ⭐', `${courseName} added to favorites`);
             }
             
-            localStorage.setItem('golf_favorite_courses', JSON.stringify(favoriteCourses));
+            userSet('golf_favorite_courses', JSON.stringify(favoriteCourses));
             updateFavoritesDropdown();
             updateFavoriteButton();
         }
@@ -10065,7 +10143,7 @@
                 favoriteCourses.push({ id: courseId, name, city, state });
             }
             
-            localStorage.setItem('golf_favorite_courses', JSON.stringify(favoriteCourses));
+            userSet('golf_favorite_courses', JSON.stringify(favoriteCourses));
             updateFavoritesDropdown();
             updateFavoriteButton();
             
@@ -10113,7 +10191,7 @@
             // Add to favorites if not already
             if (!favoriteCourses.some(f => String(f.id) === String(courseKey))) {
                 favoriteCourses.push({ id: courseKey, name: course.name, city: course.city || '', state: course.state || '' });
-                localStorage.setItem('golf_favorite_courses', JSON.stringify(favoriteCourses));
+                userSet('golf_favorite_courses', JSON.stringify(favoriteCourses));
                 updateFavoritesDropdown();
             }
             
@@ -10235,7 +10313,7 @@
                 
                 // Save to custom courses
                 customCourses[courseKey] = convertedCourse;
-                localStorage.setItem('golf_custom_courses', JSON.stringify(customCourses));
+                userSet('golf_custom_courses', JSON.stringify(customCourses));
                 
                 // Add option to dropdown and select it
                 const select = document.getElementById('courseSelect');
@@ -10253,7 +10331,7 @@
                     // Also add to favoriteCourses
                     if (!favoriteCourses.some(f => f.id === courseKey)) {
                         favoriteCourses.push({ id: courseKey, name: convertedCourse.name, city: convertedCourse.city, state: convertedCourse.state });
-                        localStorage.setItem('golf_favorite_courses', JSON.stringify(favoriteCourses));
+                        userSet('golf_favorite_courses', JSON.stringify(favoriteCourses));
                     }
                     // Hide hint
                     const hint = document.getElementById('noFavoritesHint');
@@ -10388,7 +10466,7 @@
             };
             
             customCourses[courseKey] = customCourse;
-            localStorage.setItem('golf_custom_courses', JSON.stringify(customCourses));
+            userSet('golf_custom_courses', JSON.stringify(customCourses));
             
             // Add to dropdown and favorites
             const select = document.getElementById('courseSelect');
@@ -10406,7 +10484,7 @@
             // Also add to favoriteCourses
             if (!favoriteCourses.some(f => f.id === courseKey)) {
                 favoriteCourses.push({ id: courseKey, name: name, city: '', state: '' });
-                localStorage.setItem('golf_favorite_courses', JSON.stringify(favoriteCourses));
+                userSet('golf_favorite_courses', JSON.stringify(favoriteCourses));
             }
             
             // Hide hint
@@ -11804,13 +11882,13 @@
                 const jsonData = JSON.stringify(data);
                 
                 // Track save time for conflict resolution
-                localStorage.setItem('_lastLocalSaveTime', Date.now().toString());
+                userSet('_lastLocalSaveTime', Date.now().toString());
                 
                 // Save to localStorage
-                localStorage.setItem('indianHillsScoring', jsonData);
+                userSet('indianHillsScoring', jsonData);
                 
                 // VERIFY save worked by reading it back
-                const verification = localStorage.getItem('indianHillsScoring');
+                const verification = userGet('indianHillsScoring');
                 
                 if (!verification) {
                     console.error('❌ SAVE VERIFICATION FAILED - localStorage returned null');
@@ -11844,7 +11922,7 @@
                         _deletedPlayers: deletedPlayers,
                         _lastSaved: new Date().toISOString()
                     };
-                    localStorage.setItem('indianHillsScoring', JSON.stringify(retryData));
+                    userSet('indianHillsScoring', JSON.stringify(retryData));
                     console.log('✅ Retry successful');
                     showSaveIndicator();
                     return true;
@@ -11857,7 +11935,7 @@
         }
 
         function loadFromLocalStorage() {
-            const saved = localStorage.getItem('indianHillsScoring');
+            const saved = userGet('indianHillsScoring');
             if (saved) {
                 try {
                     const data = JSON.parse(saved);
@@ -12012,7 +12090,7 @@
                 // Longer delay for iOS to ensure localStorage write completes
                 await new Promise(resolve => setTimeout(resolve, 150));
                 
-                const saved = localStorage.getItem('indianHillsScoring');
+                const saved = userGet('indianHillsScoring');
                 if (!saved) {
                     console.error('❌ VERIFY: No saved data found in localStorage');
                     return false;
@@ -12273,7 +12351,7 @@
         
         // Load stats config from localStorage
         function loadStatsConfig() {
-            const saved = localStorage.getItem('statsTrackerConfig');
+            const saved = userGet('statsTrackerConfig');
             if (saved) {
                 try {
                     statsTrackerConfig = JSON.parse(saved);
@@ -12285,7 +12363,7 @@
         
         // Save stats config to localStorage
         function saveStatsConfig() {
-            localStorage.setItem('statsTrackerConfig', JSON.stringify(statsTrackerConfig));
+            userSet('statsTrackerConfig', JSON.stringify(statsTrackerConfig));
         }
         
         // Toggle a stat on/off
@@ -12319,7 +12397,7 @@
         
         // Save player stats to localStorage (and Firebase if signed in)
         function savePlayerStatsToLocalStorage() {
-            localStorage.setItem('playerStats', JSON.stringify(playerStats));
+            userSet('playerStats', JSON.stringify(playerStats));
             // Also sync to Firebase if signed in
             if (currentAuthUser) {
                 savePlayerStatsToFirebase();
@@ -12328,7 +12406,7 @@
         
         // Load player stats from localStorage
         function loadPlayerStatsFromLocalStorage() {
-            const saved = localStorage.getItem('playerStats');
+            const saved = userGet('playerStats');
             if (saved) {
                 try {
                     playerStats = JSON.parse(saved);
@@ -12355,7 +12433,7 @@
                         playerStats = { ...localStats, ...firebaseStats };
                         
                         // Save merged stats back to localStorage
-                        localStorage.setItem('playerStats', JSON.stringify(playerStats));
+                        userSet('playerStats', JSON.stringify(playerStats));
                         console.log('📥 Player stats loaded from Firebase');
                     }
                 }
@@ -12421,7 +12499,7 @@
         // Get stats history from localStorage
         function getStatsHistory() {
             try {
-                const history = localStorage.getItem('statsHistory');
+                const history = userGet('statsHistory');
                 return history ? JSON.parse(history) : [];
             } catch (error) {
                 console.error('Error reading stats history:', error);
@@ -12432,7 +12510,7 @@
         // Save stats history to localStorage
         function saveStatsHistory(history) {
             try {
-                localStorage.setItem('statsHistory', JSON.stringify(history));
+                userSet('statsHistory', JSON.stringify(history));
             } catch (error) {
                 console.error('Error saving stats history:', error);
             }
@@ -14183,7 +14261,7 @@
             const tournament = currentIHMCEvent.tournament;
             
             // Store IHMC event reference for later publishing
-            localStorage.setItem('currentIHMCEvent', JSON.stringify({
+            userSet('currentIHMCEvent', JSON.stringify({
                 eventId: currentIHMCEvent.ihmcEventId,
                 eventName: event.name,
                 eventDate: event.date,
@@ -14289,7 +14367,7 @@
         
         // Publish results to IHMC (called after round ends)
         async function publishResultsToIHMC() {
-            const ihmcEventStr = localStorage.getItem('currentIHMCEvent');
+            const ihmcEventStr = userGet('currentIHMCEvent');
             if (!ihmcEventStr) {
                 showNotification('Error', 'No IHMC event linked to this round');
                 return false;
@@ -14330,7 +14408,7 @@
                 showNotification('Published!', 'Results sent to IHMC');
                 
                 // Clear the IHMC event link
-                localStorage.removeItem('currentIHMCEvent');
+                userRemove('currentIHMCEvent');
                 
                 return true;
             } catch (error) {
@@ -14350,12 +14428,12 @@
         
         // Check if current round is linked to IHMC event
         function isIHMCLinkedRound() {
-            return !!localStorage.getItem('currentIHMCEvent');
+            return !!userGet('currentIHMCEvent');
         }
         
         // Get IHMC event info for display
         function getIHMCEventInfo() {
-            const data = localStorage.getItem('currentIHMCEvent');
+            const data = userGet('currentIHMCEvent');
             return data ? JSON.parse(data) : null;
         }
         
@@ -14891,14 +14969,14 @@
         
         // Load mute state from localStorage
         function loadNotificationMuteState() {
-            const muted = localStorage.getItem('watchedPlayerNotificationsMuted');
+            const muted = userGet('watchedPlayerNotificationsMuted');
             watchedPlayerNotificationsMuted = muted === 'true';
         }
         
         // Toggle notification mute
         function toggleWatchedNotifications() {
             watchedPlayerNotificationsMuted = !watchedPlayerNotificationsMuted;
-            localStorage.setItem('watchedPlayerNotificationsMuted', watchedPlayerNotificationsMuted);
+            userSet('watchedPlayerNotificationsMuted', watchedPlayerNotificationsMuted);
             
             // Update UI
             updateNotificationToggleUI();
@@ -15494,7 +15572,7 @@
         
         // Check if this device has claimed players from a previous session
         async function checkForPreviousSession() {
-            const savedData = localStorage.getItem('indianHillsScoring');
+            const savedData = userGet('indianHillsScoring');
             if (!savedData) return;
             
             try {
@@ -15510,7 +15588,7 @@
                 if (!tournamentDoc.exists) {
                     console.log('Previous tournament no longer exists');
                     // Clear the old data
-                    localStorage.removeItem('indianHillsScoring');
+                    userRemove('indianHillsScoring');
                     return;
                 }
                 
@@ -15519,8 +15597,8 @@
                 // Skip if tournament is finished - don't show Welcome Back for finished tournaments
                 if (tournament.isFinished) {
                     console.log('Previous tournament is finished - clearing session');
-                    localStorage.removeItem('indianHillsScoring');
-                    localStorage.removeItem('activeTournamentId');
+                    userRemove('indianHillsScoring');
+                    userRemove('activeTournamentId');
                     return;
                 }
                 
@@ -15804,9 +15882,9 @@
             savePlayerOrder();
             
             // Clear localStorage
-            localStorage.removeItem('activeTournamentId');
-            localStorage.removeItem('indianHillsScoring');
-            localStorage.removeItem('currentTournamentId');
+            userRemove('activeTournamentId');
+            userRemove('indianHillsScoring');
+            userRemove('currentTournamentId');
             
             // Reset tournament data
             tournamentData = {
@@ -16529,7 +16607,7 @@
         // Get all course notes from localStorage
         function getAllCourseNotes() {
             try {
-                const notes = localStorage.getItem('courseNotes');
+                const notes = userGet('courseNotes');
                 return notes ? JSON.parse(notes) : {};
             } catch (e) {
                 console.error('Error loading course notes:', e);
@@ -16540,7 +16618,7 @@
         // Save all course notes to localStorage
         function saveAllCourseNotes(notes) {
             try {
-                localStorage.setItem('courseNotes', JSON.stringify(notes));
+                userSet('courseNotes', JSON.stringify(notes));
             } catch (e) {
                 console.error('Error saving course notes:', e);
             }
@@ -17110,7 +17188,7 @@
         // Start a completely new tournament - clear all existing data
         function startNewTournament() {
             // BACKUP current tournament data before clearing (so we can restore if user cancels)
-            const currentSaved = localStorage.getItem('indianHillsScoring');
+            const currentSaved = userGet('indianHillsScoring');
             if (currentSaved) {
                 previousTournamentBackup = currentSaved;
             }
@@ -17136,7 +17214,7 @@
             clearAllPlayerStats();
             
             // DON'T clear localStorage yet - keep it as backup until new tournament is started
-            // localStorage.removeItem('indianHillsScoring');
+            // userRemove('indianHillsScoring');
             
             // Reset form fields
             const nameInput = document.getElementById('tournamentName');
@@ -17291,7 +17369,7 @@
         // Clear all player stats from localStorage
         function clearAllPlayerStats() {
             playerStats = {};
-            localStorage.removeItem('playerStats');
+            userRemove('playerStats');
             console.log('✅ Player stats cleared');
         }
         
@@ -17805,7 +17883,7 @@
         // Get tournament history from localStorage
         function getTournamentHistory() {
             try {
-                const history = localStorage.getItem('tournamentHistory');
+                const history = userGet('tournamentHistory');
                 return history ? JSON.parse(history) : [];
             } catch (error) {
                 console.error('Error reading tournament history:', error);
@@ -17816,7 +17894,7 @@
         // Save tournament history to localStorage AND Firebase (if signed in)
         function saveTournamentHistory(history) {
             try {
-                localStorage.setItem('tournamentHistory', JSON.stringify(history));
+                userSet('tournamentHistory', JSON.stringify(history));
                 
                 // Also sync to Firebase if user is signed in
                 if (currentAuthUser && db) {
@@ -17871,7 +17949,7 @@
                         const mergedHistory = mergeTournamentHistories(localHistory, firebaseHistory);
                         
                         // Save merged history to localStorage (don't re-sync to avoid loop)
-                        localStorage.setItem('tournamentHistory', JSON.stringify(mergedHistory));
+                        userSet('tournamentHistory', JSON.stringify(mergedHistory));
                         
                         console.log('📥 Tournament history loaded from Firebase:', firebaseHistory.length, 'tournaments');
                         console.log('🔀 Merged history:', mergedHistory.length, 'tournaments');
@@ -18305,7 +18383,7 @@
         function confirmDeletePastRound(roundId) {
             let history = getTournamentHistory();
             history = history.filter(h => h.id !== roundId);
-            localStorage.setItem('tournamentHistory', JSON.stringify(history));
+            userSet('tournamentHistory', JSON.stringify(history));
             closeModal();
             populateHomeRoundsList();
             showNotification('Deleted', 'Round removed from history');
@@ -18352,7 +18430,7 @@
                         // Set course data
                         courseData = courses[tournamentData.course] || customCourses[tournamentData.course];
                         
-                        localStorage.setItem('activeTournamentId', tournamentId);
+                        userSet('activeTournamentId', tournamentId);
                         tournamentMode = 'multi';
                         
                         // Setup real-time listeners
@@ -18371,7 +18449,7 @@
             
             // Fallback: Try to load from localStorage
             console.log('📂 Trying localStorage fallback...');
-            const savedData = localStorage.getItem('indianHillsScoring');
+            const savedData = userGet('indianHillsScoring');
             if (savedData) {
                 try {
                     const data = JSON.parse(savedData);
@@ -18435,7 +18513,7 @@
                         // Set course data
                         courseData = courses[tournamentData.course] || customCourses[tournamentData.course];
                         
-                        localStorage.setItem('activeTournamentId', tournamentId);
+                        userSet('activeTournamentId', tournamentId);
                         
                         showPage('resultsPage');
                         return;
@@ -18446,7 +18524,7 @@
             }
             
             // Fallback: Try to load from localStorage
-            const savedData = localStorage.getItem('indianHillsScoring');
+            const savedData = userGet('indianHillsScoring');
             if (savedData) {
                 try {
                     const data = JSON.parse(savedData);
@@ -18957,7 +19035,8 @@
                         
                         // CRITICAL: Clear ALL player stats - both general and tournament-specific
                         clearAllPlayerStats();
-                        localStorage.removeItem('playerStats_' + tournamentId);
+                        const psKey = _activeStorageUid ? 'playerStats_' + tournamentId + '_uid_' + _activeStorageUid : 'playerStats_' + tournamentId;
+                        localStorage.removeItem(psKey);
                         
                         saveToLocalStorage();
                         subscribToTournamentUpdates(tournamentId);
@@ -20801,7 +20880,7 @@
                         
                         // CLEAR the backup - new tournament is now the active one
                         previousTournamentBackup = null;
-                        localStorage.removeItem('indianHillsScoring'); // Clear old data before saving new
+                        userRemove('indianHillsScoring'); // Clear old data before saving new
                         
                         // Subscribe to real-time updates
                         subscribToTournamentUpdates(tournamentId);
@@ -20842,7 +20921,7 @@
                 } else {
                     // Downgraded to single-device mode for free users
                     previousTournamentBackup = null;
-                    localStorage.removeItem('indianHillsScoring');
+                    userRemove('indianHillsScoring');
                     
                     // Free users in single-device mode are still the host
                     isHost = true;
@@ -20856,7 +20935,7 @@
                 // Single-device mode - existing behavior
                 // CLEAR the backup - new tournament is now the active one
                 previousTournamentBackup = null;
-                localStorage.removeItem('indianHillsScoring'); // Clear old data before saving new
+                userRemove('indianHillsScoring'); // Clear old data before saving new
                 
                 // CRITICAL: Clear old Firebase tournament ID for single-device mode
                 activeTournamentId = null;
@@ -22004,7 +22083,7 @@
                 await db.collection('tournaments').doc(activeTournamentId).delete();
                 
                 // Clear local data
-                localStorage.removeItem('letsgolf_data');
+                userRemove('letsgolf_data');
                 activeTournamentId = null;
                 tournamentData = null;
                 isHost = false;
@@ -23744,7 +23823,8 @@
                         
                         // Clear player stats
                         clearAllPlayerStats();
-                        localStorage.removeItem('playerStats_' + activeTournamentId);
+                        const psKey2 = _activeStorageUid ? 'playerStats_' + activeTournamentId + '_uid_' + _activeStorageUid : 'playerStats_' + activeTournamentId;
+                        localStorage.removeItem(psKey2);
                         
                         // Hide the finished actions
                         const finishedActions = document.getElementById('finishedTournamentActions');
@@ -23777,7 +23857,7 @@
             const index = history.findIndex(t => t.id === tournamentId);
             if (index !== -1) {
                 history[index] = { ...history[index], ...updates };
-                localStorage.setItem('tournamentHistory', JSON.stringify(history));
+                userSet('tournamentHistory', JSON.stringify(history));
             }
         }
         
@@ -24005,10 +24085,10 @@
                     savedAt: new Date().toISOString()
                 };
                 
-                const savedTournaments = JSON.parse(localStorage.getItem('savedTournaments') || '[]');
+                const savedTournaments = JSON.parse(userGet('savedTournaments') || '[]');
                 savedTournaments.unshift(saveData);
                 if (savedTournaments.length > 10) savedTournaments.pop();
-                localStorage.setItem('savedTournaments', JSON.stringify(savedTournaments));
+                userSet('savedTournaments', JSON.stringify(savedTournaments));
             }
             
             // Then leave
@@ -24069,9 +24149,9 @@
                 playerOrder = { claimed: [], watching: [] };
                 claimedPlayers = [];
                 
-                localStorage.removeItem('activeTournamentId');
-                localStorage.removeItem('playerOrder');
-                localStorage.removeItem('indianHillsScoring');
+                userRemove('activeTournamentId');
+                userRemove('playerOrder');
+                userRemove('indianHillsScoring');
                 
                 // Hide all tournament cards (handled by populateHomeRoundsList)
                 document.getElementById('guestCurrentTournament').style.display = 'none';
@@ -24092,7 +24172,7 @@
         function deleteLastTournament() {
             // Clear tournament data from memory
             tournamentData = null;
-            localStorage.removeItem('indianHillsScoring');
+            userRemove('indianHillsScoring');
             
             // Hide the Last Tournament card entirely
             document.getElementById('guestCurrentTournament').style.display = 'none';
@@ -24109,7 +24189,7 @@
                 };
                 
                 // Get existing saved tournaments or create new array
-                const savedTournaments = JSON.parse(localStorage.getItem('savedTournaments') || '[]');
+                const savedTournaments = JSON.parse(userGet('savedTournaments') || '[]');
                 savedTournaments.unshift(saveData); // Add to front
                 
                 // Keep only last 10 tournaments
@@ -24117,17 +24197,17 @@
                     savedTournaments.pop();
                 }
                 
-                localStorage.setItem('savedTournaments', JSON.stringify(savedTournaments));
+                userSet('savedTournaments', JSON.stringify(savedTournaments));
                 
                 // Clear tournament data from memory
                 tournamentData = null;
-                localStorage.removeItem('indianHillsScoring');
+                userRemove('indianHillsScoring');
             }
         }
         
         // Load a previously saved tournament for viewing
         function loadPreviousTournament() {
-            const savedTournaments = JSON.parse(localStorage.getItem('savedTournaments') || '[]');
+            const savedTournaments = JSON.parse(userGet('savedTournaments') || '[]');
             
             if (savedTournaments.length === 0) {
                 showNotification('No Saved Tournaments', 'No tournaments have been saved');
@@ -27275,7 +27355,7 @@
         }
 
         function newRound() {
-            localStorage.removeItem('indianHillsScoring');
+            userRemove('indianHillsScoring');
             tournamentData = { id: '', date: '', gameType: '', course: '', players: [], teams: [] };
             document.getElementById('tournamentDate').value = ''; // Clear date
             
@@ -27307,7 +27387,7 @@
                 // ALWAYS start at Host Home page
                 // Setup page is ONLY shown when user clicks "New Tournament"
                 
-                const savedData = localStorage.getItem('indianHillsScoring');
+                const savedData = userGet('indianHillsScoring');
                 if (savedData) {
                     try {
                         const data = JSON.parse(savedData);
@@ -27366,7 +27446,7 @@
                 saveToLocalStorage();
             }
             
-            const hasData = localStorage.getItem('indianHillsScoring');
+            const hasData = userGet('indianHillsScoring');
             const hasPlayers = tournamentData && tournamentData.players && tournamentData.players.length > 0;
             
             if (hasData || hasPlayers) {
@@ -27594,7 +27674,7 @@
             
             if (tournamentId) {
                 // Try to load from localStorage
-                const savedData = localStorage.getItem('indianHillsScoring');
+                const savedData = userGet('indianHillsScoring');
                 if (savedData) {
                     const data = JSON.parse(savedData);
                     if (data.id === tournamentId) {
@@ -28299,14 +28379,14 @@
         // --- Multi-Roster Storage ---
         function loadAllRosters() {
             try {
-                const data = localStorage.getItem('savedRosters');
+                const data = userGet('savedRosters');
                 if (data) return JSON.parse(data);
-                const old = localStorage.getItem('clubRoster');
+                const old = userGet('clubRoster');
                 if (old) {
                     const oldRoster = JSON.parse(old);
                     const migrated = [{ name: 'Club Roster', players: oldRoster.players, savedAt: oldRoster.savedAt }];
-                    localStorage.setItem('savedRosters', JSON.stringify(migrated));
-                    localStorage.removeItem('clubRoster');
+                    userSet('savedRosters', JSON.stringify(migrated));
+                    userRemove('clubRoster');
                     return migrated;
                 }
             } catch (e) {}
@@ -28314,7 +28394,7 @@
         }
         
         function saveAllRosters(rosters) {
-            localStorage.setItem('savedRosters', JSON.stringify(rosters));
+            userSet('savedRosters', JSON.stringify(rosters));
         }
         
         // --- Parse file helper ---
@@ -28407,8 +28487,8 @@
                 const rows = document.querySelectorAll('#playerList .player-row');
                 const lastRow = rows[rows.length - 1];
                 if (lastRow) {
-                    const nameInput = lastRow.querySelector('input[type="text"]');
-                    const hcpInput = lastRow.querySelector('input[type="number"]');
+                    const nameInput = lastRow.querySelector('.player-name-input');
+                    const hcpInput = lastRow.querySelector('.player-hcp-input');
                     if (nameInput) nameInput.value = p.name;
                     if (hcpInput) { hcpInput.value = p.handicap; hcpInput.dispatchEvent(new Event('input', { bubbles: true })); }
                 }
@@ -29186,7 +29266,7 @@
         // Check for saved round on page load
         let initialLoadComplete = false;
         function checkForSavedRound(allowNavigation = false) {
-            const savedData = localStorage.getItem('indianHillsScoring');
+            const savedData = userGet('indianHillsScoring');
             
             // If no saved data and we're allowing navigation, go to Host Home (fresh start)
             if (!savedData && allowNavigation && !initialLoadComplete) {
@@ -29400,7 +29480,7 @@
                 'Discard Saved Round?',
                 'This will permanently delete your saved round. Are you sure?',
                 function() {
-                    localStorage.removeItem('indianHillsScoring');
+                    userRemove('indianHillsScoring');
                     document.getElementById('resumeRoundSection').classList.remove('active');
                     
                     // Hide Resume Scoring button
@@ -31464,9 +31544,9 @@
                     tournamentMode = 'single';
                     
                     // Clear localStorage
-                    localStorage.removeItem('activeTournamentId');
-                    localStorage.removeItem('indianHillsScoring');
-                    localStorage.removeItem('currentTournamentId');
+                    userRemove('activeTournamentId');
+                    userRemove('indianHillsScoring');
+                    userRemove('currentTournamentId');
                     localStorage.removeItem('pendingPurchase');
                     
                     // Reset tournamentData
@@ -31522,7 +31602,7 @@
                 'End Current Round?',
                 'This will end the current round and clear all data. Make sure you\'ve saved your results!',
                 function() {
-                    localStorage.removeItem('indianHillsScoring');
+                    userRemove('indianHillsScoring');
                     tournamentData = {
                         date: '',
                         gameType: '',
