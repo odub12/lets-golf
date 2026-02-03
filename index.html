@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-02-02-v15.9.73-multi-roster-scroll-fix -->
+    <!-- VERSION: 2026-02-02-v15.9.74-roster-flow-redesign -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -3762,12 +3762,12 @@
                     </button>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
-                    <button type="button" onclick="showImportRosterModal()" 
+                    <button type="button" onclick="quickImportRoster()" 
                         style="padding: 8px 10px; background: white; border: 1px solid #166534; border-radius: 6px; color: #166534; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
                         📥 Import Roster
                     </button>
                     <button type="button" onclick="showSavedRostersModal()" id="savedRosterBtn"
-                        style="padding: 8px 10px; background: white; border: 1px solid #1e3a5f; border-radius: 6px; color: #1e3a5f; font-size: 12px; font-weight: 600; cursor: pointer; display: none; align-items: center; justify-content: center; gap: 6px;">
+                        style="padding: 8px 10px; background: white; border: 1px solid #1e3a5f; border-radius: 6px; color: #1e3a5f; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
                         📋 Saved Rosters
                     </button>
                 </div>
@@ -4652,22 +4652,20 @@
 
     <!-- Claim Players List Modal -->
     <!-- Import Roster Modal -->
+    <!-- Quick Import Modal - imports file directly to player list -->
     <div id="importRosterModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
         <div style="background: white; border-radius: 8px; padding: 24px; margin: 20px; max-width: 440px; width: 90%; box-shadow: 0 8px 16px rgba(0,0,0,0.3); max-height: 85vh; overflow-y: auto;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                 <h3 style="color: #1e3a5f; margin: 0; font-size: 18px;">📥 Import Roster</h3>
                 <button onclick="hideImportRosterModal()" style="background: none; border: none; font-size: 24px; color: #64748b; cursor: pointer;">×</button>
             </div>
-            
-            <p style="color: #64748b; font-size: 13px; margin-bottom: 16px;">Upload an Excel (.xlsx) or CSV file with player names and handicaps.</p>
-            
-            <div style="background: #f8fafc; border: 2px dashed #d1d5db; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 16px; cursor: pointer;" onclick="document.getElementById('rosterFileInput').click()" id="rosterDropZone">
+            <p style="color: #64748b; font-size: 13px; margin-bottom: 16px;">Upload an Excel or CSV file to add players to this round.</p>
+            <div style="background: #f8fafc; border: 2px dashed #d1d5db; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 16px; cursor: pointer;" onclick="document.getElementById('rosterFileInput').click()">
                 <div style="font-size: 36px; margin-bottom: 8px;">📄</div>
                 <p style="color: #1e3a5f; font-weight: 600; font-size: 14px; margin: 0 0 4px 0;">Tap to select file</p>
                 <p style="color: #9ca3af; font-size: 11px; margin: 0;">Supports .xlsx, .xls, .csv</p>
             </div>
-            <input type="file" id="rosterFileInput" accept=".xlsx,.xls,.csv" style="display: none;" onchange="handleRosterFileSelect(event)">
-            
+            <input type="file" id="rosterFileInput" accept=".xlsx,.xls,.csv" style="display: none;" onchange="handleQuickImportFile(event)">
             <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 12px; margin-bottom: 16px;">
                 <p style="color: #1e3a5f; font-size: 12px; font-weight: 600; margin: 0 0 6px 0;">Expected format:</p>
                 <div style="display: grid; grid-template-columns: 1fr 60px; gap: 4px; font-size: 11px; color: #475569;">
@@ -4676,31 +4674,13 @@
                     <div>John Smith</div><div style="text-align: center;">12</div>
                     <div>Jane Doe</div><div style="text-align: center;">8</div>
                 </div>
-                <p style="color: #6b7280; font-size: 10px; margin: 6px 0 0 0;">First column = Name, second column = Handicap. Header row is auto-detected.</p>
             </div>
-            
-            <!-- Preview area (hidden until file selected) -->
-            <div id="rosterPreview" style="display: none; margin-bottom: 16px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <h4 style="color: #1e3a5f; margin: 0; font-size: 14px;">Preview (<span id="rosterPreviewCount">0</span> players)</h4>
-                </div>
-                <div id="rosterPreviewList" style="max-height: 200px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 6px;">
-                </div>
-                
-                <!-- Save as Named Roster -->
-                <div style="margin-top: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px;">
-                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; margin-bottom: 8px;">
-                        <input type="checkbox" id="rosterSaveCheckbox" checked>
-                        <span style="font-size: 12px; color: #475569; font-weight: 600;">Save as Named Roster</span>
-                        <span style="font-size: 10px; color: #9ca3af;" id="rosterSlotInfo"></span>
-                    </label>
-                    <input type="text" id="rosterSaveName" placeholder="e.g. Tuesday Skins, Sunday Scramble" 
-                        style="width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; color: #1e293b; box-sizing: border-box;">
-                </div>
-                
+            <div id="quickImportPreview" style="display: none;">
+                <h4 style="color: #1e3a5f; margin: 0 0 8px 0; font-size: 14px;">Preview (<span id="quickImportCount">0</span> players)</h4>
+                <div id="quickImportList" style="max-height: 200px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 6px;"></div>
                 <div style="display: flex; gap: 8px; margin-top: 12px;">
                     <button onclick="hideImportRosterModal()" style="flex: 1; padding: 12px; background: #f1f5f9; border: none; border-radius: 6px; color: #475569; font-size: 14px; font-weight: 600; cursor: pointer;">Cancel</button>
-                    <button onclick="confirmImportRoster()" style="flex: 1; padding: 12px; background: #166534; border: none; border-radius: 6px; color: white; font-size: 14px; font-weight: 600; cursor: pointer;">Import Players</button>
+                    <button onclick="confirmQuickImport()" style="flex: 1; padding: 12px; background: #166534; border: none; border-radius: 6px; color: white; font-size: 14px; font-weight: 600; cursor: pointer;">Import Players</button>
                 </div>
             </div>
         </div>
@@ -17421,7 +17401,7 @@
             loadNotificationMuteState();
             loadAutoAdvanceSetting();
             loadGolfIdentity(); // Load golf identity for stats tracking
-            updateSavedRosterButton(); // Show saved roster button if roster exists
+            // Saved roster button is always visible now
             
             // Populate home page rounds list
             setTimeout(populateHomeRoundsList, 100);
@@ -28286,9 +28266,10 @@
         // ROSTER IMPORT / EXPORT FUNCTIONS
         // ============================================================
         
-        let pendingRosterData = []; // Temporarily holds parsed roster data
-        let editingRosterIndex = null; // Track which roster we're editing (null = new)
-        let selectedRosterIndex = 0; // Currently selected roster in the modal
+        let pendingRosterData = [];
+        let pendingRosterForSave = [];
+        let editingRosterIndex = null;
+        let selectedRosterIndex = 0;
         const MAX_ROSTERS = 3;
         
         // --- Multi-Roster Storage ---
@@ -28296,7 +28277,6 @@
             try {
                 const data = localStorage.getItem('savedRosters');
                 if (data) return JSON.parse(data);
-                // Migrate old single clubRoster to new format
                 const old = localStorage.getItem('clubRoster');
                 if (old) {
                     const oldRoster = JSON.parse(old);
@@ -28311,48 +28291,10 @@
         
         function saveAllRosters(rosters) {
             localStorage.setItem('savedRosters', JSON.stringify(rosters));
-            updateSavedRosterButton();
         }
         
-        function updateSavedRosterButton() {
-            const btn = document.getElementById('savedRosterBtn');
-            if (!btn) return;
-            const rosters = loadAllRosters();
-            if (rosters.length > 0) {
-                btn.style.display = 'flex';
-            } else {
-                btn.style.display = 'none';
-            }
-        }
-        
-        // --- Import Modal ---
-        function showImportRosterModal() {
-            document.getElementById('importRosterModal').style.display = 'flex';
-            document.getElementById('rosterPreview').style.display = 'none';
-            document.getElementById('rosterFileInput').value = '';
-            pendingRosterData = [];
-            editingRosterIndex = null;
-            
-            // Update slot info
-            const rosters = loadAllRosters();
-            const slotInfo = document.getElementById('rosterSlotInfo');
-            if (slotInfo) {
-                slotInfo.textContent = `(${rosters.length}/${MAX_ROSTERS} used)`;
-            }
-            const nameInput = document.getElementById('rosterSaveName');
-            if (nameInput) nameInput.value = '';
-        }
-        
-        function hideImportRosterModal() {
-            document.getElementById('importRosterModal').style.display = 'none';
-            pendingRosterData = [];
-            editingRosterIndex = null;
-        }
-        
-        function handleRosterFileSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
+        // --- Parse file helper ---
+        function parseRosterFile(file, callback) {
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
@@ -28360,115 +28302,79 @@
                     const workbook = XLSX.read(data, { type: 'array' });
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                     const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-                    
-                    if (rows.length === 0) {
-                        showNotification('Error', 'File is empty');
-                        return;
-                    }
-                    
-                    // Auto-detect header row
+                    if (rows.length === 0) { showNotification('Error', 'File is empty'); return; }
                     let startRow = 0;
                     const firstRow = rows[0];
                     if (firstRow && firstRow.length >= 2) {
                         const col0 = String(firstRow[0] || '').toLowerCase();
                         const col1 = String(firstRow[1] || '').toLowerCase();
-                        if (col0.includes('name') || col0.includes('player') || 
-                            col1.includes('hcp') || col1.includes('handicap') || col1.includes('index')) {
-                            startRow = 1;
-                        }
+                        if (col0.includes('name') || col0.includes('player') || col1.includes('hcp') || col1.includes('handicap') || col1.includes('index')) startRow = 1;
                     }
-                    
-                    pendingRosterData = [];
+                    const players = [];
                     for (let i = startRow; i < rows.length; i++) {
                         const row = rows[i];
                         if (!row || row.length < 1) continue;
                         const name = String(row[0] || '').trim();
-                        if (!name || name.length === 0) continue;
+                        if (!name) continue;
                         let hcp = 0;
-                        if (row.length >= 2 && row[1] !== null && row[1] !== undefined && row[1] !== '') {
-                            hcp = parseFloat(row[1]) || 0;
-                        }
-                        pendingRosterData.push({ name, handicap: hcp });
+                        if (row.length >= 2 && row[1] !== null && row[1] !== undefined && row[1] !== '') hcp = parseFloat(row[1]) || 0;
+                        players.push({ name, handicap: hcp });
                     }
-                    
-                    if (pendingRosterData.length === 0) {
-                        showNotification('Error', 'No players found in file');
-                        return;
-                    }
-                    
-                    showRosterPreview();
-                    
+                    if (players.length === 0) { showNotification('Error', 'No players found'); return; }
+                    callback(players);
                 } catch (err) {
                     console.error('Error parsing roster file:', err);
-                    showNotification('Error', 'Could not read file. Make sure it\'s a valid Excel or CSV file.');
+                    showNotification('Error', 'Could not read file.');
                 }
             };
             reader.readAsArrayBuffer(file);
         }
         
-        function showRosterPreview() {
-            const preview = document.getElementById('rosterPreview');
-            const list = document.getElementById('rosterPreviewList');
-            const count = document.getElementById('rosterPreviewCount');
-            
-            count.textContent = pendingRosterData.length;
-            
-            let html = '';
-            pendingRosterData.forEach((p, i) => {
-                html += `<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <input type="checkbox" id="rosterCheck${i}" checked style="cursor: pointer;">
-                        <span style="color: #1e293b; font-weight: 500;">${p.name}</span>
-                    </div>
-                    <span style="color: #6b7280; font-size: 12px;">HCP ${p.handicap}</span>
-                </div>`;
-            });
-            
-            list.innerHTML = html;
-            preview.style.display = 'block';
+        // ========== QUICK IMPORT (Setup page button) ==========
+        function quickImportRoster() {
+            document.getElementById('importRosterModal').style.display = 'flex';
+            document.getElementById('quickImportPreview').style.display = 'none';
+            document.getElementById('rosterFileInput').value = '';
+            pendingRosterData = [];
         }
         
-        function confirmImportRoster() {
-            const selectedPlayers = pendingRosterData.filter((p, i) => {
-                const checkbox = document.getElementById(`rosterCheck${i}`);
-                return checkbox && checkbox.checked;
+        function hideImportRosterModal() {
+            document.getElementById('importRosterModal').style.display = 'none';
+            pendingRosterData = [];
+        }
+        
+        function handleQuickImportFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            parseRosterFile(file, function(players) {
+                pendingRosterData = players;
+                const list = document.getElementById('quickImportList');
+                const count = document.getElementById('quickImportCount');
+                count.textContent = players.length;
+                let html = '';
+                players.forEach((p, i) => {
+                    html += `<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="quickImportCheck${i}" checked style="cursor: pointer;">
+                            <span style="color: #1e293b; font-weight: 500;">${p.name}</span>
+                        </div>
+                        <span style="color: #6b7280; font-size: 12px;">HCP ${p.handicap}</span>
+                    </div>`;
+                });
+                list.innerHTML = html;
+                document.getElementById('quickImportPreview').style.display = 'block';
             });
-            
-            if (selectedPlayers.length === 0) {
-                showNotification('No Players', 'Please select at least one player');
-                return;
-            }
-            
-            // Save roster if checkbox checked
-            const saveCheckbox = document.getElementById('rosterSaveCheckbox');
-            if (saveCheckbox && saveCheckbox.checked) {
-                const nameInput = document.getElementById('rosterSaveName');
-                const rosterName = (nameInput && nameInput.value.trim()) || 'Roster ' + (loadAllRosters().length + 1);
-                const rosters = loadAllRosters();
-                
-                if (editingRosterIndex !== null && editingRosterIndex < rosters.length) {
-                    // Overwrite existing roster
-                    rosters[editingRosterIndex] = {
-                        name: rosterName,
-                        players: pendingRosterData,  // Save ALL parsed players
-                        savedAt: new Date().toISOString()
-                    };
-                } else if (rosters.length < MAX_ROSTERS) {
-                    // New roster
-                    rosters.push({
-                        name: rosterName,
-                        players: pendingRosterData,
-                        savedAt: new Date().toISOString()
-                    });
-                } else {
-                    showNotification('Limit Reached', `Max ${MAX_ROSTERS} rosters. Delete one first.`);
-                }
-                saveAllRosters(rosters);
-            }
-            
-            addPlayersFromRoster(selectedPlayers);
+        }
+        
+        function confirmQuickImport() {
+            const selected = pendingRosterData.filter((p, i) => {
+                const cb = document.getElementById(`quickImportCheck${i}`);
+                return cb && cb.checked;
+            });
+            if (selected.length === 0) { showNotification('No Players', 'Select at least one player'); return; }
+            addPlayersFromRoster(selected);
             hideImportRosterModal();
-            showNotification('✅ Imported', `${selectedPlayers.length} players added`);
+            showNotification('✅ Imported', `${selected.length} players added`);
         }
         
         function addPlayersFromRoster(players) {
@@ -28480,21 +28386,13 @@
                     const nameInput = lastRow.querySelector('input[type="text"]');
                     const hcpInput = lastRow.querySelector('input[type="number"]');
                     if (nameInput) nameInput.value = p.name;
-                    if (hcpInput) {
-                        hcpInput.value = p.handicap;
-                        hcpInput.dispatchEvent(new Event('input', { bubbles: true }));
-                    }
+                    if (hcpInput) { hcpInput.value = p.handicap; hcpInput.dispatchEvent(new Event('input', { bubbles: true })); }
                 }
             });
         }
         
-        // --- Saved Rosters Modal (multi-roster) ---
+        // ========== SAVED ROSTERS MODAL ==========
         function showSavedRostersModal() {
-            const rosters = loadAllRosters();
-            if (rosters.length === 0) {
-                showNotification('No Rosters', 'No saved rosters. Import one first.');
-                return;
-            }
             selectedRosterIndex = 0;
             renderSavedRostersModal();
             document.getElementById('savedRosterModal').style.display = 'flex';
@@ -28511,32 +28409,26 @@
             
             if (rosters.length === 0) {
                 tabsDiv.innerHTML = '';
-                contentDiv.innerHTML = '<p style="color: #64748b; text-align: center; padding: 20px;">No saved rosters.</p>';
+                contentDiv.innerHTML = `
+                    <p style="color: #64748b; font-size: 13px; text-align: center; margin-bottom: 16px;">No saved rosters yet. Create one to reuse each week.</p>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <button onclick="startCreateRosterFromFile()" style="padding: 14px; background: #166534; border: none; border-radius: 6px; color: white; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">📥 Import from Spreadsheet</button>
+                        <button onclick="startCreateRosterManual()" style="padding: 14px; background: white; border: 1.5px solid #1e3a5f; border-radius: 6px; color: #1e3a5f; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">✏️ Create Manually</button>
+                    </div>`;
                 return;
             }
             
-            // Clamp selected index
             if (selectedRosterIndex >= rosters.length) selectedRosterIndex = 0;
             
-            // Render tabs
             let tabsHtml = '<div style="display: flex; gap: 6px; flex-wrap: wrap;">';
             rosters.forEach((r, i) => {
                 const isActive = i === selectedRosterIndex;
-                tabsHtml += `<button onclick="selectedRosterIndex=${i}; renderSavedRostersModal();" 
-                    style="flex: 1; min-width: 80px; padding: 8px 6px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; 
-                    border: ${isActive ? 'none' : '1.5px solid #1e3a5f'}; 
-                    background: ${isActive ? '#1e3a5f' : 'white'}; 
-                    color: ${isActive ? 'white' : '#1e3a5f'};">
-                    ${r.name} <span style="font-size: 10px; opacity: 0.7;">(${r.players.length})</span>
-                </button>`;
+                tabsHtml += `<button onclick="selectedRosterIndex=${i}; renderSavedRostersModal();" style="flex: 1; min-width: 80px; padding: 8px 6px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; border: ${isActive ? 'none' : '1.5px solid #1e3a5f'}; background: ${isActive ? '#1e3a5f' : 'white'}; color: ${isActive ? 'white' : '#1e3a5f'};">${r.name} <span style="font-size: 10px; opacity: 0.7;">(${r.players.length})</span></button>`;
             });
             tabsHtml += '</div>';
             tabsDiv.innerHTML = tabsHtml;
             
-            // Render selected roster content
             const roster = rosters[selectedRosterIndex];
-            
-            // Get existing player names
             const existingNames = [];
             document.querySelectorAll('#playerList .player-row input[type="text"]').forEach(input => {
                 if (input.value.trim()) existingNames.push(input.value.trim().toLowerCase());
@@ -28557,31 +28449,24 @@
             
             contentDiv.innerHTML = `
                 <p style="color: #64748b; font-size: 12px; margin-bottom: 10px;">${roster.players.length} players • Saved ${new Date(roster.savedAt).toLocaleDateString()}</p>
-                
                 <div style="display: flex; gap: 8px; margin-bottom: 10px;">
                     <button onclick="selectAllRosterPlayers(true)" style="flex: 1; padding: 6px; background: #1e3a5f; color: white; border: none; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer;">Select All</button>
                     <button onclick="selectAllRosterPlayers(false)" style="flex: 1; padding: 6px; background: #f1f5f9; color: #475569; border: none; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer;">Deselect All</button>
                 </div>
-                
-                <div style="max-height: 250px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 12px;">
-                    ${listHtml}
-                </div>
-                
+                <div style="max-height: 250px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 12px;">${listHtml}</div>
                 <div style="display: flex; gap: 8px; margin-bottom: 12px;">
                     <button onclick="hideSavedRosterModal()" style="flex: 1; padding: 12px; background: #f1f5f9; border: none; border-radius: 6px; color: #475569; font-size: 14px; font-weight: 600; cursor: pointer;">Cancel</button>
                     <button onclick="addSelectedRosterPlayers()" style="flex: 1; padding: 12px; background: #166534; border: none; border-radius: 6px; color: white; font-size: 14px; font-weight: 600; cursor: pointer;">Add Selected</button>
                 </div>
-                
                 <div style="padding-top: 12px; border-top: 1px solid #e5e7eb; display: flex; gap: 6px; flex-wrap: wrap;">
                     <button onclick="editSavedRoster(${selectedRosterIndex})" style="flex: 1; padding: 8px; background: white; border: 1px solid #1e3a5f; border-radius: 6px; color: #1e3a5f; font-size: 11px; font-weight: 600; cursor: pointer;">✏️ Edit</button>
                     <button onclick="reimportToRoster(${selectedRosterIndex})" style="flex: 1; padding: 8px; background: white; border: 1px solid #166534; border-radius: 6px; color: #166534; font-size: 11px; font-weight: 600; cursor: pointer;">📥 Re-Import</button>
                     <button onclick="confirmDeleteSavedRoster(${selectedRosterIndex})" style="flex: 1; padding: 8px; background: white; border: 1px solid #a51c30; border-radius: 6px; color: #a51c30; font-size: 11px; font-weight: 600; cursor: pointer;">🗑 Delete</button>
                 </div>
-                ${rosters.length < MAX_ROSTERS ? `
-                <div style="margin-top: 8px;">
-                    <button onclick="hideSavedRosterModal(); showImportRosterModal();" style="width: 100%; padding: 8px; background: #f8fafc; border: 1px dashed #d1d5db; border-radius: 6px; color: #475569; font-size: 12px; font-weight: 600; cursor: pointer;">+ Create New Roster (${rosters.length}/${MAX_ROSTERS})</button>
-                </div>` : ''}
-            `;
+                ${rosters.length < MAX_ROSTERS ? `<div style="margin-top: 8px; display: flex; gap: 6px;">
+                    <button onclick="startCreateRosterFromFile()" style="flex: 1; padding: 8px; background: #f8fafc; border: 1px dashed #166534; border-radius: 6px; color: #166534; font-size: 11px; font-weight: 600; cursor: pointer;">📥 New from File</button>
+                    <button onclick="startCreateRosterManual()" style="flex: 1; padding: 8px; background: #f8fafc; border: 1px dashed #1e3a5f; border-radius: 6px; color: #1e3a5f; font-size: 11px; font-weight: 600; cursor: pointer;">✏️ New Manual</button>
+                </div>` : `<p style="text-align: center; font-size: 11px; color: #9ca3af; margin-top: 8px;">${MAX_ROSTERS}/${MAX_ROSTERS} slots used</p>`}`;
         }
         
         function selectAllRosterPlayers(selectAll) {
@@ -28596,17 +28481,11 @@
         function addSelectedRosterPlayers() {
             const rosters = loadAllRosters();
             if (!rosters[selectedRosterIndex]) return;
-            
             const selected = rosters[selectedRosterIndex].players.filter((p, i) => {
                 const cb = document.getElementById(`savedRosterCheck${i}`);
                 return cb && cb.checked;
             });
-            
-            if (selected.length === 0) {
-                showNotification('No Players', 'Please select at least one player');
-                return;
-            }
-            
+            if (selected.length === 0) { showNotification('No Players', 'Select at least one'); return; }
             addPlayersFromRoster(selected);
             hideSavedRosterModal();
             showNotification('✅ Added', `${selected.length} players from roster`);
@@ -28614,58 +28493,161 @@
         
         function confirmDeleteSavedRoster(index) {
             const rosters = loadAllRosters();
-            const rosterName = rosters[index]?.name || 'this roster';
-            if (confirm(`Delete "${rosterName}"? This cannot be undone.`)) {
+            const name = rosters[index]?.name || 'this roster';
+            if (confirm(`Delete "${name}"?`)) {
                 rosters.splice(index, 1);
                 saveAllRosters(rosters);
-                if (rosters.length === 0) {
-                    hideSavedRosterModal();
-                } else {
-                    selectedRosterIndex = 0;
-                    renderSavedRostersModal();
-                }
-                showNotification('Deleted', `"${rosterName}" removed`);
+                selectedRosterIndex = 0;
+                renderSavedRostersModal();
+                showNotification('Deleted', `"${name}" removed`);
             }
         }
         
+        // --- Create from File ---
+        function startCreateRosterFromFile() {
+            editingRosterIndex = null;
+            pendingRosterForSave = [];
+            const contentDiv = document.getElementById('savedRosterContent');
+            const tabsDiv = document.getElementById('savedRosterTabs');
+            tabsDiv.innerHTML = '';
+            contentDiv.innerHTML = `
+                <p style="color: #64748b; font-size: 13px; margin-bottom: 12px;">Upload a spreadsheet to create a saved roster.</p>
+                <div style="background: #f8fafc; border: 2px dashed #d1d5db; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 12px; cursor: pointer;" onclick="document.getElementById('rosterSaveFileInput').click()">
+                    <div style="font-size: 30px; margin-bottom: 6px;">📄</div>
+                    <p style="color: #1e3a5f; font-weight: 600; font-size: 13px; margin: 0;">Tap to select file</p>
+                    <p style="color: #9ca3af; font-size: 10px; margin: 4px 0 0 0;">.xlsx, .xls, .csv</p>
+                </div>
+                <input type="file" id="rosterSaveFileInput" accept=".xlsx,.xls,.csv" style="display: none;" onchange="handleRosterSaveFile(event)">
+                <div id="rosterSaveFilePreview" style="display: none;"></div>
+                <button onclick="renderSavedRostersModal()" style="width: 100%; padding: 10px; background: #f1f5f9; border: none; border-radius: 6px; color: #475569; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 8px;">← Back</button>`;
+        }
+        
+        function handleRosterSaveFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            parseRosterFile(file, function(players) {
+                pendingRosterForSave = players;
+                const preview = document.getElementById('rosterSaveFilePreview');
+                let html = `<div style="margin-bottom: 8px;"><label style="font-size: 12px; color: #475569; font-weight: 600;">Roster Name</label>
+                    <input type="text" id="newRosterFileName" placeholder="e.g. Tuesday Skins" style="width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; box-sizing: border-box; margin-top: 4px;"></div>
+                    <p style="font-size: 12px; color: #1e3a5f; font-weight: 600; margin: 0 0 6px 0;">${players.length} players found:</p>
+                    <div style="max-height: 180px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 12px;">`;
+                players.forEach(p => { html += `<div style="display: flex; justify-content: space-between; padding: 6px 12px; border-bottom: 1px solid #f0f0f0; font-size: 12px;"><span>${p.name}</span><span style="color: #6b7280;">HCP ${p.handicap}</span></div>`; });
+                html += `</div><div style="display: flex; gap: 8px;">
+                    <button onclick="renderSavedRostersModal()" style="flex: 1; padding: 12px; background: #f1f5f9; border: none; border-radius: 6px; color: #475569; font-size: 14px; font-weight: 600; cursor: pointer;">Cancel</button>
+                    <button onclick="saveNewRosterFromFile()" style="flex: 1; padding: 12px; background: #166534; border: none; border-radius: 6px; color: white; font-size: 14px; font-weight: 600; cursor: pointer;">Save Roster</button></div>`;
+                preview.innerHTML = html;
+                preview.style.display = 'block';
+            });
+        }
+        
+        function saveNewRosterFromFile() {
+            const rosters = loadAllRosters();
+            if (rosters.length >= MAX_ROSTERS) { showNotification('Limit', `Max ${MAX_ROSTERS} rosters`); return; }
+            const name = (document.getElementById('newRosterFileName').value.trim()) || 'Roster ' + (rosters.length + 1);
+            rosters.push({ name, players: pendingRosterForSave, savedAt: new Date().toISOString() });
+            saveAllRosters(rosters);
+            selectedRosterIndex = rosters.length - 1;
+            renderSavedRostersModal();
+            showNotification('✅ Created', `"${name}" with ${pendingRosterForSave.length} players`);
+        }
+        
+        // --- Create Manually ---
+        function startCreateRosterManual() {
+            editingRosterIndex = null;
+            const contentDiv = document.getElementById('savedRosterContent');
+            const tabsDiv = document.getElementById('savedRosterTabs');
+            tabsDiv.innerHTML = '';
+            contentDiv.innerHTML = `
+                <div style="margin-bottom: 12px;"><label style="font-size: 12px; color: #475569; font-weight: 600;">Roster Name</label>
+                    <input type="text" id="manualRosterName" placeholder="e.g. Sunday Scramble" style="width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; box-sizing: border-box; margin-top: 4px;"></div>
+                <div style="margin-bottom: 8px; font-size: 12px; color: #475569; font-weight: 600;">Add Players</div>
+                <div id="manualRosterPlayers" style="max-height: 250px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 8px; min-height: 40px;">
+                    <div id="manualRosterEmpty" style="padding: 16px; text-align: center; color: #9ca3af; font-size: 12px;">No players yet</div>
+                </div>
+                <div style="display: flex; gap: 6px; margin-bottom: 12px;">
+                    <input type="text" id="manualAddName" placeholder="Player name" style="flex: 1; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px; box-sizing: border-box;">
+                    <input type="number" id="manualAddHcp" placeholder="HCP" value="0" style="width: 55px; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px; text-align: center; box-sizing: border-box;">
+                    <button onclick="addManualRosterPlayer()" style="padding: 8px 14px; background: #1e3a5f; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 700; cursor: pointer;">+</button>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button onclick="renderSavedRostersModal()" style="flex: 1; padding: 12px; background: #f1f5f9; border: none; border-radius: 6px; color: #475569; font-size: 14px; font-weight: 600; cursor: pointer;">Cancel</button>
+                    <button onclick="saveManualRoster()" style="flex: 1; padding: 12px; background: #166534; border: none; border-radius: 6px; color: white; font-size: 14px; font-weight: 600; cursor: pointer;">Save Roster</button>
+                </div>`;
+        }
+        
+        let manualRosterCount = 0;
+        function addManualRosterPlayer() {
+            const nameInput = document.getElementById('manualAddName');
+            const hcpInput = document.getElementById('manualAddHcp');
+            const name = nameInput.value.trim();
+            if (!name) { nameInput.focus(); return; }
+            const hcp = parseFloat(hcpInput.value) || 0;
+            const empty = document.getElementById('manualRosterEmpty');
+            if (empty) empty.remove();
+            manualRosterCount++;
+            const id = `manualRow${manualRosterCount}`;
+            const container = document.getElementById('manualRosterPlayers');
+            const div = document.createElement('div');
+            div.id = id;
+            div.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px;';
+            div.innerHTML = `<span style="color: #1e293b; font-weight: 500;">${name}</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="color: #6b7280; font-size: 12px;">HCP ${hcp}</span>
+                    <input type="hidden" class="manualHcp" value="${hcp}">
+                    <button onclick="document.getElementById('${id}').remove()" style="background: none; border: none; color: #a51c30; font-size: 16px; cursor: pointer;">×</button>
+                </div>`;
+            container.appendChild(div);
+            nameInput.value = ''; hcpInput.value = '0'; nameInput.focus();
+        }
+        
+        function saveManualRoster() {
+            const rosters = loadAllRosters();
+            if (rosters.length >= MAX_ROSTERS) { showNotification('Limit', `Max ${MAX_ROSTERS} rosters`); return; }
+            const name = (document.getElementById('manualRosterName').value.trim()) || 'Roster ' + (rosters.length + 1);
+            const players = [];
+            document.querySelectorAll('#manualRosterPlayers [id^="manualRow"]').forEach(row => {
+                const nameEl = row.querySelector('span');
+                const hcpInput = row.querySelector('.manualHcp');
+                if (nameEl) players.push({ name: nameEl.textContent.trim(), handicap: parseFloat(hcpInput?.value) || 0 });
+            });
+            if (players.length === 0) { showNotification('No Players', 'Add at least one player'); return; }
+            rosters.push({ name, players, savedAt: new Date().toISOString() });
+            saveAllRosters(rosters);
+            selectedRosterIndex = rosters.length - 1;
+            renderSavedRostersModal();
+            showNotification('✅ Created', `"${name}" with ${players.length} players`);
+        }
+        
+        // --- Edit Existing Roster ---
         function editSavedRoster(index) {
             const rosters = loadAllRosters();
             const roster = rosters[index];
             if (!roster) return;
-            
-            // Show an edit modal inline
+            editingRosterIndex = index;
             const contentDiv = document.getElementById('savedRosterContent');
-            let html = `
-                <div style="margin-bottom: 12px;">
-                    <label style="font-size: 12px; color: #475569; font-weight: 600; display: block; margin-bottom: 4px;">Roster Name</label>
-                    <input type="text" id="editRosterName" value="${roster.name}" style="width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; color: #1e293b; box-sizing: border-box;">
-                </div>
+            let html = `<div style="margin-bottom: 12px;"><label style="font-size: 12px; color: #475569; font-weight: 600;">Roster Name</label>
+                <input type="text" id="editRosterName" value="${roster.name}" style="width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; box-sizing: border-box; margin-top: 4px;"></div>
                 <div style="margin-bottom: 8px; font-size: 12px; color: #475569; font-weight: 600;">Players (tap × to remove)</div>
-                <div id="editRosterPlayers" style="max-height: 250px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 12px;">`;
-            
+                <div id="editRosterPlayers" style="max-height: 250px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 8px;">`;
             roster.players.forEach((p, i) => {
                 html += `<div id="editRosterRow${i}" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px;">
+                    <span style="color: #1e293b; font-weight: 500;">${p.name}</span>
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="color: #1e293b; font-weight: 500;">${p.name}</span>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <input type="number" value="${p.handicap}" id="editRosterHcp${i}" style="width: 50px; padding: 4px 6px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 12px; text-align: center;">
-                        <button onclick="document.getElementById('editRosterRow${i}').remove()" style="background: none; border: none; color: #a51c30; font-size: 16px; cursor: pointer; padding: 2px 6px;">×</button>
-                    </div>
-                </div>`;
+                        <input type="number" value="${p.handicap}" style="width: 50px; padding: 4px 6px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 12px; text-align: center;">
+                        <button onclick="document.getElementById('editRosterRow${i}').remove()" style="background: none; border: none; color: #a51c30; font-size: 16px; cursor: pointer;">×</button>
+                    </div></div>`;
             });
-            
             html += `</div>
-                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                    <input type="text" id="addPlayerToRosterName" placeholder="Add player name" style="flex: 1; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px; box-sizing: border-box;">
+                <div style="display: flex; gap: 6px; margin-bottom: 12px;">
+                    <input type="text" id="addPlayerToRosterName" placeholder="Add player" style="flex: 1; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px; box-sizing: border-box;">
                     <input type="number" id="addPlayerToRosterHcp" placeholder="HCP" value="0" style="width: 55px; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px; text-align: center; box-sizing: border-box;">
-                    <button onclick="addPlayerToEditRoster()" style="padding: 8px 12px; background: #1e3a5f; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">+</button>
+                    <button onclick="addPlayerToEditRoster()" style="padding: 8px 14px; background: #1e3a5f; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 700; cursor: pointer;">+</button>
                 </div>
                 <div style="display: flex; gap: 8px;">
-                    <button onclick="renderSavedRostersModal()" style="flex: 1; padding: 12px; background: #f1f5f9; border: none; border-radius: 6px; color: #475569; font-size: 14px; font-weight: 600; cursor: pointer;">Cancel</button>
+                    <button onclick="selectedRosterIndex=${index}; renderSavedRostersModal()" style="flex: 1; padding: 12px; background: #f1f5f9; border: none; border-radius: 6px; color: #475569; font-size: 14px; font-weight: 600; cursor: pointer;">Cancel</button>
                     <button onclick="saveEditedRoster(${index})" style="flex: 1; padding: 12px; background: #166534; border: none; border-radius: 6px; color: white; font-size: 14px; font-weight: 600; cursor: pointer;">Save Changes</button>
                 </div>`;
-            
             contentDiv.innerHTML = html;
         }
         
@@ -28676,48 +28658,33 @@
             const name = nameInput.value.trim();
             if (!name) return;
             const hcp = parseFloat(hcpInput.value) || 0;
-            
             editRosterAddCount++;
             const id = `editRosterRowNew${editRosterAddCount}`;
             const container = document.getElementById('editRosterPlayers');
             const div = document.createElement('div');
             div.id = id;
             div.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px;';
-            div.innerHTML = `<div style="display: flex; align-items: center; gap: 8px;">
-                <span style="color: #1e293b; font-weight: 500;">${name}</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <input type="number" value="${hcp}" style="width: 50px; padding: 4px 6px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 12px; text-align: center;" class="editRosterHcpNew">
-                <button onclick="document.getElementById('${id}').remove()" style="background: none; border: none; color: #a51c30; font-size: 16px; cursor: pointer; padding: 2px 6px;">×</button>
-            </div>`;
+            div.innerHTML = `<span style="color: #1e293b; font-weight: 500;">${name}</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <input type="number" value="${hcp}" style="width: 50px; padding: 4px 6px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 12px; text-align: center;">
+                    <button onclick="document.getElementById('${id}').remove()" style="background: none; border: none; color: #a51c30; font-size: 16px; cursor: pointer;">×</button>
+                </div>`;
             container.appendChild(div);
-            
-            nameInput.value = '';
-            hcpInput.value = '0';
-            nameInput.focus();
+            nameInput.value = ''; hcpInput.value = '0'; nameInput.focus();
         }
         
         function saveEditedRoster(index) {
             const rosters = loadAllRosters();
             const newName = (document.getElementById('editRosterName').value.trim()) || 'Roster';
-            
-            // Collect remaining players from the edit view
             const players = [];
-            const container = document.getElementById('editRosterPlayers');
-            container.querySelectorAll('[id^="editRosterRow"]').forEach(row => {
+            document.querySelectorAll('#editRosterPlayers [id^="editRosterRow"]').forEach(row => {
                 const nameEl = row.querySelector('span');
                 const hcpInput = row.querySelector('input[type="number"]');
-                if (nameEl && hcpInput) {
-                    players.push({ name: nameEl.textContent.trim(), handicap: parseFloat(hcpInput.value) || 0 });
-                }
+                if (nameEl && hcpInput) players.push({ name: nameEl.textContent.trim(), handicap: parseFloat(hcpInput.value) || 0 });
             });
-            
-            rosters[index] = {
-                name: newName,
-                players: players,
-                savedAt: new Date().toISOString()
-            };
+            rosters[index] = { name: newName, players, savedAt: new Date().toISOString() };
             saveAllRosters(rosters);
+            selectedRosterIndex = index;
             renderSavedRostersModal();
             showNotification('✅ Saved', `"${newName}" updated (${players.length} players)`);
         }
@@ -28725,11 +28692,48 @@
         function reimportToRoster(index) {
             editingRosterIndex = index;
             const rosters = loadAllRosters();
-            hideSavedRosterModal();
-            showImportRosterModal();
-            // Pre-fill the roster name
-            const nameInput = document.getElementById('rosterSaveName');
-            if (nameInput && rosters[index]) nameInput.value = rosters[index].name;
+            const roster = rosters[index];
+            const contentDiv = document.getElementById('savedRosterContent');
+            const tabsDiv = document.getElementById('savedRosterTabs');
+            tabsDiv.innerHTML = '';
+            contentDiv.innerHTML = `
+                <p style="color: #64748b; font-size: 13px; margin-bottom: 12px;">Re-import file to replace <strong>"${roster.name}"</strong></p>
+                <div style="background: #f8fafc; border: 2px dashed #d1d5db; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 12px; cursor: pointer;" onclick="document.getElementById('rosterReimportFileInput').click()">
+                    <div style="font-size: 30px; margin-bottom: 6px;">📄</div>
+                    <p style="color: #1e3a5f; font-weight: 600; font-size: 13px; margin: 0;">Tap to select file</p>
+                </div>
+                <input type="file" id="rosterReimportFileInput" accept=".xlsx,.xls,.csv" style="display: none;" onchange="handleReimportFile(event)">
+                <div id="reimportPreview" style="display: none;"></div>
+                <button onclick="selectedRosterIndex=${index}; renderSavedRostersModal()" style="width: 100%; padding: 10px; background: #f1f5f9; border: none; border-radius: 6px; color: #475569; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 8px;">← Back</button>`;
+        }
+        
+        function handleReimportFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            parseRosterFile(file, function(players) {
+                pendingRosterForSave = players;
+                const preview = document.getElementById('reimportPreview');
+                let html = `<p style="font-size: 12px; color: #1e3a5f; font-weight: 600;">${players.length} players found</p>
+                    <div style="max-height: 180px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 12px;">`;
+                players.forEach(p => { html += `<div style="display: flex; justify-content: space-between; padding: 6px 12px; border-bottom: 1px solid #f0f0f0; font-size: 12px;"><span>${p.name}</span><span style="color: #6b7280;">HCP ${p.handicap}</span></div>`; });
+                html += `</div><div style="display: flex; gap: 8px;">
+                    <button onclick="selectedRosterIndex=${editingRosterIndex}; renderSavedRostersModal()" style="flex: 1; padding: 12px; background: #f1f5f9; border: none; border-radius: 6px; color: #475569; font-size: 14px; font-weight: 600; cursor: pointer;">Cancel</button>
+                    <button onclick="confirmReimport()" style="flex: 1; padding: 12px; background: #166534; border: none; border-radius: 6px; color: white; font-size: 14px; font-weight: 600; cursor: pointer;">Replace Roster</button></div>`;
+                preview.innerHTML = html;
+                preview.style.display = 'block';
+            });
+        }
+        
+        function confirmReimport() {
+            const rosters = loadAllRosters();
+            const index = editingRosterIndex;
+            if (index === null || !rosters[index]) return;
+            rosters[index].players = pendingRosterForSave;
+            rosters[index].savedAt = new Date().toISOString();
+            saveAllRosters(rosters);
+            selectedRosterIndex = index;
+            renderSavedRostersModal();
+            showNotification('✅ Updated', `"${rosters[index].name}" replaced`);
         }
         
         // Export Scores
