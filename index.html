@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-02-04-v15.9.80-tutorial-system -->
+    <!-- VERSION: 2026-02-04-v15.9.81-tutorials-deeplink-fix -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -3677,6 +3677,7 @@
                 <button type="button" onclick="cancelSetup()" style="padding: 10px 14px; background: #d4b896; color: #1e3a5f; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
                     <span>🏠</span> Back to Home
                 </button>
+                <button type="button" onclick="replayTutorial('setupPage')" style="padding: 10px 14px; background: white; color: #6b7280; border: 1.5px solid #d1d5db; border-radius: 6px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Help">❓</button>
             </div>
         </div>
 
@@ -3705,6 +3706,9 @@
                     <button type="button" id="favoriteBtn" onclick="toggleCurrentCourseFavorite()" 
                         style="width: 40px; height: 40px; border: 1px solid #d1d5db; border-radius: 6px; background: white; font-size: 18px; cursor: pointer; display: none;"
                         title="Add to favorites">☆</button>
+                    <button type="button" id="editCourseBtn" onclick="editSelectedCustomCourse()" 
+                        style="width: 40px; height: 40px; border: 1px solid #d1d5db; border-radius: 6px; background: white; font-size: 16px; cursor: pointer; display: none;"
+                        title="Edit course">⚙️</button>
                 </div>
                 <p id="noFavoritesHint" style="font-size: 11px; color: #64748b; margin-top: 6px; display: none;">💡 Search for courses and ⭐ star them to add to your favorites</p>
             </div>
@@ -4254,6 +4258,7 @@
                 <div id="resultsSideGameBtnRow" style="display: none; justify-content: center; gap: 10px;">
                     <button type="button" onclick="setResultsMode('tourney')" style="padding: 8px 16px; font-size: 12px; font-weight: 600; border-radius: 6px; border: none; background: #1e3a5f; color: white; cursor: pointer;">← Back to Tournament</button>
                     <button type="button" onclick="showResultsBestBallSetup()" style="padding: 8px 16px; font-size: 12px; font-weight: 600; border-radius: 6px; border: 1px solid #1e3a5f; background: white; color: #1e3a5f; cursor: pointer;">Edit Teams</button>
+                    <button type="button" onclick="replayTutorial('sideGame')" style="width: 36px; height: 36px; border-radius: 6px; border: 1.5px solid #d1d5db; background: white; color: #6b7280; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" title="Help">❓</button>
                 </div>
                 
                 <!-- Hidden elements for backward compatibility -->
@@ -4610,7 +4615,10 @@
             </div>
             
             <div id="accountLoggedIn" style="display: none;">
-                <h3 style="color: #1e3a5f; margin-bottom: 16px; font-size: 20px; text-align: center;">👤 My Account</h3>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 16px;">
+                    <h3 style="color: #1e3a5f; margin: 0; font-size: 20px;">👤 My Account</h3>
+                    <button type="button" onclick="replayTutorial('accountModal')" style="width: 32px; height: 32px; border-radius: 6px; border: 1.5px solid #d1d5db; background: white; color: #6b7280; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" title="Help">❓</button>
+                </div>
                 
                 <!-- Compact User Info Card -->
                 <div style="background: #f8fafc; border-radius: 6px; padding: 16px; margin-bottom: 16px; border: 1px solid #e2e8f0;">
@@ -5880,6 +5888,11 @@
             }
             
             modal.style.display = 'flex';
+            
+            // Show profile tutorial for logged-in users
+            if (currentAuthUser && shouldShowTutorial('accountModal')) {
+                setTimeout(() => showTutorial('accountModal'), 400);
+            }
         }
         
         function hideAccountModal() {
@@ -8002,7 +8015,7 @@
 
         let currentPlayerCount = 0;
         let nextPlayerId = 1;
-        const maxPlayers = 40;
+        const maxPlayers = 100;
 
         // Swipe-to-delete functionality
         let touchStartX = 0;
@@ -10142,14 +10155,32 @@
         }
         
         // Show manual course entry form
-        function showManualCourseEntry(prefillName = '') {
+        // Track which course is being edited (null = new course)
+        let editingCourseId = null;
+        
+        function showManualCourseEntry(prefillName = '', editCourseId = null) {
+            editingCourseId = editCourseId;
+            const editCourse = editCourseId ? customCourses[editCourseId] : null;
+            
             const resultsDiv = document.getElementById('courseSearchResults');
             const searchInput = document.getElementById('courseSearchInput');
-            const nameToPreFill = prefillName || searchInput?.value || '';
+            const nameToPreFill = editCourse ? editCourse.name : (prefillName || searchInput?.value || '');
+            const cityToPreFill = editCourse ? (editCourse.city || '') : '';
+            const stateToPreFill = editCourse ? (editCourse.state || '') : '';
+            const slopeToPreFill = editCourse ? (editCourse.tees?.default?.slope || '') : '';
+            const ratingToPreFill = editCourse ? (editCourse.tees?.default?.rating || '') : '';
+            const editHoles = editCourse ? editCourse.holes : null;
+            const hasCustomHoles = editHoles && editHoles.length === 18;
+            
+            // Default pars and handicaps (used when not editing)
+            const defaultFrontPars = [4,4,3,4,5,4,3,4,5];
+            const defaultBackPars = [4,4,3,4,5,4,3,4,4];
+            const defaultFrontHcps = [7,3,15,1,9,5,17,11,13];
+            const defaultBackHcps = [8,4,16,2,10,6,18,12,14];
             
             resultsDiv.innerHTML = `
                 <div style="padding: 8px;">
-                    <h4 style="color: #1e3a5f; margin: 0 0 12px 0; font-size: 15px;">Enter Course Details</h4>
+                    <h4 style="color: #1e3a5f; margin: 0 0 12px 0; font-size: 15px;">${editCourseId ? '✏️ Edit Course Details' : 'Enter Course Details'}</h4>
                     
                     <div style="margin-bottom: 12px;">
                         <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 4px;">Course Name *</label>
@@ -10160,12 +10191,12 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
                         <div>
                             <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 4px;">City</label>
-                            <input type="text" id="manualCourseCity" placeholder="Riverside" 
+                            <input type="text" id="manualCourseCity" placeholder="Riverside" value="${cityToPreFill.replace(/"/g, '&quot;')}"
                                 style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
                         </div>
                         <div>
                             <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 4px;">State</label>
-                            <input type="text" id="manualCourseState" placeholder="CA" maxlength="2"
+                            <input type="text" id="manualCourseState" placeholder="CA" maxlength="2" value="${stateToPreFill}"
                                 style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box; text-transform: uppercase;">
                         </div>
                     </div>
@@ -10173,12 +10204,12 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
                         <div>
                             <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 4px;">Slope Rating</label>
-                            <input type="number" id="manualCourseSlope" placeholder="113" min="55" max="155"
+                            <input type="number" id="manualCourseSlope" placeholder="113" min="55" max="155" value="${slopeToPreFill}"
                                 style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
                         </div>
                         <div>
                             <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 4px;">Course Rating</label>
-                            <input type="number" id="manualCourseRating" placeholder="72.0" step="0.1" min="60" max="80"
+                            <input type="number" id="manualCourseRating" placeholder="72.0" step="0.1" min="60" max="80" value="${ratingToPreFill}"
                                 style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
                         </div>
                     </div>
@@ -10192,12 +10223,12 @@
                         <button type="button" onclick="toggleManualHoleDetails()" id="manualHoleToggleBtn"
                             style="width: 100%; padding: 10px; background: #f1f5f9; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; font-weight: 600; color: #1e3a5f; cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
                             <span>⛳ Set Hole Pars & Handicaps</span>
-                            <span id="manualHoleToggleArrow" style="transition: transform 0.2s;">▼</span>
+                            <span id="manualHoleToggleArrow" style="transition: transform 0.2s; ${hasCustomHoles ? 'transform: rotate(180deg);' : ''}">▼</span>
                         </button>
-                        <div id="manualHoleDetailsSection" style="display: none; margin-top: 8px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; background: #f8fafc;">
+                        <div id="manualHoleDetailsSection" style="display: ${hasCustomHoles ? 'block' : 'none'}; margin-top: 8px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; background: #f8fafc;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                                 <span style="font-size: 11px; font-weight: 600; color: #1e3a5f;">Front 9</span>
-                                <span id="manualFront9Par" style="font-size: 11px; color: #64748b;">Par: 36</span>
+                                <span id="manualFront9Par" style="font-size: 11px; color: #64748b;">Par: ${hasCustomHoles ? editHoles.slice(0,9).reduce((s,h) => s + h.par, 0) : 36}</span>
                             </div>
                             <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 8px;">
                                 <tr style="background: #e2e8f0;">
@@ -10206,16 +10237,16 @@
                                 </tr>
                                 <tr>
                                     <td style="padding: 3px 4px; font-weight: 600; color: #166534;">Par</td>
-                                    ${[1,2,3,4,5,6,7,8,9].map(h => `<td style="padding: 2px 1px; text-align: center;"><input type="number" id="manualPar${h}" value="${[4,4,3,4,5,4,3,4,5][h-1]}" min="3" max="6" oninput="updateManualParTotal()" style="width: 100%; padding: 4px 0; text-align: center; border: 1px solid #d1d5db; border-radius: 3px; font-size: 12px; box-sizing: border-box;"></td>`).join('')}
+                                    ${[1,2,3,4,5,6,7,8,9].map(h => `<td style="padding: 2px 1px; text-align: center;"><input type="number" id="manualPar${h}" value="${hasCustomHoles ? editHoles[h-1].par : defaultFrontPars[h-1]}" min="3" max="6" oninput="updateManualParTotal()" style="width: 100%; padding: 4px 0; text-align: center; border: 1px solid #d1d5db; border-radius: 3px; font-size: 12px; box-sizing: border-box;"></td>`).join('')}
                                 </tr>
                                 <tr>
                                     <td style="padding: 3px 4px; font-weight: 600; color: #7c3aed;">Hcp</td>
-                                    ${[1,2,3,4,5,6,7,8,9].map(h => `<td style="padding: 2px 1px; text-align: center;"><input type="number" id="manualHcp${h}" value="${[7,3,15,1,9,5,17,11,13][h-1]}" min="1" max="18" oninput="updateManualParTotal()" style="width: 100%; padding: 4px 0; text-align: center; border: 1px solid #d1d5db; border-radius: 3px; font-size: 12px; box-sizing: border-box;"></td>`).join('')}
+                                    ${[1,2,3,4,5,6,7,8,9].map(h => `<td style="padding: 2px 1px; text-align: center;"><input type="number" id="manualHcp${h}" value="${hasCustomHoles ? editHoles[h-1].handicap : defaultFrontHcps[h-1]}" min="1" max="18" oninput="updateManualParTotal()" style="width: 100%; padding: 4px 0; text-align: center; border: 1px solid #d1d5db; border-radius: 3px; font-size: 12px; box-sizing: border-box;"></td>`).join('')}
                                 </tr>
                             </table>
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                                 <span style="font-size: 11px; font-weight: 600; color: #1e3a5f;">Back 9</span>
-                                <span id="manualBack9Par" style="font-size: 11px; color: #64748b;">Par: 36</span>
+                                <span id="manualBack9Par" style="font-size: 11px; color: #64748b;">Par: ${hasCustomHoles ? editHoles.slice(9,18).reduce((s,h) => s + h.par, 0) : 36}</span>
                             </div>
                             <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 8px;">
                                 <tr style="background: #e2e8f0;">
@@ -10224,16 +10255,16 @@
                                 </tr>
                                 <tr>
                                     <td style="padding: 3px 4px; font-weight: 600; color: #166534;">Par</td>
-                                    ${[10,11,12,13,14,15,16,17,18].map(h => `<td style="padding: 2px 1px; text-align: center;"><input type="number" id="manualPar${h}" value="${[4,4,3,4,5,4,3,4,4][h-10]}" min="3" max="6" oninput="updateManualParTotal()" style="width: 100%; padding: 4px 0; text-align: center; border: 1px solid #d1d5db; border-radius: 3px; font-size: 12px; box-sizing: border-box;"></td>`).join('')}
+                                    ${[10,11,12,13,14,15,16,17,18].map(h => `<td style="padding: 2px 1px; text-align: center;"><input type="number" id="manualPar${h}" value="${hasCustomHoles ? editHoles[h-1].par : defaultBackPars[h-10]}" min="3" max="6" oninput="updateManualParTotal()" style="width: 100%; padding: 4px 0; text-align: center; border: 1px solid #d1d5db; border-radius: 3px; font-size: 12px; box-sizing: border-box;"></td>`).join('')}
                                 </tr>
                                 <tr>
                                     <td style="padding: 3px 4px; font-weight: 600; color: #7c3aed;">Hcp</td>
-                                    ${[10,11,12,13,14,15,16,17,18].map(h => `<td style="padding: 2px 1px; text-align: center;"><input type="number" id="manualHcp${h}" value="${[8,4,16,2,10,6,18,12,14][h-10]}" min="1" max="18" oninput="updateManualParTotal()" style="width: 100%; padding: 4px 0; text-align: center; border: 1px solid #d1d5db; border-radius: 3px; font-size: 12px; box-sizing: border-box;"></td>`).join('')}
+                                    ${[10,11,12,13,14,15,16,17,18].map(h => `<td style="padding: 2px 1px; text-align: center;"><input type="number" id="manualHcp${h}" value="${hasCustomHoles ? editHoles[h-1].handicap : defaultBackHcps[h-10]}" min="1" max="18" oninput="updateManualParTotal()" style="width: 100%; padding: 4px 0; text-align: center; border: 1px solid #d1d5db; border-radius: 3px; font-size: 12px; box-sizing: border-box;"></td>`).join('')}
                                 </tr>
                             </table>
                             <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: #1e3a5f; border-radius: 4px; color: white;">
                                 <span style="font-size: 12px; font-weight: 600;">Total Par</span>
-                                <span id="manualTotalPar" style="font-size: 14px; font-weight: 700;">72</span>
+                                <span id="manualTotalPar" style="font-size: 14px; font-weight: 700;">${hasCustomHoles ? editHoles.reduce((s,h) => s + h.par, 0) : 72}</span>
                             </div>
                             <p style="font-size: 10px; color: #94a3b8; margin: 6px 0 0 0; text-align: center;">
                                 Hcp = hole difficulty ranking (1 = hardest, 18 = easiest)
@@ -10242,13 +10273,13 @@
                     </div>
                     
                     <div style="display: flex; gap: 8px;">
-                        <button onclick="document.getElementById('courseSearchResults').innerHTML = '<p style=\\'text-align: center; color: #64748b; font-size: 14px; padding: 24px;\\'>Search for a course above</p>';" 
+                        <button onclick="document.getElementById('courseSearchResults').innerHTML = '<p style=\\'text-align: center; color: #64748b; font-size: 14px; padding: 24px;\\'>Search for a course above</p>'; editingCourseId = null;" 
                             style="flex: 1; padding: 12px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
                             ← Back
                         </button>
                         <button onclick="saveManualCourse()" 
                             style="flex: 2; padding: 12px; background: #166534; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
-                            Save & Select Course
+                            ${editCourseId ? '💾 Update Course' : 'Save & Select Course'}
                         </button>
                     </div>
                 </div>
@@ -10304,8 +10335,9 @@
                 return;
             }
             
-            // Create course ID
-            const courseId = 'manual_' + name.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + Date.now();
+            // Use existing ID if editing, otherwise create new
+            const courseId = editingCourseId || ('manual_' + name.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + Date.now());
+            const isEditing = !!editingCourseId;
             
             // Check if user set custom hole details
             const holeDetailsSection = document.getElementById('manualHoleDetailsSection');
@@ -10368,21 +10400,32 @@
                 console.error('Error saving custom course:', e);
             }
             
-            // Add to course select dropdown
+            // Add to or update course select dropdown
             const select = document.getElementById('courseSelect');
-            const option = document.createElement('option');
-            option.value = courseId;
-            option.textContent = `${name} (${city || 'Custom'})`;
-            select.appendChild(option);
+            if (isEditing) {
+                // Update existing option text
+                const existingOption = select.querySelector(`option[value="${courseId}"]`);
+                if (existingOption) {
+                    existingOption.textContent = `${name} (${city || 'Custom'})`;
+                }
+            } else {
+                const option = document.createElement('option');
+                option.value = courseId;
+                option.textContent = `${name} (${city || 'Custom'})`;
+                select.appendChild(option);
+            }
             
-            // Select the new course
+            // Select the course
             select.value = courseId;
             updateCourseDetails(courseId);
             
             // Close modal
             closeCourseSearchModal();
             
-            showNotification('✅ Course Added', `${name} saved successfully`);
+            // Clear editing state
+            editingCourseId = null;
+            
+            showNotification(isEditing ? '✅ Course Updated' : '✅ Course Added', `${name} saved successfully`);
         }
         
         // Toggle favorite for currently selected course
@@ -10440,6 +10483,7 @@
         function updateFavoriteButton() {
             const select = document.getElementById('courseSelect');
             const btn = document.getElementById('favoriteBtn');
+            const editBtn = document.getElementById('editCourseBtn');
             const selectedValue = select.value;
             
             if (!btn) return;
@@ -10447,12 +10491,21 @@
             // Hide for special options or no selection
             if (!selectedValue || selectedValue === 'search_course' || selectedValue === 'custom_course' || selectedValue.startsWith('fav_')) {
                 btn.style.display = 'none';
+                if (editBtn) editBtn.style.display = 'none';
                 return;
             }
             
             btn.style.display = 'flex';
             btn.style.alignItems = 'center';
             btn.style.justifyContent = 'center';
+            
+            // Show edit button only for custom/manual courses
+            if (editBtn) {
+                const isCustomCourse = customCourses[selectedValue] && customCourses[selectedValue].isManual;
+                editBtn.style.display = isCustomCourse ? 'flex' : 'none';
+                editBtn.style.alignItems = 'center';
+                editBtn.style.justifyContent = 'center';
+            }
             
             // Check if current course is favorited
             let courseId = selectedValue;
@@ -10465,6 +10518,23 @@
             btn.style.borderColor = isFavorite ? '#fbbf24' : '#e2e8f0';
             btn.style.background = isFavorite ? '#fef3c7' : 'white';
             btn.title = isFavorite ? 'Remove from favorites' : 'Add to favorites';
+        }
+        
+        // Edit the currently selected custom course
+        function editSelectedCustomCourse() {
+            const select = document.getElementById('courseSelect');
+            const selectedValue = select.value;
+            
+            if (!selectedValue || !customCourses[selectedValue] || !customCourses[selectedValue].isManual) {
+                showNotification('Cannot Edit', 'Only custom courses can be edited');
+                return;
+            }
+            
+            showCourseSearchModal();
+            // Small delay to ensure modal DOM is ready
+            setTimeout(() => {
+                showManualCourseEntry('', selectedValue);
+            }, 50);
         }
         
         // Toggle favorite course (from search results)
@@ -15841,6 +15911,10 @@
             const urlParams = new URLSearchParams(window.location.search);
             const joinId = urlParams.get('join');
             if (joinId) {
+                // Suppress tutorials during deep link routing so Home page tutorial
+                // doesn't fire while we're navigating to the join destination
+                suppressTutorials = true;
+                
                 // Mark as guest user - they can only participate in this tournament
                 isGuestUser = true;
                 hasJoinedTournament = false; // Not joined yet, just arrived via link
@@ -15885,9 +15959,12 @@
                             subscribToTournamentUpdates(joinId);
                             
                             // Go directly to My Players page for claiming
+                            // Re-enable tutorials now that we've reached the destination
+                            suppressTutorials = false;
                             showMyPlayersPage();
                         } else {
                             showNotification('Error', 'Tournament not found');
+                            suppressTutorials = false;
                             showPage('hostHomePage');
                             updateHostHomePage();
                         }
@@ -15895,6 +15972,7 @@
                     .catch(error => {
                         console.error('Error loading tournament from link:', error);
                         showNotification('Error', 'Failed to load tournament');
+                        suppressTutorials = false;
                         showPage('hostHomePage');
                         updateHostHomePage();
                     });
@@ -16712,7 +16790,7 @@
         // TUTORIAL SYSTEM
         // ========================================
         
-        const TUTORIAL_APP_VERSION = '15.9.80';
+        const TUTORIAL_APP_VERSION = '15.9.81';
         
         // Tutorial content definitions - bump contentVersion when tutorial changes
         const tutorialContent = {
@@ -16821,6 +16899,54 @@
                     [
                         { icon: '🏷️', text: '<strong>Tee Assignments</strong> — Tap the tee buttons (⬜🟦🔴) next to each player to assign their playing tees.' },
                         { icon: '👑', text: '<strong>Co-Host</strong> — Tap the crown icon next to a player to make them a co-host who can manage the tournament from their device.' }
+                    ]
+                ]
+            },
+            setupPage: {
+                contentVersion: 1,
+                icon: '⛳',
+                title: 'Tournament Setup',
+                subtitle: 'Configure your round before teeing off',
+                steps: [
+                    [
+                        { icon: '⛳', text: '<strong>Course</strong> — Search for any course or add a custom one. Star ⭐ your favorites so they appear at the top.' },
+                        { icon: '🏷️', text: '<strong>Tees & Rating</strong> — Pick your tees after selecting a course. Slope and rating auto-fill for accurate handicaps.' }
+                    ],
+                    [
+                        { icon: '🎮', text: '<strong>Game Type</strong> — Choose Stroke Play, Skins, Nassau, Wolf, and more. Each has its own scoring and payout rules.' },
+                        { icon: '🚀', text: '<strong>Start Tournament</strong> — Tap the button at the top when you\'re ready. You\'ll add players on the next screen.' }
+                    ]
+                ]
+            },
+            sideGame: {
+                contentVersion: 1,
+                icon: '🎲',
+                title: 'Side Game',
+                subtitle: 'Best Ball & team games alongside your round',
+                steps: [
+                    [
+                        { icon: '👥', text: '<strong>Build Teams</strong> — Drag players into 2+ teams. Use Auto Pair to balance teams by handicap automatically.' },
+                        { icon: '🏆', text: '<strong>Best Ball Scoring</strong> — Each team\'s best score per hole counts. Toggle Gross/Net/Net 18 at the top.' }
+                    ],
+                    [
+                        { icon: '✏️', text: '<strong>Edit Teams</strong> — Tap Edit Teams to rearrange at any time. Changes recalculate results instantly.' },
+                        { icon: '↩️', text: '<strong>Back to Tournament</strong> — Tap ← Back to Tournament to return to the main leaderboard.' }
+                    ]
+                ]
+            },
+            accountModal: {
+                contentVersion: 1,
+                icon: '👤',
+                title: 'Profile & Account',
+                subtitle: 'Your golf identity and settings',
+                steps: [
+                    [
+                        { icon: '⛳', text: '<strong>Golf Identity</strong> — Set your name and nicknames so Let\'s Golf can track your stats automatically across tournaments.' },
+                        { icon: '👁️', text: '<strong>Tracked Players</strong> — Add friends to track their stats whenever they appear in your rounds.' }
+                    ],
+                    [
+                        { icon: '⚙️', text: '<strong>Account Settings</strong> — Update your username, email, or password from the ⚙️ button.' },
+                        { icon: '📊', text: '<strong>Player Stats</strong> — Scroll down to see your round history, scoring averages, and personal bests.' }
                     ]
                 ]
             }
@@ -17012,8 +17138,22 @@
             }, 6000);
         }
         
+        // Flag to suppress tutorials during deep-link navigation
+        // Prevents Home page tutorial from firing when the user is being routed elsewhere
+        let suppressTutorials = false;
+        
         // Trigger tutorial check when a page is shown
         function checkPageTutorial(pageId) {
+            // Skip if tutorials are suppressed (deep link / join routing in progress)
+            if (suppressTutorials) return;
+            
+            // If a tutorial is already showing, dismiss it before showing a new one
+            if (window._currentTutorialKey) {
+                const overlay = document.getElementById('tutorialOverlay');
+                if (overlay) overlay.remove();
+                window._currentTutorialKey = null;
+            }
+            
             // Map page IDs to tutorial keys
             let tutorialKey = null;
             
@@ -17034,6 +17174,8 @@
                 tutorialKey = 'myPlayersPage';
             } else if (pageId === 'playerManagementPage') {
                 tutorialKey = 'playerManagementPage';
+            } else if (pageId === 'setupPage') {
+                tutorialKey = 'setupPage';
             }
             
             if (tutorialKey && shouldShowTutorial(tutorialKey)) {
@@ -18786,14 +18928,15 @@
             const hostPastList = document.getElementById('hostHomeRoundsList');
             const hostPastBox = document.getElementById('hostHomePastTournaments');
             
-            // If signed out, hide all tournament sections
+            // If signed out, show sign-in prompt in past tournaments area
             if (!currentAuthUser) {
                 if (currentBox) currentBox.style.display = 'none';
                 if (hostCurrentBox) hostCurrentBox.style.display = 'none';
-                if (pastBox) pastBox.style.display = 'none';
-                if (hostPastBox) hostPastBox.style.display = 'none';
-                if (pastList) pastList.innerHTML = '';
-                if (hostPastList) hostPastList.innerHTML = '';
+                const signInMsg = '<p style="color: #94a3b8; font-size: 13px; text-align: center; padding: 16px 0;">Sign in to see your tournament history</p>';
+                if (pastBox) { pastBox.style.display = 'block'; }
+                if (hostPastBox) { hostPastBox.style.display = 'block'; }
+                if (pastList) pastList.innerHTML = signInMsg;
+                if (hostPastList) hostPastList.innerHTML = signInMsg;
                 return;
             }
             
@@ -26714,6 +26857,11 @@
                 } else {
                     // First time - show setup modal
                     showResultsBestBallSetup();
+                }
+                
+                // Show side game tutorial
+                if (shouldShowTutorial('sideGame')) {
+                    setTimeout(() => showTutorial('sideGame'), 500);
                 }
             }
         }
