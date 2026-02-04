@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-02-04-v15.9.78-android-scroll-home-btn-carousel-fix -->
+    <!-- VERSION: 2026-02-04-v15.9.80-tutorial-system -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -3446,6 +3446,217 @@
             top: 2px;
             font-size: 10px;
         }
+        
+        /* Tutorial Overlay */
+        .tutorial-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            animation: tutorialFadeIn 0.3s ease-out;
+        }
+        
+        @keyframes tutorialFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .tutorial-card {
+            background: white;
+            border-radius: 16px;
+            max-width: 380px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            animation: tutorialSlideUp 0.3s ease-out;
+        }
+        
+        @keyframes tutorialSlideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .tutorial-header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2d5a8e 100%);
+            padding: 18px 20px 14px;
+            border-radius: 16px 16px 0 0;
+            text-align: center;
+        }
+        
+        .tutorial-header-icon {
+            font-size: 32px;
+            margin-bottom: 4px;
+        }
+        
+        .tutorial-header-title {
+            color: white;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        
+        .tutorial-header-subtitle {
+            color: #93c5fd;
+            font-size: 12px;
+            margin-top: 2px;
+        }
+        
+        .tutorial-body {
+            padding: 16px 20px;
+        }
+        
+        .tutorial-step {
+            display: none;
+        }
+        
+        .tutorial-step.active {
+            display: block;
+        }
+        
+        .tutorial-tip {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px;
+            background: #f0f9ff;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 3px solid #1e3a5f;
+        }
+        
+        .tutorial-tip-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+        
+        .tutorial-tip-text {
+            font-size: 13px;
+            color: #334155;
+            line-height: 1.5;
+        }
+        
+        .tutorial-tip-text strong {
+            color: #1e3a5f;
+        }
+        
+        .tutorial-progress {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            padding: 12px 0 4px;
+        }
+        
+        .tutorial-progress-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #d1d5db;
+            transition: all 0.2s;
+        }
+        
+        .tutorial-progress-dot.active {
+            background: #1e3a5f;
+            width: 20px;
+            border-radius: 4px;
+        }
+        
+        .tutorial-progress-dot.done {
+            background: #22c55e;
+        }
+        
+        .tutorial-footer {
+            padding: 12px 20px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .tutorial-nav {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .tutorial-nav-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .tutorial-nav-btn.secondary {
+            background: #e2e8f0;
+            color: #475569;
+        }
+        
+        .tutorial-nav-btn.primary {
+            background: #1e3a5f;
+            color: white;
+        }
+        
+        .tutorial-dismiss {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 4px 0;
+            font-size: 12px;
+            color: #94a3b8;
+            cursor: pointer;
+        }
+        
+        .tutorial-dismiss input[type="checkbox"] {
+            margin: 0;
+            accent-color: #1e3a5f;
+        }
+        
+        .tutorial-whats-new {
+            position: fixed;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #1e3a5f 0%, #2d5a8e 100%);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            z-index: 99998;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            max-width: 340px;
+            animation: whatsNewSlide 0.4s ease-out;
+            cursor: pointer;
+        }
+        
+        @keyframes whatsNewSlide {
+            from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+        
+        .tutorial-whats-new-close {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            font-size: 12px;
+            cursor: pointer;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
     <!-- SheetJS for Excel import/export -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
@@ -3975,6 +4186,7 @@
                 <button type="button" id="myPlayersBtnHeader" onclick="showMyPlayersPage()" style="display: none; flex: 1; height: 40px; border-radius: 6px; border: 1.5px solid rgba(180, 130, 80, 0.5); background: rgba(212, 165, 116, 0.7); color: #78350f; font-size: 18px; cursor: pointer; align-items: center; justify-content: center;" title="My Players">👤</button>
                 <button type="button" onclick="openScorecardModal()" style="flex: 1; height: 40px; border-radius: 6px; border: 1.5px solid #1e3a5f; background: white; color: #1e3a5f; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Scorecard">📋</button>
                 <button type="button" id="finishRoundBtn" onclick="showPage('resultsPage')" style="flex: 1; height: 40px; border-radius: 6px; border: 1.5px solid #1e3a5f; background: white; color: #1e3a5f; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Results">🏆</button>
+                <button type="button" onclick="replayTutorial(currentView === 'player' ? 'scoringPage_player' : 'scoringPage_hole')" style="width: 40px; height: 40px; border-radius: 6px; border: 1.5px solid #d1d5db; background: white; color: #6b7280; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" title="Help">❓</button>
             </div>
             
             <!-- Row 4: Toggle Buttons - Navy blue active state -->
@@ -4027,6 +4239,7 @@
                     <button type="button" id="resultsScorecardBtn" onclick="openScorecardModal()" style="flex: 1; height: 40px; border-radius: 6px; border: 1.5px solid #1e3a5f; background: white; color: #1e3a5f; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="View Scorecards">📋</button>
                     <button type="button" onclick="showExportScoresModal()" style="flex: 1; height: 40px; border-radius: 6px; border: 1.5px solid #166534; background: white; color: #166534; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Export Scores">📤</button>
                     <button type="button" onclick="showPage('scoringPage')" style="flex: 1; height: 40px; border-radius: 6px; border: 1.5px solid #1e3a5f; background: white; color: #1e3a5f; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Scoring">🏌️‍♂️</button>
+                    <button type="button" onclick="replayTutorial('resultsPage')" style="width: 40px; height: 40px; border-radius: 6px; border: 1.5px solid #d1d5db; background: white; color: #6b7280; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" title="Help">❓</button>
                 </div>
                 
                 <!-- Row 4: Tournament / Side Game Toggle (shown in tourney mode) -->
@@ -4774,6 +4987,7 @@
                 </button>
                 <button type="button" onclick="showPage('scoringPage')" style="flex: 1; height: 48px; border-radius: 6px; border: 1.5px solid #1e3a5f; background: white; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center;">🏌️‍♂️</button>
                 <button type="button" onclick="showPage('resultsPage')" style="flex: 1; height: 48px; border-radius: 6px; border: 1.5px solid #1e3a5f; background: white; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center;">🏆</button>
+                <button type="button" onclick="replayTutorial('playerManagementPage')" style="width: 48px; height: 48px; border-radius: 6px; border: 1.5px solid #d1d5db; background: white; color: #6b7280; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" title="Help">❓</button>
             </div>
             
             <!-- Row 4: Host/Player Toggle - tan/beige when selected, white when not -->
@@ -4903,6 +5117,7 @@
                 </button>
                 <button type="button" onclick="showPage('scoringPage')" style="flex: 1; height: 48px; border-radius: 6px; border: 1.5px solid #1e3a5f; background: white; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center;">🏌️‍♂️</button>
                 <button type="button" onclick="showPage('resultsPage')" style="flex: 1; height: 48px; border-radius: 6px; border: 1.5px solid #1e3a5f; background: white; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center;">🏆</button>
+                <button type="button" onclick="replayTutorial('myPlayersPage')" style="width: 48px; height: 48px; border-radius: 6px; border: 1.5px solid #d1d5db; background: white; color: #6b7280; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" title="Help">❓</button>
             </div>
             
             <!-- Row 4: Host/Player Toggle - tan/beige when selected, white when not -->
@@ -9968,9 +10183,63 @@
                         </div>
                     </div>
                     
-                    <p style="font-size: 11px; color: #64748b; margin-bottom: 12px;">
-                        💡 Find slope/rating on the course scorecard or website. Default pars will be used (4-4-3-4-5-4-3-4-5...).
+                    <p style="font-size: 11px; color: #64748b; margin-bottom: 8px;">
+                        💡 Find slope/rating on the course scorecard or website.
                     </p>
+                    
+                    <!-- Per-hole par and handicap entry -->
+                    <div style="margin-bottom: 12px;">
+                        <button type="button" onclick="toggleManualHoleDetails()" id="manualHoleToggleBtn"
+                            style="width: 100%; padding: 10px; background: #f1f5f9; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; font-weight: 600; color: #1e3a5f; cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
+                            <span>⛳ Set Hole Pars & Handicaps</span>
+                            <span id="manualHoleToggleArrow" style="transition: transform 0.2s;">▼</span>
+                        </button>
+                        <div id="manualHoleDetailsSection" style="display: none; margin-top: 8px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; background: #f8fafc;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <span style="font-size: 11px; font-weight: 600; color: #1e3a5f;">Front 9</span>
+                                <span id="manualFront9Par" style="font-size: 11px; color: #64748b;">Par: 36</span>
+                            </div>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 8px;">
+                                <tr style="background: #e2e8f0;">
+                                    <td style="padding: 3px 4px; font-weight: 600; color: #475569; width: 32px;">Hole</td>
+                                    ${[1,2,3,4,5,6,7,8,9].map(h => `<td style="padding: 3px 2px; text-align: center; font-weight: 600; color: #475569;">${h}</td>`).join('')}
+                                </tr>
+                                <tr>
+                                    <td style="padding: 3px 4px; font-weight: 600; color: #166534;">Par</td>
+                                    ${[1,2,3,4,5,6,7,8,9].map(h => `<td style="padding: 2px 1px; text-align: center;"><input type="number" id="manualPar${h}" value="${[4,4,3,4,5,4,3,4,5][h-1]}" min="3" max="6" oninput="updateManualParTotal()" style="width: 100%; padding: 4px 0; text-align: center; border: 1px solid #d1d5db; border-radius: 3px; font-size: 12px; box-sizing: border-box;"></td>`).join('')}
+                                </tr>
+                                <tr>
+                                    <td style="padding: 3px 4px; font-weight: 600; color: #7c3aed;">Hcp</td>
+                                    ${[1,2,3,4,5,6,7,8,9].map(h => `<td style="padding: 2px 1px; text-align: center;"><input type="number" id="manualHcp${h}" value="${[7,3,15,1,9,5,17,11,13][h-1]}" min="1" max="18" oninput="updateManualParTotal()" style="width: 100%; padding: 4px 0; text-align: center; border: 1px solid #d1d5db; border-radius: 3px; font-size: 12px; box-sizing: border-box;"></td>`).join('')}
+                                </tr>
+                            </table>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <span style="font-size: 11px; font-weight: 600; color: #1e3a5f;">Back 9</span>
+                                <span id="manualBack9Par" style="font-size: 11px; color: #64748b;">Par: 36</span>
+                            </div>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 8px;">
+                                <tr style="background: #e2e8f0;">
+                                    <td style="padding: 3px 4px; font-weight: 600; color: #475569; width: 32px;">Hole</td>
+                                    ${[10,11,12,13,14,15,16,17,18].map(h => `<td style="padding: 3px 2px; text-align: center; font-weight: 600; color: #475569;">${h}</td>`).join('')}
+                                </tr>
+                                <tr>
+                                    <td style="padding: 3px 4px; font-weight: 600; color: #166534;">Par</td>
+                                    ${[10,11,12,13,14,15,16,17,18].map(h => `<td style="padding: 2px 1px; text-align: center;"><input type="number" id="manualPar${h}" value="${[4,4,3,4,5,4,3,4,4][h-10]}" min="3" max="6" oninput="updateManualParTotal()" style="width: 100%; padding: 4px 0; text-align: center; border: 1px solid #d1d5db; border-radius: 3px; font-size: 12px; box-sizing: border-box;"></td>`).join('')}
+                                </tr>
+                                <tr>
+                                    <td style="padding: 3px 4px; font-weight: 600; color: #7c3aed;">Hcp</td>
+                                    ${[10,11,12,13,14,15,16,17,18].map(h => `<td style="padding: 2px 1px; text-align: center;"><input type="number" id="manualHcp${h}" value="${[8,4,16,2,10,6,18,12,14][h-10]}" min="1" max="18" oninput="updateManualParTotal()" style="width: 100%; padding: 4px 0; text-align: center; border: 1px solid #d1d5db; border-radius: 3px; font-size: 12px; box-sizing: border-box;"></td>`).join('')}
+                                </tr>
+                            </table>
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: #1e3a5f; border-radius: 4px; color: white;">
+                                <span style="font-size: 12px; font-weight: 600;">Total Par</span>
+                                <span id="manualTotalPar" style="font-size: 14px; font-weight: 700;">72</span>
+                            </div>
+                            <p style="font-size: 10px; color: #94a3b8; margin: 6px 0 0 0; text-align: center;">
+                                Hcp = hole difficulty ranking (1 = hardest, 18 = easiest)
+                            </p>
+                        </div>
+                    </div>
                     
                     <div style="display: flex; gap: 8px;">
                         <button onclick="document.getElementById('courseSearchResults').innerHTML = '<p style=\\'text-align: center; color: #64748b; font-size: 14px; padding: 24px;\\'>Search for a course above</p>';" 
@@ -9986,6 +10255,40 @@
             `;
             
             document.getElementById('manualCourseName').focus();
+        }
+        
+        // Toggle manual hole details section
+        function toggleManualHoleDetails() {
+            const section = document.getElementById('manualHoleDetailsSection');
+            const arrow = document.getElementById('manualHoleToggleArrow');
+            if (!section) return;
+            
+            if (section.style.display === 'none') {
+                section.style.display = 'block';
+                if (arrow) arrow.style.transform = 'rotate(180deg)';
+            } else {
+                section.style.display = 'none';
+                if (arrow) arrow.style.transform = 'rotate(0deg)';
+            }
+        }
+        
+        // Update par totals in manual course entry
+        function updateManualParTotal() {
+            let front9 = 0, back9 = 0;
+            for (let i = 1; i <= 9; i++) {
+                const input = document.getElementById('manualPar' + i);
+                front9 += parseInt(input?.value) || 0;
+            }
+            for (let i = 10; i <= 18; i++) {
+                const input = document.getElementById('manualPar' + i);
+                back9 += parseInt(input?.value) || 0;
+            }
+            const front9El = document.getElementById('manualFront9Par');
+            const back9El = document.getElementById('manualBack9Par');
+            const totalEl = document.getElementById('manualTotalPar');
+            if (front9El) front9El.textContent = 'Par: ' + front9;
+            if (back9El) back9El.textContent = 'Par: ' + back9;
+            if (totalEl) totalEl.textContent = front9 + back9;
         }
         
         // Save manually entered course
@@ -10004,20 +10307,41 @@
             // Create course ID
             const courseId = 'manual_' + name.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + Date.now();
             
-            // Default pars for 18 holes
-            const defaultPars = [4, 4, 3, 4, 5, 4, 3, 4, 5, 4, 4, 3, 4, 5, 4, 3, 4, 4];
-            const holes = defaultPars.map((par, i) => ({
-                number: i + 1,
-                par: par,
-                handicap: i + 1
-            }));
+            // Check if user set custom hole details
+            const holeDetailsSection = document.getElementById('manualHoleDetailsSection');
+            const usedCustomHoles = holeDetailsSection && holeDetailsSection.style.display !== 'none';
+            
+            let holes = [];
+            let totalPar = 72;
+            
+            if (usedCustomHoles) {
+                // Read per-hole values from inputs
+                for (let i = 1; i <= 18; i++) {
+                    const parInput = document.getElementById('manualPar' + i);
+                    const hcpInput = document.getElementById('manualHcp' + i);
+                    holes.push({
+                        number: i,
+                        par: parseInt(parInput?.value) || 4,
+                        handicap: parseInt(hcpInput?.value) || i
+                    });
+                }
+                totalPar = holes.reduce((sum, h) => sum + h.par, 0);
+            } else {
+                // Default pars for 18 holes
+                const defaultPars = [4, 4, 3, 4, 5, 4, 3, 4, 5, 4, 4, 3, 4, 5, 4, 3, 4, 4];
+                holes = defaultPars.map((par, i) => ({
+                    number: i + 1,
+                    par: par,
+                    handicap: i + 1
+                }));
+            }
             
             // Create course object
             const courseData = {
                 name: name,
                 city: city,
                 state: state,
-                totalPar: 72,
+                totalPar: totalPar,
                 holes: holes,
                 tees: {
                     default: {
@@ -10025,7 +10349,7 @@
                         slope: slope,
                         rating: rating,
                         yardage: 6200,
-                        par: 72
+                        par: totalPar
                     }
                 },
                 defaultTee: 'default',
@@ -16384,6 +16708,347 @@
         // END FIREBASE FUNCTIONS
         // ========================================
 
+        // ========================================
+        // TUTORIAL SYSTEM
+        // ========================================
+        
+        const TUTORIAL_APP_VERSION = '15.9.80';
+        
+        // Tutorial content definitions - bump contentVersion when tutorial changes
+        const tutorialContent = {
+            hostHomePage: {
+                contentVersion: 1,
+                icon: '🏠',
+                title: 'Host Home',
+                subtitle: 'Your tournament command center',
+                steps: [
+                    [
+                        { icon: '🏌️', text: '<strong>Start a Round</strong> — Set up your course, game type, and players, then hit Start Round to begin scoring.' },
+                        { icon: '📱', text: '<strong>Multi-Device Mode</strong> — Share the tournament code so other players can join and enter their own scores in real-time.' }
+                    ],
+                    [
+                        { icon: '🔄', text: '<strong>Resume a Round</strong> — Your in-progress round appears at the top with a Resume button. Rounds auto-save.' },
+                        { icon: '📊', text: '<strong>Past Rounds</strong> — Scroll down to see your tournament history and stats.' }
+                    ]
+                ]
+            },
+            guestHomePage: {
+                contentVersion: 1,
+                icon: '🏠',
+                title: 'Home',
+                subtitle: 'Join or start a round',
+                steps: [
+                    [
+                        { icon: '🔗', text: '<strong>Join a Tournament</strong> — Enter the player code shared by the host to join a multi-device round.' },
+                        { icon: '👤', text: '<strong>Sign In</strong> — Create an account to save your rounds, track stats, and set your golf identity.' }
+                    ]
+                ]
+            },
+            scoringPage_hole: {
+                contentVersion: 1,
+                icon: '⛳',
+                title: 'Scoring — Hole View',
+                subtitle: 'Enter scores hole by hole',
+                steps: [
+                    [
+                        { icon: '🔢', text: '<strong>Tap a Score</strong> — Tap any player\'s score cell to open the quick entry popup with +/− buttons and presets.' },
+                        { icon: '📍', text: '<strong>Hole Navigation</strong> — Use the numbered buttons at the top to jump to any hole.' }
+                    ],
+                    [
+                        { icon: '🔄', text: '<strong>Switch Views</strong> — Tap <strong>👤 Players</strong> at the top to see one player\'s full scorecard at a time.' },
+                        { icon: '📊', text: '<strong>Track Stats</strong> — Tap the ⚙️ gear icon to enable putts, fairways, and greens tracking for detailed statistics.' }
+                    ]
+                ]
+            },
+            scoringPage_player: {
+                contentVersion: 1,
+                icon: '👤',
+                title: 'Scoring — Player View',
+                subtitle: 'Full scorecard per player',
+                steps: [
+                    [
+                        { icon: '👆', text: '<strong>Swipe Between Players</strong> — Swipe left/right on the scorecard or use the arrow buttons to navigate between players.' },
+                        { icon: '🔍', text: '<strong>Search Players</strong> — Tap the 🔍 button to jump directly to any player.' }
+                    ],
+                    [
+                        { icon: '⛶', text: '<strong>Fullscreen Mode</strong> — Tap the ⛶ button for a larger view of the scorecard. Great for entering lots of scores.' },
+                        { icon: '🟢', text: '<strong>Handicap Dots</strong> — Green dots show strokes received, red dots show strokes given for plus handicaps.' }
+                    ]
+                ]
+            },
+            resultsPage: {
+                contentVersion: 1,
+                icon: '🏆',
+                title: 'Results',
+                subtitle: 'Leaderboard and game results',
+                steps: [
+                    [
+                        { icon: '📋', text: '<strong>Leaderboard</strong> — Shows final standings sorted by score. Toggle between <strong>Gross</strong> and <strong>Net</strong> with the button at the top.' },
+                        { icon: '💰', text: '<strong>Skins & Games</strong> — Scroll down for skins results, Nassau, and other game payouts based on your game type.' }
+                    ],
+                    [
+                        { icon: '📤', text: '<strong>Share Results</strong> — Tap the share button to copy a formatted leaderboard to paste into group chats.' },
+                        { icon: '🏁', text: '<strong>Finish Round</strong> — Tap Finish Round to save to history and return home. You can always view past results from the home screen.' }
+                    ]
+                ]
+            },
+            myPlayersPage: {
+                contentVersion: 1,
+                icon: '👥',
+                title: 'My Players',
+                subtitle: 'Manage who you\'re scoring for',
+                steps: [
+                    [
+                        { icon: '✋', text: '<strong>Claim Players</strong> — Tap a player\'s name to claim them. You\'ll enter scores for your claimed players.' },
+                        { icon: '👁', text: '<strong>Watch Others</strong> — Players you haven\'t claimed show as "watched" — you can see their scores update live but can\'t edit them.' }
+                    ],
+                    [
+                        { icon: '➕', text: '<strong>Claim More</strong> — Use the Claim Another Player button to add more players to your device.' },
+                        { icon: '🏠', text: '<strong>Return Home</strong> — Tap 🏠 to go back. If you\'re not signed in, you\'ll see a sign-in prompt.' }
+                    ]
+                ]
+            },
+            playerManagementPage: {
+                contentVersion: 1,
+                icon: '⚙️',
+                title: 'Tournament Management',
+                subtitle: 'Add, edit, and organize players',
+                steps: [
+                    [
+                        { icon: '➕', text: '<strong>Add Players</strong> — Use Quick Add for saved players, or type a name manually. Import from a roster for big groups.' },
+                        { icon: '🎯', text: '<strong>Handicaps</strong> — Set each player\'s course handicap. Use GHIN lookup to pull official handicaps automatically.' }
+                    ],
+                    [
+                        { icon: '🏷️', text: '<strong>Tee Assignments</strong> — Tap the tee buttons (⬜🟦🔴) next to each player to assign their playing tees.' },
+                        { icon: '👑', text: '<strong>Co-Host</strong> — Tap the crown icon next to a player to make them a co-host who can manage the tournament from their device.' }
+                    ]
+                ]
+            }
+        };
+        
+        // Check if tutorial should show for a given screen
+        function shouldShowTutorial(tutorialKey) {
+            const tutorial = tutorialContent[tutorialKey];
+            if (!tutorial) return false;
+            
+            const storageKey = `tutorial_${tutorialKey}_v${tutorial.contentVersion}`;
+            const dismissed = localStorage.getItem(storageKey);
+            
+            if (dismissed === 'dismissed_permanent') return false;
+            if (dismissed === 'dismissed_once') {
+                // Was dismissed without "don't show again" - show again after app version changes
+                const versionKey = `tutorial_${tutorialKey}_appVersion`;
+                const lastVersion = localStorage.getItem(versionKey);
+                if (lastVersion === TUTORIAL_APP_VERSION) return false;
+                // New app version - show again
+                return true;
+            }
+            
+            // Never seen this tutorial version
+            return true;
+        }
+        
+        // Show tutorial overlay
+        function showTutorial(tutorialKey) {
+            const tutorial = tutorialContent[tutorialKey];
+            if (!tutorial) return;
+            
+            let currentStep = 0;
+            const totalSteps = tutorial.steps.length;
+            
+            function renderStep() {
+                const stepsHTML = tutorial.steps.map((tips, stepIdx) => `
+                    <div class="tutorial-step ${stepIdx === currentStep ? 'active' : ''}" data-step="${stepIdx}">
+                        ${tips.map(tip => `
+                            <div class="tutorial-tip">
+                                <span class="tutorial-tip-icon">${tip.icon}</span>
+                                <span class="tutorial-tip-text">${tip.text}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `).join('');
+                
+                const dotsHTML = totalSteps > 1 ? `
+                    <div class="tutorial-progress">
+                        ${tutorial.steps.map((_, idx) => `
+                            <div class="tutorial-progress-dot ${idx === currentStep ? 'active' : ''} ${idx < currentStep ? 'done' : ''}"></div>
+                        `).join('')}
+                    </div>
+                ` : '';
+                
+                const navHTML = totalSteps > 1 ? `
+                    <div class="tutorial-nav">
+                        ${currentStep > 0 ? `<button class="tutorial-nav-btn secondary" onclick="tutorialPrev()">← Back</button>` : `<button class="tutorial-nav-btn secondary" onclick="dismissTutorial(false)">Skip</button>`}
+                        ${currentStep < totalSteps - 1 ? `<button class="tutorial-nav-btn primary" onclick="tutorialNext()">Next →</button>` : `<button class="tutorial-nav-btn primary" onclick="dismissTutorial(false)">Got It! ✓</button>`}
+                    </div>
+                ` : `
+                    <div class="tutorial-nav">
+                        <button class="tutorial-nav-btn primary" onclick="dismissTutorial(false)" style="flex: 1;">Got It! ✓</button>
+                    </div>
+                `;
+                
+                const overlay = document.getElementById('tutorialOverlay');
+                if (overlay) {
+                    // Update steps
+                    overlay.querySelectorAll('.tutorial-step').forEach((el, idx) => {
+                        el.classList.toggle('active', idx === currentStep);
+                    });
+                    // Update dots
+                    overlay.querySelectorAll('.tutorial-progress-dot').forEach((el, idx) => {
+                        el.classList.toggle('active', idx === currentStep);
+                        el.classList.toggle('done', idx < currentStep);
+                    });
+                    // Update nav
+                    const navEl = overlay.querySelector('.tutorial-nav');
+                    if (navEl) navEl.outerHTML = navHTML;
+                    return;
+                }
+                
+                // Create overlay
+                const overlayHTML = `
+                    <div class="tutorial-overlay" id="tutorialOverlay" onclick="if(event.target===this)dismissTutorial(false)">
+                        <div class="tutorial-card">
+                            <div class="tutorial-header">
+                                <div class="tutorial-header-icon">${tutorial.icon}</div>
+                                <div class="tutorial-header-title">${tutorial.title}</div>
+                                <div class="tutorial-header-subtitle">${tutorial.subtitle}</div>
+                            </div>
+                            <div class="tutorial-body">
+                                ${stepsHTML}
+                                ${dotsHTML}
+                            </div>
+                            <div class="tutorial-footer">
+                                ${navHTML}
+                                <label class="tutorial-dismiss" id="tutorialDismissCheck">
+                                    <input type="checkbox" id="tutorialDontShow">
+                                    <span>Don't show this again</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.insertAdjacentHTML('beforeend', overlayHTML);
+            }
+            
+            // Store current tutorial key for dismiss handler
+            window._currentTutorialKey = tutorialKey;
+            window._currentTutorialStep = currentStep;
+            
+            window.tutorialNext = function() {
+                if (currentStep < totalSteps - 1) {
+                    currentStep++;
+                    window._currentTutorialStep = currentStep;
+                    renderStep();
+                }
+            };
+            
+            window.tutorialPrev = function() {
+                if (currentStep > 0) {
+                    currentStep--;
+                    window._currentTutorialStep = currentStep;
+                    renderStep();
+                }
+            };
+            
+            renderStep();
+        }
+        
+        // Dismiss tutorial
+        function dismissTutorial(permanent) {
+            const tutorialKey = window._currentTutorialKey;
+            if (!tutorialKey) return;
+            
+            const tutorial = tutorialContent[tutorialKey];
+            if (!tutorial) return;
+            
+            const storageKey = `tutorial_${tutorialKey}_v${tutorial.contentVersion}`;
+            const versionKey = `tutorial_${tutorialKey}_appVersion`;
+            
+            const dontShowCheckbox = document.getElementById('tutorialDontShow');
+            const isPermanent = permanent || (dontShowCheckbox && dontShowCheckbox.checked);
+            
+            if (isPermanent) {
+                localStorage.setItem(storageKey, 'dismissed_permanent');
+            } else {
+                localStorage.setItem(storageKey, 'dismissed_once');
+                localStorage.setItem(versionKey, TUTORIAL_APP_VERSION);
+            }
+            
+            // Remove overlay
+            const overlay = document.getElementById('tutorialOverlay');
+            if (overlay) {
+                overlay.style.animation = 'none';
+                overlay.style.opacity = '0';
+                overlay.style.transition = 'opacity 0.2s';
+                setTimeout(() => overlay.remove(), 200);
+            }
+            
+            window._currentTutorialKey = null;
+        }
+        
+        // Show "What's New" toast for minor updates
+        function showWhatsNewToast(message) {
+            // Remove any existing toast
+            const existing = document.getElementById('whatsNewToast');
+            if (existing) existing.remove();
+            
+            const toast = document.createElement('div');
+            toast.id = 'whatsNewToast';
+            toast.className = 'tutorial-whats-new';
+            toast.innerHTML = `
+                <span>✨ ${message}</span>
+                <button class="tutorial-whats-new-close" onclick="this.parentElement.remove()">✕</button>
+            `;
+            document.body.appendChild(toast);
+            
+            // Auto-dismiss after 6 seconds
+            setTimeout(() => {
+                if (document.getElementById('whatsNewToast')) {
+                    toast.style.opacity = '0';
+                    toast.style.transition = 'opacity 0.3s';
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 6000);
+        }
+        
+        // Trigger tutorial check when a page is shown
+        function checkPageTutorial(pageId) {
+            // Map page IDs to tutorial keys
+            let tutorialKey = null;
+            
+            if (pageId === 'hostHomePage') {
+                tutorialKey = 'hostHomePage';
+            } else if (pageId === 'guestHomePage') {
+                tutorialKey = 'guestHomePage';
+            } else if (pageId === 'scoringPage') {
+                // Check which view is active
+                if (currentView === 'player') {
+                    tutorialKey = 'scoringPage_player';
+                } else {
+                    tutorialKey = 'scoringPage_hole';
+                }
+            } else if (pageId === 'resultsPage') {
+                tutorialKey = 'resultsPage';
+            } else if (pageId === 'myPlayersPage') {
+                tutorialKey = 'myPlayersPage';
+            } else if (pageId === 'playerManagementPage') {
+                tutorialKey = 'playerManagementPage';
+            }
+            
+            if (tutorialKey && shouldShowTutorial(tutorialKey)) {
+                // Small delay so the page renders first
+                setTimeout(() => showTutorial(tutorialKey), 400);
+            }
+        }
+        
+        // Replay tutorial from help button
+        function replayTutorial(tutorialKey) {
+            if (tutorialContent[tutorialKey]) {
+                showTutorial(tutorialKey);
+            }
+        }
+
         // Page navigation
         function showPage(pageId) {
             document.querySelectorAll('.page').forEach(page => {
@@ -16491,6 +17156,9 @@
                     }, 500);
                 }
             }
+            
+            // Trigger tutorial check for this page
+            checkPageTutorial(pageId);
         }
 
         // GHIN Posting Score Modal
@@ -29593,6 +30261,9 @@
             
             // Use compact view rendering with sorted players (claimed first, then watched)
             renderCompactPlayerView(getPlayersToShow());
+            
+            // Check for player view tutorial
+            checkPageTutorial('scoringPage');
         }
         
         // Player carousel state
