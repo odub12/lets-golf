@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-02-03-v15.9.77-user-scoped-storage -->
+    <!-- VERSION: 2026-02-04-v15.9.78-android-scroll-home-btn-fix -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -4888,7 +4888,7 @@
             
             <!-- Row 3: Nav buttons - full width -->
             <div style="display: flex; justify-content: space-between; gap: 6px; margin-bottom: 10px;">
-                <button type="button" onclick="goToCorrectHomePage()" style="flex: 1; height: 48px; border-radius: 6px; border: 1.5px solid #1e3a5f; background: white; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center;">🏠</button>
+                <button type="button" onclick="confirmBackToHome()" style="flex: 1; height: 48px; border-radius: 6px; border: 1.5px solid #1e3a5f; background: white; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center;">🏠</button>
                 <button type="button" onclick="copyActiveTournamentLink()" style="flex: 1; height: 48px; border-radius: 6px; border: 1.5px solid #1e3a5f; background: white; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center;">🔗</button>
                 <button type="button" onclick="showQRCodeForActiveTournament()" style="flex: 1; height: 48px; border-radius: 6px; border: 1.5px solid #1e3a5f; background: white; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                     <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#1e3a5f" stroke-width="2">
@@ -5313,10 +5313,14 @@
                     await loadTournamentHistoryFromFirebase();
                     // Load stats from Firebase
                     await loadPlayerStatsFromFirebase();
+                    // Load golf identity (Firebase is authoritative)
+                    await loadGolfIdentity();
                     // Migrate any device-based claims to account-based claims
                     await migrateDeviceClaimsToAccount();
                 } else {
                     userSubscription = { status: 'free', expiresAt: null, email: null };
+                    // Clear golf identity when signed out
+                    golfIdentityData = { name: '', aliases: [], trackedPlayers: [] };
                 }
                 updateAccountUI();
                 // Refresh home page to show/hide tournaments based on auth state
@@ -5758,7 +5762,7 @@
         
         // Load golf identity from localStorage/Firebase
         async function loadGolfIdentity() {
-            // Try localStorage first
+            // Try localStorage first (for offline / not-signed-in)
             const saved = userGet('golfIdentity');
             if (saved) {
                 try {
@@ -5768,17 +5772,23 @@
                 }
             }
             
-            // If logged in, try to load from Firebase
+            // If logged in, Firebase is authoritative
             if (currentAuthUser && db) {
                 try {
                     const doc = await db.collection('userProfiles').doc(currentAuthUser.uid).get();
                     if (doc.exists && doc.data().golfIdentity) {
                         golfIdentityData = doc.data().golfIdentity;
-                        // Also save to localStorage for offline access
+                        // Cache to localStorage for offline access
                         userSet('golfIdentity', JSON.stringify(golfIdentityData));
+                    } else {
+                        // Firebase has no identity for this user - clear any local copy
+                        // (prevents migrated/stale data from wrong account)
+                        golfIdentityData = { name: '', aliases: [], trackedPlayers: [] };
+                        userRemove('golfIdentity');
                     }
                 } catch (e) {
                     console.error('Error loading golf identity from Firebase:', e);
+                    // On error, keep localStorage version as fallback
                 }
             }
             
@@ -16380,6 +16390,24 @@
                 page.classList.remove('active');
             });
             document.getElementById(pageId).classList.add('active');
+            
+            // Android scroll fix: Reset body/html scroll state on page transition
+            // Home pages use position:fixed + touch-action:none which can stick on Android
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.touchAction = '';
+            document.documentElement.style.overflow = '';
+            document.documentElement.style.touchAction = '';
+            
+            // Remove players-view-active if leaving scoring page
+            if (pageId !== 'scoringPage') {
+                document.getElementById('scoringPage').classList.remove('players-view-active');
+            }
+            
+            // Scroll to top on page transition
+            window.scrollTo(0, 0);
+            document.body.scrollTop = 0;
+            document.documentElement.scrollTop = 0;
             
             // Render scoring page when navigating to it
             if (pageId === 'scoringPage') {
