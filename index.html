@@ -22568,6 +22568,20 @@
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
                 
+                // If course or tee changed, update embedded courseData in Firebase
+                // This ensures all devices get fresh hole pars/handicaps
+                if (teeChanged) {
+                    const freshCourseObj = courses[course] || customCourses[course];
+                    if (freshCourseObj) {
+                        updateObj.courseData = {
+                            name: freshCourseObj.name,
+                            holes: freshCourseObj.holes,
+                            totalPar: freshCourseObj.totalPar,
+                            tees: freshCourseObj.tees
+                        };
+                    }
+                }
+                
                 // Add privacy settings if multi-device
                 if (tournamentMode === 'multi') {
                     updateObj.privacy = {
@@ -22593,6 +22607,14 @@
                     };
                 }
                 courseData = courses[course] || customCourses[course];
+                if (teeChanged && courseData) {
+                    tournamentData.courseData = {
+                        name: courseData.name,
+                        holes: courseData.holes,
+                        totalPar: courseData.totalPar,
+                        tees: courseData.tees
+                    };
+                }
                 saveToLocalStorage();
                 
                 // Update smart info lines
