@@ -4473,6 +4473,17 @@
                                     <input type="number" id="payoutNetSkins" value="25" min="0" step="1" onchange="updatePayoutTotals()" oninput="updatePayoutTotals()" style="width: 60px; padding: 6px; border: 1.5px solid #e2e8f0; border-radius: 4px; font-size: 13px; text-align: center; color: #1e3a5f; font-weight: 600;">
                                 </div>
                             </div>
+                            
+                            <!-- Skins Options -->
+                            <div id="payoutSkinsOptions" style="display: flex; gap: 8px; padding: 8px 0 4px 32px;">
+                                <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; color: #475569; cursor: pointer;">
+                                    <input type="checkbox" id="payoutSkinsParOrBetter" style="width: 14px; height: 14px;"> Par or better
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; color: #475569; cursor: pointer;">
+                                    <input type="checkbox" id="payoutSkinsCarryover" style="width: 14px; height: 14px;"> Carryover
+                                </label>
+                            </div>
+                            
                             <!-- Low Gross -->
                             <div class="payout-category" style="display: flex; align-items: center; gap: 8px;">
                                 <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; min-width: 24px;">
@@ -4495,6 +4506,66 @@
                                     <input type="number" id="payoutLowNet" value="25" min="0" step="1" onchange="updatePayoutTotals()" oninput="updatePayoutTotals()" style="width: 60px; padding: 6px; border: 1.5px solid #e2e8f0; border-radius: 4px; font-size: 13px; text-align: center; color: #1e3a5f; font-weight: 600;">
                                 </div>
                             </div>
+                            
+                            <!-- Footlong Out -->
+                            <div class="payout-category" style="display: flex; align-items: center; gap: 8px;">
+                                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; min-width: 24px;">
+                                    <input type="checkbox" id="payoutEnableFootlongOut" onchange="updatePayoutTotals()" style="width: 16px; height: 16px;">
+                                </label>
+                                <span style="flex: 1; font-size: 12px; font-weight: 600; color: #1e3a5f;">Footlong (Out)</span>
+                                <div style="display: flex; align-items: center; gap: 2px;">
+                                    <span id="payoutFootlongOutSymbol" style="font-size: 13px; color: #64748b;">%</span>
+                                    <input type="number" id="payoutFootlongOut" value="0" min="0" step="1" onchange="updatePayoutTotals()" oninput="updatePayoutTotals()" style="width: 60px; padding: 6px; border: 1.5px solid #e2e8f0; border-radius: 4px; font-size: 13px; text-align: center; color: #1e3a5f; font-weight: 600;" disabled>
+                                </div>
+                            </div>
+                            <!-- Footlong Out options -->
+                            <div id="payoutFootlongOutOptions" style="display: none; padding: 4px 0 4px 32px;">
+                                <div style="display: flex; gap: 4px;">
+                                    <button type="button" id="payoutFootlongOutGross" onclick="setFootlongScope('Out','gross')" style="padding: 4px 10px; font-size: 10px; font-weight: 600; border-radius: 4px; border: 1px solid #e2e8f0; background: transparent; color: #6b7280; cursor: pointer;">Gross</button>
+                                    <button type="button" id="payoutFootlongOutNet" onclick="setFootlongScope('Out','net')" style="padding: 4px 10px; font-size: 10px; font-weight: 600; border-radius: 4px; border: 1px solid #e2e8f0; background: #1e3a5f; color: white; cursor: pointer;">Net</button>
+                                    <button type="button" id="payoutFootlongOutBoth" onclick="setFootlongScope('Out','both')" style="padding: 4px 10px; font-size: 10px; font-weight: 600; border-radius: 4px; border: 1px solid #e2e8f0; background: transparent; color: #6b7280; cursor: pointer;">Both</button>
+                                </div>
+                            </div>
+                            
+                            <!-- Footlong In -->
+                            <div class="payout-category" style="display: flex; align-items: center; gap: 8px;">
+                                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; min-width: 24px;">
+                                    <input type="checkbox" id="payoutEnableFootlongIn" onchange="updatePayoutTotals()" style="width: 16px; height: 16px;">
+                                </label>
+                                <span style="flex: 1; font-size: 12px; font-weight: 600; color: #1e3a5f;">Footlong (In)</span>
+                                <div style="display: flex; align-items: center; gap: 2px;">
+                                    <span id="payoutFootlongInSymbol" style="font-size: 13px; color: #64748b;">%</span>
+                                    <input type="number" id="payoutFootlongIn" value="0" min="0" step="1" onchange="updatePayoutTotals()" oninput="updatePayoutTotals()" style="width: 60px; padding: 6px; border: 1.5px solid #e2e8f0; border-radius: 4px; font-size: 13px; text-align: center; color: #1e3a5f; font-weight: 600;" disabled>
+                                </div>
+                            </div>
+                            <!-- Footlong In options -->
+                            <div id="payoutFootlongInOptions" style="display: none; padding: 4px 0 4px 32px;">
+                                <div style="display: flex; gap: 4px;">
+                                    <button type="button" id="payoutFootlongInGross" onclick="setFootlongScope('In','gross')" style="padding: 4px 10px; font-size: 10px; font-weight: 600; border-radius: 4px; border: 1px solid #e2e8f0; background: transparent; color: #6b7280; cursor: pointer;">Gross</button>
+                                    <button type="button" id="payoutFootlongInNet" onclick="setFootlongScope('In','net')" style="padding: 4px 10px; font-size: 10px; font-weight: 600; border-radius: 4px; border: 1px solid #e2e8f0; background: #1e3a5f; color: white; cursor: pointer;">Net</button>
+                                    <button type="button" id="payoutFootlongInBoth" onclick="setFootlongScope('In','both')" style="padding: 4px 10px; font-size: 10px; font-weight: 600; border-radius: 4px; border: 1px solid #e2e8f0; background: transparent; color: #6b7280; cursor: pointer;">Both</button>
+                                </div>
+                            </div>
+                            
+                            <!-- KP (Closest to Pin) -->
+                            <div class="payout-category" style="display: flex; align-items: center; gap: 8px;">
+                                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; min-width: 24px;">
+                                    <input type="checkbox" id="payoutEnableKP" onchange="updatePayoutTotals()" style="width: 16px; height: 16px;">
+                                </label>
+                                <span style="flex: 1; font-size: 12px; font-weight: 600; color: #1e3a5f;">KP (Closest to Pin)</span>
+                                <div style="display: flex; align-items: center; gap: 2px;">
+                                    <span id="payoutKPSymbol" style="font-size: 13px; color: #64748b;">%</span>
+                                    <input type="number" id="payoutKP" value="0" min="0" step="1" onchange="updatePayoutTotals()" oninput="updatePayoutTotals()" style="width: 60px; padding: 6px; border: 1.5px solid #e2e8f0; border-radius: 4px; font-size: 13px; text-align: center; color: #1e3a5f; font-weight: 600;" disabled>
+                                </div>
+                            </div>
+                            <!-- KP hole winners (shown when KP enabled) -->
+                            <div id="payoutKPHoles" style="display: none; padding: 4px 0 4px 32px;"></div>
+                            
+                            <!-- Custom Categories -->
+                            <div id="payoutCustomCategories" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                            
+                            <!-- Add Custom Category Button -->
+                            <button type="button" onclick="addPayoutCustomCategory()" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 6px; color: #64748b; font-size: 11px; font-weight: 600; cursor: pointer;">＋ Add Custom Category</button>
                         </div>
                         
                         <!-- Allocation Status -->
@@ -4502,8 +4573,8 @@
                             ✓ 100% allocated
                         </div>
                         
-                        <!-- Places Paid for Low Gross / Low Net -->
-                        <div style="display: flex; gap: 12px; margin-bottom: 14px;">
+                        <!-- Places Paid -->
+                        <div style="display: flex; gap: 12px; margin-bottom: 8px;">
                             <div style="flex: 1;">
                                 <label style="font-size: 11px; color: #64748b; display: block; margin-bottom: 4px;">Low Gross Places</label>
                                 <select id="payoutLowGrossPlaces" onchange="updatePayoutTotals()" style="width: 100%; padding: 6px; border: 1.5px solid #e2e8f0; border-radius: 4px; font-size: 12px;">
@@ -4520,6 +4591,28 @@
                                     <option value="1">1st only</option>
                                     <option value="2">Top 2</option>
                                     <option value="3" selected>Top 3</option>
+                                    <option value="4">Top 4</option>
+                                    <option value="5">Top 5</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 12px; margin-bottom: 14px;">
+                            <div style="flex: 1;">
+                                <label style="font-size: 11px; color: #64748b; display: block; margin-bottom: 4px;">Footlong Out Places</label>
+                                <select id="payoutFootlongOutPlaces" onchange="updatePayoutTotals()" style="width: 100%; padding: 6px; border: 1.5px solid #e2e8f0; border-radius: 4px; font-size: 12px;">
+                                    <option value="1" selected>1st only</option>
+                                    <option value="2">Top 2</option>
+                                    <option value="3">Top 3</option>
+                                    <option value="4">Top 4</option>
+                                    <option value="5">Top 5</option>
+                                </select>
+                            </div>
+                            <div style="flex: 1;">
+                                <label style="font-size: 11px; color: #64748b; display: block; margin-bottom: 4px;">Footlong In Places</label>
+                                <select id="payoutFootlongInPlaces" onchange="updatePayoutTotals()" style="width: 100%; padding: 6px; border: 1.5px solid #e2e8f0; border-radius: 4px; font-size: 12px;">
+                                    <option value="1" selected>1st only</option>
+                                    <option value="2">Top 2</option>
+                                    <option value="3">Top 3</option>
                                     <option value="4">Top 4</option>
                                     <option value="5">Top 5</option>
                                 </select>
@@ -28717,6 +28810,11 @@
         let payoutExpanded = false;
         let payoutViewMode = 'net'; // 'net' or 'gross'
         let lastPayoutData = null; // Store last calculation for view toggle
+        let payoutFootlongOutScope = 'net'; // 'gross', 'net', or 'both'
+        let payoutFootlongInScope = 'net';
+        let payoutKPWinners = {}; // { holeNum: 'playerName' }
+        let payoutCustomCategories = []; // [{ id, name, value, enabled, winner }]
+        let payoutCustomCategoryCounter = 0;
         
         function togglePayoutCalculator() {
             payoutExpanded = !payoutExpanded;
@@ -28766,23 +28864,33 @@
             const buyIn = parseFloat(document.getElementById('payoutBuyIn')?.value) || 0;
             const categories = [];
             
-            const mapping = [
+            const allCats = [
                 { id: 'GrossSkins', label: 'Gross Skins' },
                 { id: 'NetSkins', label: 'Net Skins' },
                 { id: 'LowGross', label: 'Low Gross' },
-                { id: 'LowNet', label: 'Low Net' }
+                { id: 'LowNet', label: 'Low Net' },
+                { id: 'FootlongOut', label: 'Footlong (Out)' },
+                { id: 'FootlongIn', label: 'Footlong (In)' },
+                { id: 'KP', label: 'KP' }
             ];
             
-            mapping.forEach(cat => {
+            allCats.forEach(cat => {
                 const checkbox = document.getElementById('payoutEnable' + cat.id);
                 const input = document.getElementById('payout' + cat.id);
                 if (checkbox?.checked && input) {
                     const val = parseFloat(input.value) || 0;
                     if (val > 0) {
-                        const symbol = payoutMode === 'percent' ? '%' : '$';
                         const display = payoutMode === 'percent' ? `${val}%` : `$${val}`;
                         categories.push(`${cat.label} ${display}`);
                     }
+                }
+            });
+            
+            // Custom categories
+            payoutCustomCategories.forEach(cc => {
+                if (cc.enabled && cc.value > 0 && cc.name) {
+                    const display = payoutMode === 'percent' ? `${cc.value}%` : `$${cc.value}`;
+                    categories.push(`${cc.name} ${display}`);
                 }
             });
             
@@ -28826,7 +28934,7 @@
             const playerCount = (tournamentData?.players || []).filter(p => p.scores && p.scores.some(s => s > 0)).length;
             const totalPot = buyIn * playerCount;
             
-            const categories = ['GrossSkins', 'NetSkins', 'LowGross', 'LowNet'];
+            const categories = ['GrossSkins', 'NetSkins', 'LowGross', 'LowNet', 'FootlongOut', 'FootlongIn', 'KP'];
             categories.forEach(cat => {
                 const input = document.getElementById('payout' + cat);
                 const symbol = document.getElementById('payout' + cat + 'Symbol');
@@ -28834,14 +28942,27 @@
                 
                 const val = parseFloat(input.value) || 0;
                 if (mode === 'fixed' && oldMode === 'percent') {
-                    // Convert percentage to dollar amount
                     input.value = totalPot > 0 ? Math.round(totalPot * val / 100) : 0;
                     input.step = '1';
                     if (symbol) symbol.textContent = '$';
                 } else if (mode === 'percent' && oldMode === 'fixed') {
-                    // Convert dollar amount to percentage
                     input.value = totalPot > 0 ? Math.round(val / totalPot * 100) : 0;
                     input.step = '1';
+                    if (symbol) symbol.textContent = '%';
+                }
+            });
+            
+            // Convert custom categories too
+            payoutCustomCategories.forEach(cc => {
+                const input = document.getElementById('payoutCustom_' + cc.id);
+                const symbol = document.getElementById('payoutCustom_' + cc.id + 'Symbol');
+                if (!input) return;
+                const val = parseFloat(input.value) || 0;
+                if (mode === 'fixed' && oldMode === 'percent') {
+                    input.value = totalPot > 0 ? Math.round(totalPot * val / 100) : 0;
+                    if (symbol) symbol.textContent = '$';
+                } else if (mode === 'percent' && oldMode === 'fixed') {
+                    input.value = totalPot > 0 ? Math.round(val / totalPot * 100) : 0;
                     if (symbol) symbol.textContent = '%';
                 }
             });
@@ -28859,16 +28980,15 @@
         
         function applyPayoutPreset(preset) {
             const presets = {
-                even: { GrossSkins: 25, NetSkins: 25, LowGross: 25, LowNet: 25 },
-                skins_heavy: { GrossSkins: 35, NetSkins: 35, LowGross: 15, LowNet: 15 },
-                low_score: { GrossSkins: 10, NetSkins: 10, LowGross: 40, LowNet: 40 },
-                custom: { GrossSkins: 0, NetSkins: 0, LowGross: 0, LowNet: 0 }
+                even: { GrossSkins: 25, NetSkins: 25, LowGross: 25, LowNet: 25, FootlongOut: 0, FootlongIn: 0, KP: 0 },
+                skins_heavy: { GrossSkins: 35, NetSkins: 35, LowGross: 15, LowNet: 15, FootlongOut: 0, FootlongIn: 0, KP: 0 },
+                low_score: { GrossSkins: 10, NetSkins: 10, LowGross: 40, LowNet: 40, FootlongOut: 0, FootlongIn: 0, KP: 0 },
+                custom: { GrossSkins: 0, NetSkins: 0, LowGross: 0, LowNet: 0, FootlongOut: 0, FootlongIn: 0, KP: 0 }
             };
             
             const values = presets[preset];
             if (!values) return;
             
-            // If in fixed mode, switch to percent first
             if (payoutMode === 'fixed') setPayoutMode('percent');
             
             Object.entries(values).forEach(([cat, val]) => {
@@ -28876,9 +28996,43 @@
                 const checkbox = document.getElementById('payoutEnable' + cat);
                 if (input) input.value = val;
                 if (checkbox) checkbox.checked = val > 0;
+                if (input) input.disabled = val <= 0 && checkbox && !checkbox.checked;
+            });
+            
+            // Zero out custom categories on preset
+            payoutCustomCategories.forEach(cc => {
+                const input = document.getElementById('payoutCustom_' + cc.id);
+                if (input) input.value = 0;
+                cc.value = 0;
             });
             
             updatePayoutTotals();
+        }
+        
+        function getAllPayoutCategories() {
+            // Returns array of { key, checkboxId, inputId, symbolId } for all categories including custom
+            const builtIn = [
+                { key: 'GrossSkins', checkboxId: 'payoutEnableGrossSkins', inputId: 'payoutGrossSkins', symbolId: 'payoutGrossSkinsSymbol' },
+                { key: 'NetSkins', checkboxId: 'payoutEnableNetSkins', inputId: 'payoutNetSkins', symbolId: 'payoutNetSkinsSymbol' },
+                { key: 'LowGross', checkboxId: 'payoutEnableLowGross', inputId: 'payoutLowGross', symbolId: 'payoutLowGrossSymbol' },
+                { key: 'LowNet', checkboxId: 'payoutEnableLowNet', inputId: 'payoutLowNet', symbolId: 'payoutLowNetSymbol' },
+                { key: 'FootlongOut', checkboxId: 'payoutEnableFootlongOut', inputId: 'payoutFootlongOut', symbolId: 'payoutFootlongOutSymbol' },
+                { key: 'FootlongIn', checkboxId: 'payoutEnableFootlongIn', inputId: 'payoutFootlongIn', symbolId: 'payoutFootlongInSymbol' },
+                { key: 'KP', checkboxId: 'payoutEnableKP', inputId: 'payoutKP', symbolId: 'payoutKPSymbol' }
+            ];
+            
+            payoutCustomCategories.forEach(cc => {
+                builtIn.push({
+                    key: 'Custom_' + cc.id,
+                    checkboxId: 'payoutEnableCustom_' + cc.id,
+                    inputId: 'payoutCustom_' + cc.id,
+                    symbolId: 'payoutCustom_' + cc.id + 'Symbol',
+                    isCustom: true,
+                    customData: cc
+                });
+            });
+            
+            return builtIn;
         }
         
         function updatePayoutTotals() {
@@ -28886,12 +29040,12 @@
             const playerCount = (tournamentData?.players || []).filter(p => p.scores && p.scores.some(s => s > 0)).length;
             const totalPot = buyIn * playerCount;
             
-            const categories = ['GrossSkins', 'NetSkins', 'LowGross', 'LowNet'];
+            const allCats = getAllPayoutCategories();
             let totalAllocated = 0;
             
-            categories.forEach(cat => {
-                const input = document.getElementById('payout' + cat);
-                const checkbox = document.getElementById('payoutEnable' + cat);
+            allCats.forEach(cat => {
+                const input = document.getElementById(cat.inputId);
+                const checkbox = document.getElementById(cat.checkboxId);
                 if (!input || !checkbox) return;
                 
                 const enabled = checkbox.checked;
@@ -28899,14 +29053,31 @@
                 input.style.opacity = enabled ? '1' : '0.4';
                 
                 if (enabled) {
-                    const val = parseFloat(input.value) || 0;
-                    if (payoutMode === 'percent') {
-                        totalAllocated += val;
-                    } else {
-                        totalAllocated += val;
-                    }
+                    totalAllocated += parseFloat(input.value) || 0;
                 }
             });
+            
+            // Show/hide Footlong options
+            const flOutEnabled = document.getElementById('payoutEnableFootlongOut')?.checked;
+            const flInEnabled = document.getElementById('payoutEnableFootlongIn')?.checked;
+            const flOutOpts = document.getElementById('payoutFootlongOutOptions');
+            const flInOpts = document.getElementById('payoutFootlongInOptions');
+            if (flOutOpts) flOutOpts.style.display = flOutEnabled ? 'block' : 'none';
+            if (flInOpts) flInOpts.style.display = flInEnabled ? 'block' : 'none';
+            
+            // Show/hide KP holes
+            const kpEnabled = document.getElementById('payoutEnableKP')?.checked;
+            const kpHoles = document.getElementById('payoutKPHoles');
+            if (kpHoles) {
+                kpHoles.style.display = kpEnabled ? 'block' : 'none';
+                if (kpEnabled) renderKPHoleSelectors();
+            }
+            
+            // Show/hide skins options based on whether either skins category is enabled
+            const grossSkinsOn = document.getElementById('payoutEnableGrossSkins')?.checked;
+            const netSkinsOn = document.getElementById('payoutEnableNetSkins')?.checked;
+            const skinsOpts = document.getElementById('payoutSkinsOptions');
+            if (skinsOpts) skinsOpts.style.display = (grossSkinsOn || netSkinsOn) ? 'flex' : 'none';
             
             const statusEl = document.getElementById('payoutAllocationStatus');
             const calcBtn = document.getElementById('payoutCalculateBtn');
@@ -28926,7 +29097,6 @@
                     if (calcBtn) calcBtn.style.opacity = '0.5';
                 }
             } else {
-                // Fixed mode
                 if (totalAllocated <= totalPot && totalAllocated > 0) {
                     const remaining = totalPot - totalAllocated;
                     if (remaining < 0.01) {
@@ -28954,6 +29124,101 @@
                     if (calcBtn) calcBtn.style.opacity = '0.5';
                 }
             }
+        }
+        
+        // ===== FOOTLONG SCOPE =====
+        function setFootlongScope(side, scope) {
+            if (side === 'Out') payoutFootlongOutScope = scope;
+            else payoutFootlongInScope = scope;
+            
+            ['Gross', 'Net', 'Both'].forEach(s => {
+                const btn = document.getElementById('payoutFootlong' + side + s.charAt(0).toUpperCase() + s.slice(1));
+                if (!btn) return;
+                const active = s.toLowerCase() === scope;
+                btn.style.background = active ? '#1e3a5f' : 'transparent';
+                btn.style.color = active ? 'white' : '#6b7280';
+            });
+        }
+        
+        // ===== KP HOLE SELECTORS =====
+        function renderKPHoleSelectors() {
+            const container = document.getElementById('payoutKPHoles');
+            if (!container) return;
+            
+            const holes = courseData?.holes || [];
+            const par3Holes = [];
+            holes.forEach((h, i) => { if (h.par === 3) par3Holes.push(i + 1); });
+            
+            if (par3Holes.length === 0) {
+                container.innerHTML = '<div style="font-size: 11px; color: #94a3b8; font-style: italic;">No par 3 holes on this course</div>';
+                return;
+            }
+            
+            const activePlayers = (tournamentData?.players || []).filter(p => p.scores && p.scores.some(s => s > 0));
+            const playerNames = activePlayers.map(p => p.name);
+            
+            let html = '';
+            par3Holes.forEach(holeNum => {
+                const selected = payoutKPWinners[holeNum] || '';
+                html += `<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                    <span style="font-size: 11px; font-weight: 600; color: #475569; min-width: 50px;">Hole ${holeNum}</span>
+                    <select onchange="payoutKPWinners[${holeNum}]=this.value" style="flex: 1; padding: 5px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 11px;">
+                        <option value="">— No winner —</option>
+                        ${playerNames.map(n => `<option value="${n}" ${n === selected ? 'selected' : ''}>${n}</option>`).join('')}
+                    </select>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+        
+        // ===== CUSTOM CATEGORIES =====
+        function addPayoutCustomCategory() {
+            payoutCustomCategoryCounter++;
+            const id = payoutCustomCategoryCounter;
+            const cc = { id, name: '', value: 0, enabled: true, winner: '' };
+            payoutCustomCategories.push(cc);
+            renderPayoutCustomCategories();
+            updatePayoutTotals();
+        }
+        
+        function removePayoutCustomCategory(id) {
+            payoutCustomCategories = payoutCustomCategories.filter(cc => cc.id !== id);
+            renderPayoutCustomCategories();
+            updatePayoutTotals();
+        }
+        
+        function renderPayoutCustomCategories() {
+            const container = document.getElementById('payoutCustomCategories');
+            if (!container) return;
+            
+            const activePlayers = (tournamentData?.players || []).filter(p => p.scores && p.scores.some(s => s > 0));
+            const playerNames = activePlayers.map(p => p.name);
+            const symbol = payoutMode === 'percent' ? '%' : '$';
+            
+            let html = '';
+            payoutCustomCategories.forEach(cc => {
+                html += `<div id="payoutCustomRow_${cc.id}" style="position: relative; overflow: hidden; border-radius: 6px;">
+                    <div style="display: flex; flex-direction: column; gap: 6px; background: #fefce8; border: 1px solid #fde68a; border-radius: 6px; padding: 8px; transition: transform 0.2s;"
+                         ontouchstart="this._startX=event.touches[0].clientX;this._moved=false"
+                         ontouchmove="const dx=event.touches[0].clientX-this._startX;if(dx<-30){this.style.transform='translateX(-70px)';this._moved=true}else if(dx>10){this.style.transform='';this._moved=false}"
+                         ontouchend="if(!this._moved)this.style.transform=''">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <label style="min-width: 24px;"><input type="checkbox" id="payoutEnableCustom_${cc.id}" ${cc.enabled ? 'checked' : ''} onchange="updatePayoutTotals()" style="width: 16px; height: 16px;"></label>
+                            <input type="text" id="payoutCustomName_${cc.id}" value="${cc.name}" placeholder="Category name" oninput="payoutCustomCategories.find(c=>c.id===${cc.id}).name=this.value" style="flex: 1; padding: 4px 6px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 11px; font-weight: 600; color: #1e3a5f;">
+                            <span id="payoutCustom_${cc.id}Symbol" style="font-size: 13px; color: #64748b;">${symbol}</span>
+                            <input type="number" id="payoutCustom_${cc.id}" value="${cc.value}" min="0" step="1" onchange="updatePayoutTotals()" oninput="updatePayoutTotals()" style="width: 60px; padding: 6px; border: 1.5px solid #e2e8f0; border-radius: 4px; font-size: 13px; text-align: center; color: #1e3a5f; font-weight: 600;">
+                        </div>
+                        <div style="padding-left: 32px;">
+                            <select id="payoutCustomWinner_${cc.id}" onchange="payoutCustomCategories.find(c=>c.id===${cc.id}).winner=this.value" style="width: 100%; padding: 5px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 11px;">
+                                <option value="">— Select winner —</option>
+                                ${playerNames.map(n => `<option value="${n}" ${n === cc.winner ? 'selected' : ''}>${n}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+                    <button type="button" onclick="removePayoutCustomCategory(${cc.id})" style="position: absolute; right: 0; top: 0; bottom: 0; width: 70px; background: #ef4444; color: white; border: none; font-size: 12px; font-weight: 600; cursor: pointer;">Delete</button>
+                </div>`;
+            });
+            container.innerHTML = html;
         }
         
         // Get the place payout split ratios
@@ -29151,29 +29416,81 @@
             const isNet = method !== 'gross';
             const numHoles = courseData?.holes?.length || 18;
             const players = tournamentData?.players || [];
+            const parOrBetter = document.getElementById('payoutSkinsParOrBetter')?.checked || false;
+            const carryover = document.getElementById('payoutSkinsCarryover')?.checked || false;
             const skinsByPlayer = {};
             
-            players.forEach((p, idx) => { skinsByPlayer[idx] = { name: p.name, skins: 0, holes: [] }; });
+            players.forEach((p, idx) => { skinsByPlayer[idx] = { name: p.name, skins: 0, holes: [], amount: 0 }; });
+            
+            let carryoverCount = 0; // How many holes have carried over
             
             for (let holeIdx = 0; holeIdx < numHoles; holeIdx++) {
+                const holePar = courseData?.holes?.[holeIdx]?.par || 4;
                 const holeScores = players.map((player, pIdx) => {
                     const gross = player.scores[holeIdx];
-                    if (!gross || gross === 0) return { pIdx, score: 999 };
+                    if (!gross || gross === 0) return { pIdx, score: 999, gross };
                     let score = isNet ? getNetScore(gross, player.handicap, courseData.holes[holeIdx].handicap, hcpMethod) : gross;
-                    return { pIdx, score };
+                    return { pIdx, score, gross };
                 }).filter(s => s.score < 999);
                 
-                if (holeScores.length === 0) continue;
+                if (holeScores.length === 0) {
+                    if (carryover) carryoverCount++;
+                    continue;
+                }
+                
                 const minScore = Math.min(...holeScores.map(s => s.score));
                 const winners = holeScores.filter(s => s.score === minScore);
                 
+                let skinWon = false;
                 if (winners.length === 1) {
-                    skinsByPlayer[winners[0].pIdx].skins++;
-                    skinsByPlayer[winners[0].pIdx].holes.push(holeIdx + 1);
+                    // Check par-or-better rule
+                    if (parOrBetter && minScore > holePar) {
+                        // Score worse than par — no skin
+                        skinWon = false;
+                    } else {
+                        skinWon = true;
+                        const skinsValue = 1 + carryoverCount;
+                        skinsByPlayer[winners[0].pIdx].skins += skinsValue;
+                        skinsByPlayer[winners[0].pIdx].holes.push({ hole: holeIdx + 1, value: skinsValue });
+                        carryoverCount = 0;
+                    }
+                }
+                
+                if (!skinWon && carryover) {
+                    carryoverCount++;
                 }
             }
             
-            return Object.values(skinsByPlayer).filter(p => p.skins > 0).sort((a, b) => b.skins - a.skins);
+            return { 
+                winners: Object.values(skinsByPlayer).filter(p => p.skins > 0).sort((a, b) => b.skins - a.skins),
+                carryoverRemaining: carryoverCount,
+                hasCarryover: carryover
+            };
+        }
+        
+        // Get footlong (half-round) leaderboard
+        function getFootlongLeaderboard(side, method) {
+            const isNet = method !== 'gross';
+            const hcpMethod = 'full';
+            const startHole = side === 'out' ? 0 : 9;
+            const endHole = side === 'out' ? 9 : (courseData?.holes?.length || 18);
+            const players = tournamentData?.players || [];
+            
+            return players.map(player => {
+                let total = 0;
+                let hasScores = false;
+                for (let i = startHole; i < endHole; i++) {
+                    const gross = player.scores[i];
+                    if (!gross || gross === 0) continue;
+                    hasScores = true;
+                    if (isNet) {
+                        total += getNetScore(gross, player.handicap, courseData.holes[i].handicap, hcpMethod);
+                    } else {
+                        total += gross;
+                    }
+                }
+                return { name: player.name, total, player, hasScores };
+            }).filter(p => p.hasScores).sort((a, b) => a.total - b.total);
         }
         
         function calculatePayouts() {
@@ -29186,35 +29503,35 @@
                 return;
             }
             
-            // Get category amounts
-            const categories = ['GrossSkins', 'NetSkins', 'LowGross', 'LowNet'];
+            // Get all category amounts
+            const allCats = getAllPayoutCategories();
             const categoryAmounts = {};
-            
-            categories.forEach(cat => {
-                const input = document.getElementById('payout' + cat);
-                const checkbox = document.getElementById('payoutEnable' + cat);
+            allCats.forEach(cat => {
+                const input = document.getElementById(cat.inputId);
+                const checkbox = document.getElementById(cat.checkboxId);
                 if (!input || !checkbox || !checkbox.checked) {
-                    categoryAmounts[cat] = 0;
+                    categoryAmounts[cat.key] = 0;
                     return;
                 }
                 const val = parseFloat(input.value) || 0;
-                categoryAmounts[cat] = payoutMode === 'percent' ? Math.round(totalPot * val / 100 * 100) / 100 : val;
+                categoryAmounts[cat.key] = payoutMode === 'percent' ? Math.round(totalPot * val / 100 * 100) / 100 : val;
             });
             
-            // Get places paid
+            // Places paid
             const grossPlaces = parseInt(document.getElementById('payoutLowGrossPlaces')?.value) || 1;
             const netPlaces = parseInt(document.getElementById('payoutLowNetPlaces')?.value) || 1;
+            const flOutPlaces = parseInt(document.getElementById('payoutFootlongOutPlaces')?.value) || 1;
+            const flInPlaces = parseInt(document.getElementById('payoutFootlongInPlaces')?.value) || 1;
             
-            // Calculate each category
-            const payouts = {}; // playerName -> { total: 0, details: [] }
+            const payouts = {};
             activePlayers.forEach(p => { payouts[p.name] = { total: 0, details: [] }; });
-            
             const breakdowns = [];
             
-            // Gross Skins
+            // ===== GROSS SKINS =====
             if (categoryAmounts.GrossSkins > 0) {
                 const pot = categoryAmounts.GrossSkins;
-                const winners = getSkinsPayouts('gross');
+                const result = getSkinsPayouts('gross');
+                const winners = result.winners;
                 const totalSkins = winners.reduce((sum, w) => sum + w.skins, 0);
                 const perSkin = totalSkins > 0 ? pot / totalSkins : 0;
                 
@@ -29225,16 +29542,21 @@
                         payouts[w.name].total += amt;
                         payouts[w.name].details.push(`Gross Skins: +$${amt.toFixed(2)}`);
                     }
-                    details.push(`${w.name}: ${w.skins} skin${w.skins > 1 ? 's' : ''} (holes ${w.holes.join(', ')}) → $${amt.toFixed(2)}`);
+                    const holeStr = w.holes.map(h => result.hasCarryover ? `${h.hole}(${h.value})` : h.hole).join(', ');
+                    details.push(`${w.name}: ${w.skins} skin${w.skins > 1 ? 's' : ''} (holes ${holeStr}) → $${amt.toFixed(2)}`);
                 });
                 
-                breakdowns.push({ title: '🏆 Gross Skins', pot, totalSkins, perSkin, details, noWinners: totalSkins === 0 });
+                let extraNote = '';
+                if (result.carryoverRemaining > 0) extraNote = ` (${result.carryoverRemaining} hole${result.carryoverRemaining > 1 ? 's' : ''} carried over — no winner)`;
+                
+                breakdowns.push({ title: '🏆 Gross Skins', pot, totalSkins, perSkin, details, noWinners: totalSkins === 0, extraNote });
             }
             
-            // Net Skins
+            // ===== NET SKINS =====
             if (categoryAmounts.NetSkins > 0) {
                 const pot = categoryAmounts.NetSkins;
-                const winners = getSkinsPayouts('net');
+                const result = getSkinsPayouts('net');
+                const winners = result.winners;
                 const totalSkins = winners.reduce((sum, w) => sum + w.skins, 0);
                 const perSkin = totalSkins > 0 ? pot / totalSkins : 0;
                 
@@ -29245,13 +29567,17 @@
                         payouts[w.name].total += amt;
                         payouts[w.name].details.push(`Net Skins: +$${amt.toFixed(2)}`);
                     }
-                    details.push(`${w.name}: ${w.skins} skin${w.skins > 1 ? 's' : ''} (holes ${w.holes.join(', ')}) → $${amt.toFixed(2)}`);
+                    const holeStr = w.holes.map(h => result.hasCarryover ? `${h.hole}(${h.value})` : h.hole).join(', ');
+                    details.push(`${w.name}: ${w.skins} skin${w.skins > 1 ? 's' : ''} (holes ${holeStr}) → $${amt.toFixed(2)}`);
                 });
                 
-                breakdowns.push({ title: '🎯 Net Skins', pot, totalSkins, perSkin, details, noWinners: totalSkins === 0 });
+                let extraNote = '';
+                if (result.carryoverRemaining > 0) extraNote = ` (${result.carryoverRemaining} hole${result.carryoverRemaining > 1 ? 's' : ''} carried over)`;
+                
+                breakdowns.push({ title: '🎯 Net Skins', pot, totalSkins, perSkin, details, noWinners: totalSkins === 0, extraNote });
             }
             
-            // Low Gross
+            // ===== LOW GROSS =====
             if (categoryAmounts.LowGross > 0) {
                 const pot = categoryAmounts.LowGross;
                 const leaderboard = getPayoutLeaderboard('gross');
@@ -29274,7 +29600,7 @@
                 breakdowns.push({ title: '⛳ Low Gross', pot, details, noWinners: places.length === 0 });
             }
             
-            // Low Net
+            // ===== LOW NET =====
             if (categoryAmounts.LowNet > 0) {
                 const pot = categoryAmounts.LowNet;
                 const leaderboard = getPayoutLeaderboard('net');
@@ -29296,6 +29622,145 @@
                 
                 breakdowns.push({ title: '🎯 Low Net', pot, details, noWinners: places.length === 0 });
             }
+            
+            // ===== FOOTLONG OUT =====
+            if (categoryAmounts.FootlongOut > 0) {
+                const pot = categoryAmounts.FootlongOut;
+                const scope = payoutFootlongOutScope;
+                
+                if (scope === 'both') {
+                    // Split 50/50 between gross and net
+                    const halfPot = pot / 2;
+                    ['gross', 'net'].forEach(m => {
+                        const lb = getFootlongLeaderboard('out', m);
+                        const places = resolvePlaces(lb, flOutPlaces, m);
+                        const label = m === 'gross' ? 'Footlong Out (Gross)' : 'Footlong Out (Net)';
+                        const icon = m === 'gross' ? '🏌️' : '🏌️‍♂️';
+                        const details = [];
+                        places.forEach(p => {
+                            const amt = Math.round(halfPot * p.splitRatio * 100) / 100;
+                            p.players.forEach(player => {
+                                const playerAmt = p.tied ? Math.round(amt * 100) / 100 : amt;
+                                if (payouts[player.name]) { payouts[player.name].total += playerAmt; payouts[player.name].details.push(`${label} ${getPlaceLabel(p.place)}: +$${playerAmt.toFixed(2)}`); }
+                                details.push(`${getPlaceLabel(p.place)}: ${player.name} (${player.total}) → $${playerAmt.toFixed(2)}`);
+                            });
+                        });
+                        breakdowns.push({ title: `${icon} ${label}`, pot: halfPot, details, noWinners: places.length === 0 });
+                    });
+                } else {
+                    const lb = getFootlongLeaderboard('out', scope);
+                    const places = resolvePlaces(lb, flOutPlaces, scope);
+                    const label = 'Footlong Out' + (scope === 'gross' ? ' (Gross)' : ' (Net)');
+                    const details = [];
+                    places.forEach(p => {
+                        const amt = Math.round(pot * p.splitRatio * 100) / 100;
+                        p.players.forEach(player => {
+                            const playerAmt = p.tied ? Math.round(amt * 100) / 100 : amt;
+                            if (payouts[player.name]) { payouts[player.name].total += playerAmt; payouts[player.name].details.push(`${label} ${getPlaceLabel(p.place)}: +$${playerAmt.toFixed(2)}`); }
+                            details.push(`${getPlaceLabel(p.place)}: ${player.name} (${player.total}) → $${playerAmt.toFixed(2)}`);
+                        });
+                    });
+                    breakdowns.push({ title: `🏌️ ${label}`, pot, details, noWinners: places.length === 0 });
+                }
+            }
+            
+            // ===== FOOTLONG IN =====
+            if (categoryAmounts.FootlongIn > 0) {
+                const pot = categoryAmounts.FootlongIn;
+                const scope = payoutFootlongInScope;
+                
+                if (scope === 'both') {
+                    const halfPot = pot / 2;
+                    ['gross', 'net'].forEach(m => {
+                        const lb = getFootlongLeaderboard('in', m);
+                        const places = resolvePlaces(lb, flInPlaces, m);
+                        const label = m === 'gross' ? 'Footlong In (Gross)' : 'Footlong In (Net)';
+                        const details = [];
+                        places.forEach(p => {
+                            const amt = Math.round(halfPot * p.splitRatio * 100) / 100;
+                            p.players.forEach(player => {
+                                const playerAmt = p.tied ? Math.round(amt * 100) / 100 : amt;
+                                if (payouts[player.name]) { payouts[player.name].total += playerAmt; payouts[player.name].details.push(`${label} ${getPlaceLabel(p.place)}: +$${playerAmt.toFixed(2)}`); }
+                                details.push(`${getPlaceLabel(p.place)}: ${player.name} (${player.total}) → $${playerAmt.toFixed(2)}`);
+                            });
+                        });
+                        breakdowns.push({ title: `🏌️ ${label}`, pot: halfPot, details, noWinners: places.length === 0 });
+                    });
+                } else {
+                    const lb = getFootlongLeaderboard('in', scope);
+                    const places = resolvePlaces(lb, flInPlaces, scope);
+                    const label = 'Footlong In' + (scope === 'gross' ? ' (Gross)' : ' (Net)');
+                    const details = [];
+                    places.forEach(p => {
+                        const amt = Math.round(pot * p.splitRatio * 100) / 100;
+                        p.players.forEach(player => {
+                            const playerAmt = p.tied ? Math.round(amt * 100) / 100 : amt;
+                            if (payouts[player.name]) { payouts[player.name].total += playerAmt; payouts[player.name].details.push(`${label} ${getPlaceLabel(p.place)}: +$${playerAmt.toFixed(2)}`); }
+                            details.push(`${getPlaceLabel(p.place)}: ${player.name} (${player.total}) → $${playerAmt.toFixed(2)}`);
+                        });
+                    });
+                    breakdowns.push({ title: `🏌️ ${label}`, pot, details, noWinners: places.length === 0 });
+                }
+            }
+            
+            // ===== KP (CLOSEST TO PIN) =====
+            if (categoryAmounts.KP > 0) {
+                const pot = categoryAmounts.KP;
+                const holes = courseData?.holes || [];
+                const par3Holes = [];
+                holes.forEach((h, i) => { if (h.par === 3) par3Holes.push(i + 1); });
+                
+                // Read latest KP winners from dropdowns
+                par3Holes.forEach(holeNum => {
+                    const sel = document.querySelector(`#payoutKPHoles select[onchange*="${holeNum}"]`);
+                    if (sel && sel.value) payoutKPWinners[holeNum] = sel.value;
+                    else if (!payoutKPWinners[holeNum]) payoutKPWinners[holeNum] = '';
+                });
+                
+                const kpWinnerHoles = par3Holes.filter(h => payoutKPWinners[h] && payoutKPWinners[h] !== '');
+                const perHole = kpWinnerHoles.length > 0 ? pot / kpWinnerHoles.length : 0;
+                
+                const details = [];
+                kpWinnerHoles.forEach(holeNum => {
+                    const winner = payoutKPWinners[holeNum];
+                    const amt = Math.round(perHole * 100) / 100;
+                    if (payouts[winner]) {
+                        payouts[winner].total += amt;
+                        payouts[winner].details.push(`KP Hole ${holeNum}: +$${amt.toFixed(2)}`);
+                    }
+                    details.push(`Hole ${holeNum}: ${winner} → $${amt.toFixed(2)}`);
+                });
+                
+                const unselected = par3Holes.filter(h => !payoutKPWinners[h] || payoutKPWinners[h] === '');
+                if (unselected.length > 0) {
+                    details.push(`(Holes ${unselected.join(', ')} — no winner selected)`);
+                }
+                
+                breakdowns.push({ title: '📍 KP (Closest to Pin)', pot, details, noWinners: kpWinnerHoles.length === 0 });
+            }
+            
+            // ===== CUSTOM CATEGORIES =====
+            payoutCustomCategories.forEach(cc => {
+                const amt = categoryAmounts['Custom_' + cc.id] || 0;
+                if (amt <= 0) return;
+                
+                // Read latest winner from dropdown
+                const sel = document.getElementById('payoutCustomWinner_' + cc.id);
+                if (sel) cc.winner = sel.value;
+                
+                const catName = cc.name || 'Custom';
+                const details = [];
+                
+                if (cc.winner && payouts[cc.winner]) {
+                    payouts[cc.winner].total += amt;
+                    payouts[cc.winner].details.push(`${catName}: +$${amt.toFixed(2)}`);
+                    details.push(`${cc.winner} → $${amt.toFixed(2)}`);
+                } else {
+                    details.push('No winner selected');
+                }
+                
+                breakdowns.push({ title: `🎖️ ${catName}`, pot: amt, details, noWinners: !cc.winner });
+            });
             
             // Render results
             renderPayoutResults(payouts, breakdowns, buyIn, totalPot, activePlayers.length);
@@ -29402,7 +29867,7 @@
                     breakdownHTML += `<div style="font-size: 12px; color: #64748b; font-style: italic;">No winners yet</div>`;
                 } else {
                     if (b.perSkin !== undefined && b.totalSkins > 0) {
-                        breakdownHTML += `<div style="font-size: 11px; color: #64748b; margin-bottom: 6px;">${b.totalSkins} skin${b.totalSkins > 1 ? 's' : ''} won — $${b.perSkin.toFixed(2)} per skin</div>`;
+                        breakdownHTML += `<div style="font-size: 11px; color: #64748b; margin-bottom: 6px;">${b.totalSkins} skin${b.totalSkins > 1 ? 's' : ''} won — $${b.perSkin.toFixed(2)} per skin${b.extraNote || ''}</div>`;
                     }
                     b.details.forEach(d => {
                         breakdownHTML += `<div style="font-size: 12px; color: #475569; padding: 2px 0;">${d}</div>`;
@@ -29423,132 +29888,43 @@
         }
         
         function sharePayoutSummary() {
-            const buyIn = parseFloat(document.getElementById('payoutBuyIn')?.value) || 0;
-            const activePlayers = (tournamentData?.players || []).filter(p => p.scores && p.scores.some(s => s > 0));
-            const totalPot = buyIn * activePlayers.length;
+            if (!lastPayoutData) { showNotification('No Data', 'Calculate payouts first'); return; }
+            
+            const { payouts, breakdowns, buyIn, totalPot, playerCount } = lastPayoutData;
             const tourneyName = tournamentData?.name || 'Golf Tournament';
             const tourneyDate = tournamentData?.date || '';
             
             let text = `💰 ${tourneyName} Payouts\n`;
             if (tourneyDate) text += `📅 ${tourneyDate}\n`;
-            text += `💵 $${buyIn} buy-in × ${activePlayers.length} players = $${totalPot} pot\n\n`;
+            text += `💵 $${buyIn} buy-in × ${playerCount} players = $${totalPot} pot\n\n`;
             
-            // Re-calculate to get data
-            const categories = ['GrossSkins', 'NetSkins', 'LowGross', 'LowNet'];
-            const categoryAmounts = {};
-            categories.forEach(cat => {
-                const input = document.getElementById('payout' + cat);
-                const checkbox = document.getElementById('payoutEnable' + cat);
-                if (!input || !checkbox || !checkbox.checked) { categoryAmounts[cat] = 0; return; }
-                const val = parseFloat(input.value) || 0;
-                categoryAmounts[cat] = payoutMode === 'percent' ? Math.round(totalPot * val / 100 * 100) / 100 : val;
+            // Category breakdowns
+            breakdowns.forEach(b => {
+                if (b.noWinners) return;
+                text += `${b.title} ($${b.pot.toFixed(0)} pot)\n`;
+                if (b.perSkin !== undefined && b.totalSkins > 0) {
+                    text += `  ${b.totalSkins} skin${b.totalSkins > 1 ? 's' : ''} — $${b.perSkin.toFixed(2)}/skin${b.extraNote || ''}\n`;
+                }
+                b.details.forEach(d => { text += `  ${d}\n`; });
+                text += '\n';
             });
-            
-            const grossPlaces = parseInt(document.getElementById('payoutLowGrossPlaces')?.value) || 1;
-            const netPlaces = parseInt(document.getElementById('payoutLowNetPlaces')?.value) || 1;
-            
-            const payouts = {};
-            activePlayers.forEach(p => { payouts[p.name] = { total: 0 }; });
-            
-            // Gross Skins
-            if (categoryAmounts.GrossSkins > 0) {
-                const pot = categoryAmounts.GrossSkins;
-                const winners = getSkinsPayouts('gross');
-                const totalSkins = winners.reduce((sum, w) => sum + w.skins, 0);
-                const perSkin = totalSkins > 0 ? pot / totalSkins : 0;
-                
-                if (totalSkins > 0) {
-                    text += `🏆 Gross Skins ($${pot.toFixed(0)} pot, $${perSkin.toFixed(2)}/skin)\n`;
-                    winners.forEach(w => {
-                        const amt = Math.round(perSkin * w.skins * 100) / 100;
-                        payouts[w.name].total += amt;
-                        text += `  ${w.name}: ${w.skins} skin${w.skins > 1 ? 's' : ''} → $${amt.toFixed(2)}\n`;
-                    });
-                    text += '\n';
-                }
-            }
-            
-            // Net Skins
-            if (categoryAmounts.NetSkins > 0) {
-                const pot = categoryAmounts.NetSkins;
-                const winners = getSkinsPayouts('net');
-                const totalSkins = winners.reduce((sum, w) => sum + w.skins, 0);
-                const perSkin = totalSkins > 0 ? pot / totalSkins : 0;
-                
-                if (totalSkins > 0) {
-                    text += `🎯 Net Skins ($${pot.toFixed(0)} pot, $${perSkin.toFixed(2)}/skin)\n`;
-                    winners.forEach(w => {
-                        const amt = Math.round(perSkin * w.skins * 100) / 100;
-                        payouts[w.name].total += amt;
-                        text += `  ${w.name}: ${w.skins} skin${w.skins > 1 ? 's' : ''} → $${amt.toFixed(2)}\n`;
-                    });
-                    text += '\n';
-                }
-            }
-            
-            // Low Gross
-            if (categoryAmounts.LowGross > 0) {
-                const pot = categoryAmounts.LowGross;
-                const leaderboard = getPayoutLeaderboard('gross');
-                const places = resolvePlaces(leaderboard, grossPlaces, 'gross');
-                
-                if (places.length > 0) {
-                    text += `⛳ Low Gross ($${pot.toFixed(0)} pot)\n`;
-                    places.forEach(p => {
-                        const amt = Math.round(pot * p.splitRatio * 100) / 100;
-                        p.players.forEach(player => {
-                            payouts[player.name].total += amt;
-                            const tieNote = p.tied ? ' (split)' : p.tiebreakerUsed ? ' (TB)' : '';
-                            text += `  ${getPlaceLabel(p.place)}${tieNote}: ${player.name} (${player.total}) → $${amt.toFixed(2)}\n`;
-                        });
-                    });
-                    text += '\n';
-                }
-            }
-            
-            // Low Net
-            if (categoryAmounts.LowNet > 0) {
-                const pot = categoryAmounts.LowNet;
-                const leaderboard = getPayoutLeaderboard('net');
-                const places = resolvePlaces(leaderboard, netPlaces, 'net');
-                
-                if (places.length > 0) {
-                    text += `🎯 Low Net ($${pot.toFixed(0)} pot)\n`;
-                    places.forEach(p => {
-                        const amt = Math.round(pot * p.splitRatio * 100) / 100;
-                        p.players.forEach(player => {
-                            payouts[player.name].total += amt;
-                            const tieNote = p.tied ? ' (split)' : p.tiebreakerUsed ? ' (TB)' : '';
-                            text += `  ${getPlaceLabel(p.place)}${tieNote}: ${player.name} (${player.total}) → $${amt.toFixed(2)}\n`;
-                        });
-                    });
-                    text += '\n';
-                }
-            }
             
             // Summary based on current view mode
             if (payoutViewMode === 'gross') {
                 text += `📊 Gross Winnings:\n`;
-                const grossResults = Object.entries(payouts).map(([name, data]) => ({
-                    name, won: data.total
-                })).sort((a, b) => b.won - a.won);
-                
-                grossResults.forEach(r => {
-                    text += `  ${r.name}: $${r.won.toFixed(2)}\n`;
-                });
+                Object.entries(payouts).map(([name, data]) => ({ name, won: data.total }))
+                    .sort((a, b) => b.won - a.won)
+                    .forEach(r => { text += `  ${r.name}: $${r.won.toFixed(2)}\n`; });
             } else {
                 text += `📊 Net Results:\n`;
-                const netResults = Object.entries(payouts).map(([name, data]) => ({
-                    name, net: data.total - buyIn
-                })).sort((a, b) => b.net - a.net);
-                
-                netResults.forEach(r => {
-                    const sign = r.net > 0 ? '+' : '';
-                    text += `  ${r.name}: ${sign}$${r.net.toFixed(2)}\n`;
-                });
+                Object.entries(payouts).map(([name, data]) => ({ name, net: data.total - buyIn }))
+                    .sort((a, b) => b.net - a.net)
+                    .forEach(r => {
+                        const sign = r.net > 0 ? '+' : '';
+                        text += `  ${r.name}: ${sign}$${r.net.toFixed(2)}\n`;
+                    });
             }
             
-            // Copy to clipboard
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(text).then(() => {
                     showNotification('Copied!', 'Payout summary copied to clipboard');
@@ -29560,6 +29936,27 @@
         
         // Build payout config object from current form state
         function buildPayoutConfig() {
+            // Read KP winners from dropdowns
+            const holes = courseData?.holes || [];
+            const par3Holes = [];
+            holes.forEach((h, i) => { if (h.par === 3) par3Holes.push(i + 1); });
+            par3Holes.forEach(holeNum => {
+                const sel = document.querySelector(`#payoutKPHoles select[onchange*="${holeNum}"]`);
+                if (sel) payoutKPWinners[holeNum] = sel.value || '';
+            });
+            
+            // Read custom category values
+            payoutCustomCategories.forEach(cc => {
+                const input = document.getElementById('payoutCustom_' + cc.id);
+                const nameInput = document.getElementById('payoutCustomName_' + cc.id);
+                const winnerSel = document.getElementById('payoutCustomWinner_' + cc.id);
+                const checkbox = document.getElementById('payoutEnableCustom_' + cc.id);
+                if (input) cc.value = parseFloat(input.value) || 0;
+                if (nameInput) cc.name = nameInput.value;
+                if (winnerSel) cc.winner = winnerSel.value;
+                if (checkbox) cc.enabled = checkbox.checked;
+            });
+            
             return {
                 buyIn: parseFloat(document.getElementById('payoutBuyIn')?.value) || 20,
                 mode: payoutMode,
@@ -29568,8 +29965,16 @@
                 netSkins: { enabled: document.getElementById('payoutEnableNetSkins')?.checked !== false, value: parseFloat(document.getElementById('payoutNetSkins')?.value) || 0 },
                 lowGross: { enabled: document.getElementById('payoutEnableLowGross')?.checked !== false, value: parseFloat(document.getElementById('payoutLowGross')?.value) || 0 },
                 lowNet: { enabled: document.getElementById('payoutEnableLowNet')?.checked !== false, value: parseFloat(document.getElementById('payoutLowNet')?.value) || 0 },
+                footlongOut: { enabled: document.getElementById('payoutEnableFootlongOut')?.checked || false, value: parseFloat(document.getElementById('payoutFootlongOut')?.value) || 0, scope: payoutFootlongOutScope },
+                footlongIn: { enabled: document.getElementById('payoutEnableFootlongIn')?.checked || false, value: parseFloat(document.getElementById('payoutFootlongIn')?.value) || 0, scope: payoutFootlongInScope },
+                kp: { enabled: document.getElementById('payoutEnableKP')?.checked || false, value: parseFloat(document.getElementById('payoutKP')?.value) || 0, winners: { ...payoutKPWinners } },
+                skinsParOrBetter: document.getElementById('payoutSkinsParOrBetter')?.checked || false,
+                skinsCarryover: document.getElementById('payoutSkinsCarryover')?.checked || false,
                 lowGrossPlaces: parseInt(document.getElementById('payoutLowGrossPlaces')?.value) || 3,
                 lowNetPlaces: parseInt(document.getElementById('payoutLowNetPlaces')?.value) || 3,
+                footlongOutPlaces: parseInt(document.getElementById('payoutFootlongOutPlaces')?.value) || 1,
+                footlongInPlaces: parseInt(document.getElementById('payoutFootlongInPlaces')?.value) || 1,
+                customCategories: payoutCustomCategories.map(cc => ({ id: cc.id, name: cc.name, value: cc.value, enabled: cc.enabled, winner: cc.winner })),
                 updatedAt: Date.now()
             };
         }
@@ -29584,6 +29989,7 @@
             if (config.mode) setPayoutMode(config.mode);
             if (config.tieRule) setPayoutTieRule(config.tieRule);
             
+            // Standard 4 categories
             const mapping = { grossSkins: 'GrossSkins', netSkins: 'NetSkins', lowGross: 'LowGross', lowNet: 'LowNet' };
             Object.entries(mapping).forEach(([key, id]) => {
                 if (config[key]) {
@@ -29594,10 +30000,59 @@
                 }
             });
             
+            // Footlong Out/In
+            if (config.footlongOut) {
+                const cb = document.getElementById('payoutEnableFootlongOut');
+                const inp = document.getElementById('payoutFootlongOut');
+                if (cb) cb.checked = config.footlongOut.enabled || false;
+                if (inp) inp.value = config.footlongOut.value || 0;
+                if (config.footlongOut.scope) {
+                    payoutFootlongOutScope = config.footlongOut.scope;
+                    setFootlongScope('Out', config.footlongOut.scope);
+                }
+            }
+            if (config.footlongIn) {
+                const cb = document.getElementById('payoutEnableFootlongIn');
+                const inp = document.getElementById('payoutFootlongIn');
+                if (cb) cb.checked = config.footlongIn.enabled || false;
+                if (inp) inp.value = config.footlongIn.value || 0;
+                if (config.footlongIn.scope) {
+                    payoutFootlongInScope = config.footlongIn.scope;
+                    setFootlongScope('In', config.footlongIn.scope);
+                }
+            }
+            
+            // KP
+            if (config.kp) {
+                const cb = document.getElementById('payoutEnableKP');
+                const inp = document.getElementById('payoutKP');
+                if (cb) cb.checked = config.kp.enabled || false;
+                if (inp) inp.value = config.kp.value || 0;
+                if (config.kp.winners) payoutKPWinners = { ...config.kp.winners };
+            }
+            
+            // Skins options
+            const parOrBetterEl = document.getElementById('payoutSkinsParOrBetter');
+            const carryoverEl = document.getElementById('payoutSkinsCarryover');
+            if (parOrBetterEl) parOrBetterEl.checked = config.skinsParOrBetter || false;
+            if (carryoverEl) carryoverEl.checked = config.skinsCarryover || false;
+            
+            // Places
             const grossPlacesEl = document.getElementById('payoutLowGrossPlaces');
             const netPlacesEl = document.getElementById('payoutLowNetPlaces');
+            const flOutPlacesEl = document.getElementById('payoutFootlongOutPlaces');
+            const flInPlacesEl = document.getElementById('payoutFootlongInPlaces');
             if (grossPlacesEl && config.lowGrossPlaces) grossPlacesEl.value = config.lowGrossPlaces;
             if (netPlacesEl && config.lowNetPlaces) netPlacesEl.value = config.lowNetPlaces;
+            if (flOutPlacesEl && config.footlongOutPlaces) flOutPlacesEl.value = config.footlongOutPlaces;
+            if (flInPlacesEl && config.footlongInPlaces) flInPlacesEl.value = config.footlongInPlaces;
+            
+            // Custom categories
+            if (config.customCategories && config.customCategories.length > 0) {
+                payoutCustomCategories = config.customCategories.map(cc => ({ ...cc }));
+                payoutCustomCategoryCounter = Math.max(payoutCustomCategoryCounter, ...payoutCustomCategories.map(cc => cc.id));
+                renderPayoutCustomCategories();
+            }
             
             updatePayoutPot();
         }
@@ -29653,13 +30108,13 @@
             const buyIn = parseFloat(document.getElementById('payoutBuyIn')?.value) || 0;
             if (buyIn <= 0) return;
             
-            // Validate allocation
-            const categories = ['GrossSkins', 'NetSkins', 'LowGross', 'LowNet'];
+            // Validate allocation using all categories
+            const allCats = getAllPayoutCategories();
             let totalAllocated = 0;
             let anyEnabled = false;
-            categories.forEach(cat => {
-                const checkbox = document.getElementById('payoutEnable' + cat);
-                const input = document.getElementById('payout' + cat);
+            allCats.forEach(cat => {
+                const checkbox = document.getElementById(cat.checkboxId);
+                const input = document.getElementById(cat.inputId);
                 if (checkbox?.checked && input) {
                     totalAllocated += parseFloat(input.value) || 0;
                     anyEnabled = true;
