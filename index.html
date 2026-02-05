@@ -10971,7 +10971,6 @@
             userSet('golf_recent_courses', JSON.stringify(recentCourses));
             updateRecentsDropdown();
         }
-        }
         
         // Select a built-in or custom course (no API call needed)
         function selectBuiltinCourse(courseKey) {
@@ -10993,7 +10992,6 @@
             updateCourse();
             
             showNotification('Course Selected', `${course.name}`);
-        }
         }
         
         // Select a searched course
