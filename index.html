@@ -3696,7 +3696,8 @@
                 <div style="display: flex; gap: 8px; align-items: center;">
                     <select id="courseSelect" onchange="updateCourse()" style="flex: 1;">
                         <option value="" selected>Select a Course</option>
-                        <optgroup label="⭐ Favorites" id="favoritesOptgroup"></optgroup>
+                        <optgroup label="⭐ Favorites" id="favoritesOptgroup" style="display: none;"></optgroup>
+                        <optgroup label="🕐 Recent" id="recentsOptgroup" style="display: none;"></optgroup>
                         <optgroup label="➕ Find Course">
                             <option value="search_course">🔍 Search for a Course...</option>
                             <option value="custom_course">✏️ Add Custom Course...</option>
@@ -7915,7 +7916,7 @@
             'golfIdentity', 'linkedPlayers', 'statsHistory', 'statsTrackerConfig', 'playerStats',
             'tournamentHistory', 'savedTournaments', 'activeTournamentId', 'currentTournamentId',
             'savedRosters', 'clubRoster',
-            'courseNotes', 'golf_custom_courses', 'golf_favorite_courses', 'letsgolf_custom_courses',
+            'courseNotes', 'golf_custom_courses', 'golf_favorite_courses', 'golf_recent_courses', 'letsgolf_custom_courses',
             'currentIHMCEvent', 'indianHillsScoring', 'indianHillsPlayerHistory',
             'watchedPlayerNotificationsMuted', 'playerOrder', '_lastLocalSaveTime', 'letsgolf_data'
         ]);
@@ -7989,10 +7990,11 @@
         function reloadUserScopedData() {
             try {
                 favoriteCourses = JSON.parse(userGet('golf_favorite_courses') || '[]');
+                recentCourses = JSON.parse(userGet('golf_recent_courses') || '[]');
                 customCourses = JSON.parse(userGet('golf_custom_courses') || '{}');
-                console.log('🔑 Reloaded user-scoped data:', favoriteCourses.length, 'favorites,', Object.keys(customCourses).length, 'custom courses');
-                // Update the favorites dropdown with the reloaded data
-                updateFavoritesDropdown();
+                console.log('🔑 Reloaded user-scoped data:', favoriteCourses.length, 'favorites,', recentCourses.length, 'recents,', Object.keys(customCourses).length, 'custom courses');
+                // Update the course dropdown with the reloaded data
+                updateCourseDropdown();
             } catch(e) {
                 console.warn('Failed to reload user-scoped data:', e);
             }
@@ -8288,8 +8290,12 @@
             }
         };
         
-        // Favorite courses stored in localStorage
+        // Favorite courses stored in localStorage (user-starred, persistent)
         let favoriteCourses = JSON.parse(userGet('golf_favorite_courses') || '[]');
+        
+        // Recent courses (auto-managed, last 5 used, not starred)
+        let recentCourses = JSON.parse(userGet('golf_recent_courses') || '[]');
+        const MAX_RECENT_COURSES = 5;
         
         // Custom courses added by users (also stored in localStorage)
         let customCourses = JSON.parse(userGet('golf_custom_courses') || '{}');
@@ -9481,6 +9487,59 @@
         }
 
         // Update course when selection changes
+        // Helper to handle course selection by ID (used for both fav_ and rec_ prefixes)
+        function handleCourseIdSelection(courseId, teeSection) {
+            // First check if this is a built-in course
+            if (courses[courseId]) {
+                courseData = courses[courseId];
+                if (courseData && courseData.tees) {
+                    teeSection.style.display = 'block';
+                    renderTeeButtons(courseId);
+                }
+                updateFavoriteButton();
+                return;
+            }
+            
+            // Check if it's a custom course
+            if (customCourses[courseId]) {
+                courseData = customCourses[courseId];
+                if (courseData && courseData.tees) {
+                    teeSection.style.display = 'block';
+                    renderTeeButtons(courseId);
+                }
+                updateFavoriteButton();
+                return;
+            }
+            
+            // Check if we already have this course loaded as API course
+            const apiKey = 'api_' + courseId;
+            if (customCourses[apiKey]) {
+                courseData = customCourses[apiKey];
+                if (courseData && courseData.tees) {
+                    teeSection.style.display = 'block';
+                    renderTeeButtons(apiKey);
+                }
+                updateFavoriteButton();
+                return;
+            }
+            
+            // Check favorites array for API course info to fetch
+            const favorite = favoriteCourses.find(f => String(f.id) === courseId);
+            if (favorite) {
+                showNotification('Loading...', `Fetching ${favorite.name} data`);
+                selectSearchedCourse(courseId);
+                return;
+            }
+            
+            // Check recents array for API course info to fetch
+            const recent = recentCourses.find(r => String(r.id) === courseId);
+            if (recent) {
+                showNotification('Loading...', `Fetching ${recent.name} data`);
+                selectSearchedCourse(courseId);
+                return;
+            }
+        }
+        
         function updateCourse() {
             const selectedCourse = document.getElementById('courseSelect').value;
             const teeSection = document.getElementById('teeSelectionSection');
@@ -9501,48 +9560,14 @@
             // Handle favorite course selection (fav_xxx format)
             if (selectedCourse && selectedCourse.startsWith('fav_')) {
                 const favId = selectedCourse.replace('fav_', '');
-                
-                // First check if this is a built-in course (even if not in favorites list)
-                if (courses[favId]) {
-                    courseData = courses[favId];
-                    if (courseData && courseData.tees) {
-                        teeSection.style.display = 'block';
-                        renderTeeButtons(favId);
-                    }
-                    updateFavoriteButton();
-                    return;
-                }
-                
-                // Check if it's a custom course
-                if (customCourses[favId]) {
-                    courseData = customCourses[favId];
-                    if (courseData && courseData.tees) {
-                        teeSection.style.display = 'block';
-                        renderTeeButtons(favId);
-                    }
-                    updateFavoriteButton();
-                    return;
-                }
-                
-                // Check if we already have this course loaded as API course
-                const apiKey = 'api_' + favId;
-                if (customCourses[apiKey]) {
-                    courseData = customCourses[apiKey];
-                    if (courseData && courseData.tees) {
-                        teeSection.style.display = 'block';
-                        renderTeeButtons(apiKey);
-                    }
-                    updateFavoriteButton();
-                    return;
-                }
-                
-                // Check favorites array for API course info
-                const favorite = favoriteCourses.find(f => String(f.id) === favId);
-                if (favorite) {
-                    // Need to fetch from API
-                    showNotification('Loading...', `Fetching ${favorite.name} data`);
-                    selectSearchedCourse(favId);
-                }
+                handleCourseIdSelection(favId, teeSection);
+                return;
+            }
+            
+            // Handle recent course selection (rec_xxx format)
+            if (selectedCourse && selectedCourse.startsWith('rec_')) {
+                const recId = selectedCourse.replace('rec_', '');
+                handleCourseIdSelection(recId, teeSection);
                 return;
             }
             
@@ -10743,27 +10768,33 @@
                 return;
             }
             
-            // Get course info
+            // Get course info - strip fav_ or rec_ prefix if present
             let courseId, courseName, city, state;
+            let rawId = selectedValue;
+            if (selectedValue.startsWith('fav_')) {
+                rawId = selectedValue.replace('fav_', '');
+            } else if (selectedValue.startsWith('rec_')) {
+                rawId = selectedValue.replace('rec_', '');
+            }
             
-            if (selectedValue.startsWith('api_')) {
+            if (rawId.startsWith('api_')) {
                 // API course
-                courseId = selectedValue.replace('api_', '');
-                const course = customCourses[selectedValue];
+                courseId = rawId;
+                const course = customCourses[rawId];
                 courseName = course?.name || 'Unknown';
                 city = course?.city || '';
                 state = course?.state || '';
-            } else if (selectedValue.startsWith('custom_')) {
+            } else if (rawId.startsWith('custom_') || rawId.startsWith('manual_')) {
                 // Custom course
-                courseId = selectedValue;
-                const course = customCourses[selectedValue];
+                courseId = rawId;
+                const course = customCourses[rawId];
                 courseName = course?.name || 'Unknown';
                 city = course?.city || '';
                 state = course?.state || '';
             } else {
                 // Built-in course
-                courseId = selectedValue;
-                const course = courses[selectedValue];
+                courseId = rawId;
+                const course = courses[rawId];
                 courseName = course?.name || 'Unknown';
                 city = course?.city || '';
                 state = course?.state || '';
@@ -10773,15 +10804,24 @@
             const index = favoriteCourses.findIndex(f => String(f.id) === String(courseId));
             
             if (index >= 0) {
+                // Removing from favorites - add back to recents
                 favoriteCourses.splice(index, 1);
-                showNotification('Removed', `${courseName} removed from favorites`);
+                addToRecentCourses(courseId, courseName, city, state);
+                showNotification('Unfavorited', `${courseName} moved to recents`);
+                // Update select to use rec_ prefix
+                select.value = `rec_${courseId}`;
             } else {
+                // Adding to favorites - remove from recents
+                recentCourses = recentCourses.filter(r => String(r.id) !== String(courseId));
+                userSet('golf_recent_courses', JSON.stringify(recentCourses));
                 favoriteCourses.push({ id: courseId, name: courseName, city, state });
                 showNotification('Favorited ⭐', `${courseName} added to favorites`);
+                // Update select to use fav_ prefix
+                select.value = `fav_${courseId}`;
             }
             
             userSet('golf_favorite_courses', JSON.stringify(favoriteCourses));
-            updateFavoritesDropdown();
+            updateCourseDropdown();
             updateFavoriteButton();
         }
         
@@ -10795,7 +10835,7 @@
             if (!btn) return;
             
             // Hide for special options or no selection
-            if (!selectedValue || selectedValue === 'search_course' || selectedValue === 'custom_course' || selectedValue.startsWith('fav_')) {
+            if (!selectedValue || selectedValue === 'search_course' || selectedValue === 'custom_course') {
                 btn.style.display = 'none';
                 if (editBtn) editBtn.style.display = 'none';
                 return;
@@ -10805,21 +10845,25 @@
             btn.style.alignItems = 'center';
             btn.style.justifyContent = 'center';
             
+            // Strip prefix to get raw course ID
+            let rawId = selectedValue;
+            if (selectedValue.startsWith('fav_')) {
+                rawId = selectedValue.replace('fav_', '');
+            } else if (selectedValue.startsWith('rec_')) {
+                rawId = selectedValue.replace('rec_', '');
+            }
+            
             // Show edit button only for custom/manual courses
             if (editBtn) {
-                const isCustomCourse = customCourses[selectedValue] && customCourses[selectedValue].isManual;
+                const courseToCheck = customCourses[rawId];
+                const isCustomCourse = courseToCheck && courseToCheck.isManual;
                 editBtn.style.display = isCustomCourse ? 'flex' : 'none';
                 editBtn.style.alignItems = 'center';
                 editBtn.style.justifyContent = 'center';
             }
             
-            // Check if current course is favorited
-            let courseId = selectedValue;
-            if (selectedValue.startsWith('api_')) {
-                courseId = selectedValue.replace('api_', '');
-            }
-            
-            const isFavorite = favoriteCourses.some(f => String(f.id) === String(courseId));
+            // Check if current course is favorited (using raw ID without prefix)
+            const isFavorite = favoriteCourses.some(f => String(f.id) === String(rawId));
             btn.textContent = isFavorite ? '⭐' : '☆';
             btn.style.borderColor = isFavorite ? '#fbbf24' : '#e2e8f0';
             btn.style.background = isFavorite ? '#fef3c7' : 'white';
@@ -10865,6 +10909,11 @@
         }
         
         // Update favorites in dropdown
+        function updateCourseDropdown() {
+            updateFavoritesDropdown();
+            updateRecentsDropdown();
+        }
+        
         function updateFavoritesDropdown() {
             const optgroup = document.getElementById('favoritesOptgroup');
             if (!optgroup) return;
@@ -10872,20 +10921,56 @@
             if (favoriteCourses.length === 0) {
                 optgroup.style.display = 'none';
                 optgroup.innerHTML = '';
-                // Show hint
-                const hint = document.getElementById('noFavoritesHint');
-                if (hint) hint.style.display = 'block';
                 return;
             }
-            
-            // Hide hint
-            const hint = document.getElementById('noFavoritesHint');
-            if (hint) hint.style.display = 'none';
             
             optgroup.style.display = 'block';
             optgroup.innerHTML = favoriteCourses.map(fav => 
                 `<option value="fav_${fav.id}">${fav.name}</option>`
             ).join('');
+        }
+        
+        function updateRecentsDropdown() {
+            const optgroup = document.getElementById('recentsOptgroup');
+            if (!optgroup) return;
+            
+            // Filter out any courses that are already in favorites (no duplicates)
+            const favIds = new Set(favoriteCourses.map(f => String(f.id)));
+            const filteredRecents = recentCourses.filter(r => !favIds.has(String(r.id)));
+            
+            if (filteredRecents.length === 0) {
+                optgroup.style.display = 'none';
+                optgroup.innerHTML = '';
+                return;
+            }
+            
+            optgroup.style.display = 'block';
+            optgroup.innerHTML = filteredRecents.map(rec => 
+                `<option value="rec_${rec.id}">${rec.name}</option>`
+            ).join('');
+        }
+        
+        // Add a course to recents (auto-managed, capped at MAX_RECENT_COURSES)
+        function addToRecentCourses(courseId, courseName, city, state) {
+            // Don't add if it's already a favorite
+            if (favoriteCourses.some(f => String(f.id) === String(courseId))) {
+                return;
+            }
+            
+            // Remove if already in recents (will re-add at front)
+            recentCourses = recentCourses.filter(r => String(r.id) !== String(courseId));
+            
+            // Add to front
+            recentCourses.unshift({ id: courseId, name: courseName, city: city || '', state: state || '' });
+            
+            // Cap at MAX_RECENT_COURSES
+            if (recentCourses.length > MAX_RECENT_COURSES) {
+                recentCourses = recentCourses.slice(0, MAX_RECENT_COURSES);
+            }
+            
+            userSet('golf_recent_courses', JSON.stringify(recentCourses));
+            updateRecentsDropdown();
+        }
         }
         
         // Select a built-in or custom course (no API call needed)
@@ -10898,23 +10983,17 @@
                 return;
             }
             
-            // Add to favorites if not already
-            if (!favoriteCourses.some(f => String(f.id) === String(courseKey))) {
-                favoriteCourses.push({ id: courseKey, name: course.name, city: course.city || '', state: course.state || '' });
-                userSet('golf_favorite_courses', JSON.stringify(favoriteCourses));
-                updateFavoritesDropdown();
-            }
+            // Add to recents (not favorites - user must star to favorite)
+            addToRecentCourses(courseKey, course.name, course.city || '', course.state || '');
             
-            // Hide hint
-            const hint = document.getElementById('noFavoritesHint');
-            if (hint) hint.style.display = 'none';
-            
-            // Select using the fav_ prefix to match dropdown options
-            select.value = `fav_${courseKey}`;
+            // Select using the rec_ prefix (or fav_ if it's a favorite)
+            const isFavorite = favoriteCourses.some(f => String(f.id) === String(courseKey));
+            select.value = isFavorite ? `fav_${courseKey}` : `rec_${courseKey}`;
             closeCourseSearchModal();
             updateCourse();
             
             showNotification('Course Selected', `${course.name}`);
+        }
         }
         
         // Select a searched course
@@ -11025,30 +11104,12 @@
                 customCourses[courseKey] = convertedCourse;
                 userSet('golf_custom_courses', JSON.stringify(customCourses));
                 
-                // Add option to dropdown and select it
-                const select = document.getElementById('courseSelect');
-                const existingOption = select.querySelector(`option[value="${courseKey}"]`);
-                if (!existingOption) {
-                    const option = document.createElement('option');
-                    option.value = courseKey;
-                    option.textContent = convertedCourse.name;
-                    // Add to Favorites optgroup
-                    const favOptgroup = select.querySelector('#favoritesOptgroup');
-                    if (favOptgroup) {
-                        favOptgroup.style.display = 'block';
-                        favOptgroup.appendChild(option);
-                    }
-                    // Also add to favoriteCourses
-                    if (!favoriteCourses.some(f => f.id === courseKey)) {
-                        favoriteCourses.push({ id: courseKey, name: convertedCourse.name, city: convertedCourse.city, state: convertedCourse.state });
-                        userSet('golf_favorite_courses', JSON.stringify(favoriteCourses));
-                    }
-                    // Hide hint
-                    const hint = document.getElementById('noFavoritesHint');
-                    if (hint) hint.style.display = 'none';
-                }
+                // Add to recents (not favorites - user must star to favorite)
+                addToRecentCourses(courseKey, convertedCourse.name, convertedCourse.city, convertedCourse.state);
                 
-                select.value = courseKey;
+                // Select the course - use rec_ prefix since it's in recents now
+                const select = document.getElementById('courseSelect');
+                select.value = `rec_${courseKey}`;
                 closeCourseSearchModal();
                 updateCourse();
                 
@@ -11178,57 +11239,21 @@
             customCourses[courseKey] = customCourse;
             userSet('golf_custom_courses', JSON.stringify(customCourses));
             
-            // Add to dropdown and favorites
+            // Add to recents (user can star to favorite)
+            addToRecentCourses(courseKey, name, '', '');
+            
+            // Select the course
             const select = document.getElementById('courseSelect');
-            const option = document.createElement('option');
-            option.value = courseKey;
-            option.textContent = name;
-            
-            // Add to Favorites optgroup
-            const favOptgroup = select.querySelector('#favoritesOptgroup');
-            if (favOptgroup) {
-                favOptgroup.style.display = 'block';
-                favOptgroup.appendChild(option);
-            }
-            
-            // Also add to favoriteCourses
-            if (!favoriteCourses.some(f => f.id === courseKey)) {
-                favoriteCourses.push({ id: courseKey, name: name, city: '', state: '' });
-                userSet('golf_favorite_courses', JSON.stringify(favoriteCourses));
-            }
-            
-            // Hide hint
-            const hint = document.getElementById('noFavoritesHint');
-            if (hint) hint.style.display = 'none';
-            
-            select.value = courseKey;
+            select.value = `rec_${courseKey}`;
             closeCustomCourseModal();
             updateCourse();
             
             showNotification('Course Added', `${name} is ready to use`);
         }
         
-        // Initialize favorites dropdown on page load
+        // Initialize course dropdown on page load
         function initializeCourseDropdown() {
-            updateFavoritesDropdown();
-            
-            // Add custom courses to Favorites optgroup
-            const select = document.getElementById('courseSelect');
-            const favOptgroup = select.querySelector('#favoritesOptgroup');
-            
-            Object.keys(customCourses).forEach(key => {
-                const course = customCourses[key];
-                // Check if already in favorites
-                if (!favoriteCourses.some(f => f.id === key)) {
-                    const option = document.createElement('option');
-                    option.value = key;
-                    option.textContent = course.name;
-                    if (favOptgroup) {
-                        favOptgroup.style.display = 'block';
-                        favOptgroup.appendChild(option);
-                    }
-                }
-            });
+            updateCourseDropdown();
         }
 
         // Handle game type changes to show/hide team setup
@@ -32365,7 +32390,8 @@
                     if (isFirebaseIdCheck && tournamentMode !== 'multi') {
                         console.log('🔧 AUTO-FIX: Detected Firebase tournament ID, forcing multi-device mode');
                         tournamentMode = 'multi';
-                        isHost = true;
+                        // NOTE: Do NOT force isHost=true here - that would give everyone host powers
+                        // Host status is correctly restored from _isHost + _hostForTournament above
                     }
                     
                     hasJoinedTournament = data._hasJoinedTournament || false;
