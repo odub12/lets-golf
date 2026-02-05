@@ -4406,7 +4406,12 @@
                 </div>
                 
                 <div id="payoutCalculatorBody" style="display: none; padding: 16px;">
-                    <!-- Setup Section -->
+                    <!-- Read-only config summary for non-hosts -->
+                    <div id="payoutReadOnlySummary" style="display: none; padding: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 12px; font-size: 12px; color: #475569; text-align: center;">
+                        <!-- Populated dynamically -->
+                    </div>
+                    
+                    <!-- Setup Section (host/co-host only) -->
                     <div id="payoutSetupSection">
                         <!-- Buy-in Row -->
                         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
@@ -4538,6 +4543,14 @@
                     
                     <!-- Results Section (hidden until calculated) -->
                     <div id="payoutResultsSection" style="display: none;">
+                        <!-- Gross/Net Payout Toggle -->
+                        <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 12px;">
+                            <div style="display: flex; background: #e5e7eb; border-radius: 6px; padding: 2px;">
+                                <button type="button" id="payoutViewNet" onclick="setPayoutView('net')" style="padding: 6px 16px; font-size: 11px; font-weight: 600; border-radius: 4px; border: none; background: #1e3a5f; color: white; cursor: pointer;">Net (+/-)</button>
+                                <button type="button" id="payoutViewGross" onclick="setPayoutView('gross')" style="padding: 6px 16px; font-size: 11px; font-weight: 600; border-radius: 4px; border: none; background: transparent; color: #6b7280; cursor: pointer;">Gross (Winnings)</button>
+                            </div>
+                        </div>
+                        
                         <!-- Net summary (who owes/collects) -->
                         <div id="payoutNetSummary" style="margin-bottom: 16px;"></div>
                         
@@ -4547,7 +4560,7 @@
                         <!-- Action buttons -->
                         <div style="display: flex; gap: 8px;">
                             <button type="button" onclick="sharePayoutSummary()" style="flex: 1; padding: 10px; background: #1e3a5f; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">📋 Copy Summary</button>
-                            <button type="button" onclick="showPayoutSetup()" style="flex: 1; padding: 10px; background: #d4b896; color: #1e3a5f; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">✏️ Edit Setup</button>
+                            <button type="button" id="payoutEditBtn" onclick="showPayoutSetup()" style="flex: 1; padding: 10px; background: #d4b896; color: #1e3a5f; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">✏️ Edit Setup</button>
                         </div>
                     </div>
                 </div>
@@ -28645,6 +28658,8 @@
         let payoutMode = 'percent'; // 'percent' or 'fixed'
         let payoutTieRule = 'split'; // 'split' or 'tiebreaker'
         let payoutExpanded = false;
+        let payoutViewMode = 'net'; // 'net' or 'gross'
+        let lastPayoutData = null; // Store last calculation for view toggle
         
         function togglePayoutCalculator() {
             payoutExpanded = !payoutExpanded;
@@ -28655,9 +28670,68 @@
                 if (payoutExpanded) {
                     updatePayoutPot();
                     loadPayoutConfig();
+                    updatePayoutPermissions();
                 }
             }
             if (arrow) arrow.textContent = payoutExpanded ? '▲' : '▼';
+        }
+        
+        function updatePayoutPermissions() {
+            const isHost = canManageTournament();
+            const setupSection = document.getElementById('payoutSetupSection');
+            const readOnlySummary = document.getElementById('payoutReadOnlySummary');
+            const editBtn = document.getElementById('payoutEditBtn');
+            
+            if (isHost) {
+                // Host sees full setup
+                if (readOnlySummary) readOnlySummary.style.display = 'none';
+                // Setup visibility depends on whether results are showing
+                if (editBtn) editBtn.style.display = 'flex';
+            } else {
+                // Non-host: hide setup, show read-only summary
+                if (setupSection) setupSection.style.display = 'none';
+                if (readOnlySummary) readOnlySummary.style.display = 'block';
+                if (editBtn) editBtn.style.display = 'none';
+                updateReadOnlySummary();
+            }
+        }
+        
+        function updateReadOnlySummary() {
+            const el = document.getElementById('payoutReadOnlySummary');
+            if (!el) return;
+            
+            const buyIn = parseFloat(document.getElementById('payoutBuyIn')?.value) || 0;
+            const categories = [];
+            
+            const mapping = [
+                { id: 'GrossSkins', label: 'Gross Skins' },
+                { id: 'NetSkins', label: 'Net Skins' },
+                { id: 'LowGross', label: 'Low Gross' },
+                { id: 'LowNet', label: 'Low Net' }
+            ];
+            
+            mapping.forEach(cat => {
+                const checkbox = document.getElementById('payoutEnable' + cat.id);
+                const input = document.getElementById('payout' + cat.id);
+                if (checkbox?.checked && input) {
+                    const val = parseFloat(input.value) || 0;
+                    if (val > 0) {
+                        const symbol = payoutMode === 'percent' ? '%' : '$';
+                        const display = payoutMode === 'percent' ? `${val}%` : `$${val}`;
+                        categories.push(`${cat.label} ${display}`);
+                    }
+                }
+            });
+            
+            const grossPlaces = document.getElementById('payoutLowGrossPlaces')?.value || '3';
+            const netPlaces = document.getElementById('payoutLowNetPlaces')?.value || '3';
+            const tieText = payoutTieRule === 'tiebreaker' ? 'Tiebreaker' : 'Split ties';
+            
+            if (categories.length > 0) {
+                el.innerHTML = `<strong>$${buyIn} buy-in</strong> · ${categories.join(' · ')} · Top ${grossPlaces}/${netPlaces} places · ${tieText}`;
+            } else {
+                el.innerHTML = '<span style="color: #94a3b8;">Host has not configured payouts yet</span>';
+            }
         }
         
         function updatePayoutPot() {
@@ -29171,41 +29245,80 @@
         }
         
         function renderPayoutResults(payouts, breakdowns, buyIn, totalPot, playerCount) {
+            // Store for view toggle
+            lastPayoutData = { payouts, breakdowns, buyIn, totalPot, playerCount };
+            
             // Show results section, hide setup
             document.getElementById('payoutSetupSection').style.display = 'none';
             document.getElementById('payoutResultsSection').style.display = 'block';
             
-            // Net summary - sort by net amount (winners first)
+            // Update read-only summary for non-hosts
+            updateReadOnlySummary();
+            updatePayoutPermissions();
+            
+            renderPayoutSummaryView();
+        }
+        
+        function setPayoutView(mode) {
+            payoutViewMode = mode;
+            const netBtn = document.getElementById('payoutViewNet');
+            const grossBtn = document.getElementById('payoutViewGross');
+            if (netBtn) { netBtn.style.background = mode === 'net' ? '#1e3a5f' : 'transparent'; netBtn.style.color = mode === 'net' ? 'white' : '#6b7280'; }
+            if (grossBtn) { grossBtn.style.background = mode === 'gross' ? '#1e3a5f' : 'transparent'; grossBtn.style.color = mode === 'gross' ? 'white' : '#6b7280'; }
+            
+            if (lastPayoutData) renderPayoutSummaryView();
+        }
+        
+        function renderPayoutSummaryView() {
+            if (!lastPayoutData) return;
+            const { payouts, breakdowns, buyIn, totalPot, playerCount } = lastPayoutData;
+            const showNet = payoutViewMode === 'net';
+            
+            // Net/Gross summary
             const netResults = Object.entries(payouts).map(([name, data]) => ({
                 name,
                 won: data.total,
                 net: data.total - buyIn,
                 details: data.details
-            })).sort((a, b) => b.net - a.net);
+            })).sort((a, b) => showNet ? (b.net - a.net) : (b.won - a.won));
             
             let summaryHTML = `
                 <div style="background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); border: 2px solid #166534; border-radius: 8px; padding: 14px; margin-bottom: 4px;">
                     <div style="text-align: center; margin-bottom: 10px;">
-                        <div style="font-size: 11px; color: #166534; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Net Payouts</div>
+                        <div style="font-size: 11px; color: #166534; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">${showNet ? 'Net Payouts' : 'Gross Winnings'}</div>
                         <div style="font-size: 11px; color: #64748b; margin-top: 2px;">$${buyIn} buy-in × ${playerCount} players = $${totalPot} pot</div>
                     </div>
             `;
             
             netResults.forEach(r => {
-                const isPositive = r.net > 0.005;
-                const isNegative = r.net < -0.005;
-                const isEven = !isPositive && !isNegative;
-                const color = isPositive ? '#166534' : isNegative ? '#a51c30' : '#64748b';
-                const bg = isPositive ? '#dcfce7' : isNegative ? '#fef2f2' : '#f8fafc';
-                const sign = isPositive ? '+' : '';
-                const medal = r.net >= netResults[0].net && isPositive ? '💰 ' : '';
-                
-                summaryHTML += `
-                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; background: ${bg}; border-radius: 6px; margin-bottom: 4px;">
-                        <span style="font-size: 13px; font-weight: 600; color: #1e3a5f;">${medal}${r.name}</span>
-                        <span style="font-size: 14px; font-weight: 700; color: ${color};">${sign}$${r.net.toFixed(2)}</span>
-                    </div>
-                `;
+                if (showNet) {
+                    const isPositive = r.net > 0.005;
+                    const isNegative = r.net < -0.005;
+                    const color = isPositive ? '#166534' : isNegative ? '#a51c30' : '#64748b';
+                    const bg = isPositive ? '#dcfce7' : isNegative ? '#fef2f2' : '#f8fafc';
+                    const sign = isPositive ? '+' : '';
+                    const medal = r.net >= netResults[0].net && isPositive ? '💰 ' : '';
+                    
+                    summaryHTML += `
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; background: ${bg}; border-radius: 6px; margin-bottom: 4px;">
+                            <span style="font-size: 13px; font-weight: 600; color: #1e3a5f;">${medal}${r.name}</span>
+                            <span style="font-size: 14px; font-weight: 700; color: ${color};">${sign}$${r.net.toFixed(2)}</span>
+                        </div>
+                    `;
+                } else {
+                    // Gross view - show total winnings only (no buy-in subtracted)
+                    const hasWinnings = r.won > 0.005;
+                    const color = hasWinnings ? '#166534' : '#64748b';
+                    const bg = hasWinnings ? '#dcfce7' : '#f8fafc';
+                    const medal = r.won >= netResults[0].won && hasWinnings ? '💰 ' : '';
+                    
+                    summaryHTML += `
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; background: ${bg}; border-radius: 6px; margin-bottom: 4px;">
+                            <span style="font-size: 13px; font-weight: 600; color: #1e3a5f;">${medal}${r.name}</span>
+                            <span style="font-size: 14px; font-weight: 700; color: ${color};">${hasWinnings ? '$' + r.won.toFixed(2) : '—'}</span>
+                        </div>
+                    `;
+                }
             });
             
             summaryHTML += '</div>';
@@ -29240,6 +29353,7 @@
         }
         
         function showPayoutSetup() {
+            if (!canManageTournament()) return; // Only host/co-host can edit
             document.getElementById('payoutSetupSection').style.display = 'block';
             document.getElementById('payoutResultsSection').style.display = 'none';
         }
@@ -29348,16 +29462,27 @@
                 }
             }
             
-            // Net summary
-            text += `📊 Net Results:\n`;
-            const netResults = Object.entries(payouts).map(([name, data]) => ({
-                name, net: data.total - buyIn
-            })).sort((a, b) => b.net - a.net);
-            
-            netResults.forEach(r => {
-                const sign = r.net > 0 ? '+' : '';
-                text += `  ${r.name}: ${sign}$${r.net.toFixed(2)}\n`;
-            });
+            // Summary based on current view mode
+            if (payoutViewMode === 'gross') {
+                text += `📊 Gross Winnings:\n`;
+                const grossResults = Object.entries(payouts).map(([name, data]) => ({
+                    name, won: data.total
+                })).sort((a, b) => b.won - a.won);
+                
+                grossResults.forEach(r => {
+                    text += `  ${r.name}: $${r.won.toFixed(2)}\n`;
+                });
+            } else {
+                text += `📊 Net Results:\n`;
+                const netResults = Object.entries(payouts).map(([name, data]) => ({
+                    name, net: data.total - buyIn
+                })).sort((a, b) => b.net - a.net);
+                
+                netResults.forEach(r => {
+                    const sign = r.net > 0 ? '+' : '';
+                    text += `  ${r.name}: ${sign}$${r.net.toFixed(2)}\n`;
+                });
+            }
             
             // Copy to clipboard
             if (navigator.clipboard && navigator.clipboard.writeText) {
