@@ -329,8 +329,7 @@
         }
         
         .setup-header-actions {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+            display: flex;
             gap: 8px;
             padding: 10px 12px;
             background: var(--gray-50);
@@ -7992,6 +7991,8 @@
                 favoriteCourses = JSON.parse(userGet('golf_favorite_courses') || '[]');
                 customCourses = JSON.parse(userGet('golf_custom_courses') || '{}');
                 console.log('🔑 Reloaded user-scoped data:', favoriteCourses.length, 'favorites,', Object.keys(customCourses).length, 'custom courses');
+                // Update the favorites dropdown with the reloaded data
+                updateFavoritesDropdown();
             } catch(e) {
                 console.warn('Failed to reload user-scoped data:', e);
             }
