@@ -4543,12 +4543,13 @@
                     
                     <!-- Results Section (hidden until calculated) -->
                     <div id="payoutResultsSection" style="display: none;">
-                        <!-- Gross/Net Payout Toggle -->
-                        <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 12px;">
+                        <!-- Gross/Net Payout Toggle + Refresh -->
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px;">
                             <div style="display: flex; background: #e5e7eb; border-radius: 6px; padding: 2px;">
                                 <button type="button" id="payoutViewNet" onclick="setPayoutView('net')" style="padding: 6px 16px; font-size: 11px; font-weight: 600; border-radius: 4px; border: none; background: #1e3a5f; color: white; cursor: pointer;">Net (+/-)</button>
                                 <button type="button" id="payoutViewGross" onclick="setPayoutView('gross')" style="padding: 6px 16px; font-size: 11px; font-weight: 600; border-radius: 4px; border: none; background: transparent; color: #6b7280; cursor: pointer;">Gross (Winnings)</button>
                             </div>
+                            <button type="button" onclick="refreshPayouts()" title="Recalculate with latest scores" style="width: 32px; height: 32px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;">🔄</button>
                         </div>
                         
                         <!-- Net summary (who owes/collects) -->
@@ -15684,6 +15685,18 @@
             tournamentData.gameType = tournament.gameType;
             tournamentData.enabledGames = tournament.enabledGames || [tournament.gameType];
             tournamentData.name = tournament.name || '';
+            
+            // Sync payout config from cloud
+            if (tournament.payoutConfig) {
+                const hadConfig = !!tournamentData.payoutConfig;
+                const oldTimestamp = tournamentData.payoutConfig?.updatedAt || 0;
+                tournamentData.payoutConfig = tournament.payoutConfig;
+                
+                // If config changed, notify payout calculator
+                if (!hadConfig || tournament.payoutConfig.updatedAt > oldTimestamp) {
+                    setTimeout(() => onPayoutConfigUpdated(), 100);
+                }
+            }
             
             // NEWEST-WINS: Merge players intelligently
             const now = Date.now();
@@ -28669,8 +28682,13 @@
                 body.style.display = payoutExpanded ? 'block' : 'none';
                 if (payoutExpanded) {
                     updatePayoutPot();
-                    loadPayoutConfig();
+                    const hasConfig = loadPayoutConfig();
                     updatePayoutPermissions();
+                    
+                    // Auto-calculate if config exists (from Firebase or localStorage)
+                    if (hasConfig) {
+                        autoCalculatePayouts();
+                    }
                 }
             }
             if (arrow) arrow.textContent = payoutExpanded ? '▲' : '▼';
@@ -29496,54 +29514,142 @@
             }
         }
         
-        // Save/Load payout config to localStorage
-        function savePayoutConfig() {
-            const config = {
+        // Build payout config object from current form state
+        function buildPayoutConfig() {
+            return {
                 buyIn: parseFloat(document.getElementById('payoutBuyIn')?.value) || 20,
                 mode: payoutMode,
                 tieRule: payoutTieRule,
-                grossSkins: { enabled: document.getElementById('payoutEnableGrossSkins')?.checked, value: parseFloat(document.getElementById('payoutGrossSkins')?.value) || 0 },
-                netSkins: { enabled: document.getElementById('payoutEnableNetSkins')?.checked, value: parseFloat(document.getElementById('payoutNetSkins')?.value) || 0 },
-                lowGross: { enabled: document.getElementById('payoutEnableLowGross')?.checked, value: parseFloat(document.getElementById('payoutLowGross')?.value) || 0 },
-                lowNet: { enabled: document.getElementById('payoutEnableLowNet')?.checked, value: parseFloat(document.getElementById('payoutLowNet')?.value) || 0 },
+                grossSkins: { enabled: document.getElementById('payoutEnableGrossSkins')?.checked !== false, value: parseFloat(document.getElementById('payoutGrossSkins')?.value) || 0 },
+                netSkins: { enabled: document.getElementById('payoutEnableNetSkins')?.checked !== false, value: parseFloat(document.getElementById('payoutNetSkins')?.value) || 0 },
+                lowGross: { enabled: document.getElementById('payoutEnableLowGross')?.checked !== false, value: parseFloat(document.getElementById('payoutLowGross')?.value) || 0 },
+                lowNet: { enabled: document.getElementById('payoutEnableLowNet')?.checked !== false, value: parseFloat(document.getElementById('payoutLowNet')?.value) || 0 },
                 lowGrossPlaces: parseInt(document.getElementById('payoutLowGrossPlaces')?.value) || 3,
-                lowNetPlaces: parseInt(document.getElementById('payoutLowNetPlaces')?.value) || 3
+                lowNetPlaces: parseInt(document.getElementById('payoutLowNetPlaces')?.value) || 3,
+                updatedAt: Date.now()
             };
-            localStorage.setItem('letsgolf_payout_config', JSON.stringify(config));
         }
         
-        function loadPayoutConfig() {
-            const saved = localStorage.getItem('letsgolf_payout_config');
-            if (!saved) return;
+        // Apply a config object to the form UI
+        function applyPayoutConfigToForm(config) {
+            if (!config) return;
             
-            try {
-                const config = JSON.parse(saved);
-                
-                const buyInEl = document.getElementById('payoutBuyIn');
-                if (buyInEl && config.buyIn) buyInEl.value = config.buyIn;
-                
-                if (config.mode) setPayoutMode(config.mode);
-                if (config.tieRule) setPayoutTieRule(config.tieRule);
-                
-                const mapping = { grossSkins: 'GrossSkins', netSkins: 'NetSkins', lowGross: 'LowGross', lowNet: 'LowNet' };
-                Object.entries(mapping).forEach(([key, id]) => {
-                    if (config[key]) {
-                        const checkbox = document.getElementById('payoutEnable' + id);
-                        const input = document.getElementById('payout' + id);
-                        if (checkbox) checkbox.checked = config[key].enabled !== false;
-                        if (input) input.value = config[key].value || 0;
-                    }
+            const buyInEl = document.getElementById('payoutBuyIn');
+            if (buyInEl && config.buyIn) buyInEl.value = config.buyIn;
+            
+            if (config.mode) setPayoutMode(config.mode);
+            if (config.tieRule) setPayoutTieRule(config.tieRule);
+            
+            const mapping = { grossSkins: 'GrossSkins', netSkins: 'NetSkins', lowGross: 'LowGross', lowNet: 'LowNet' };
+            Object.entries(mapping).forEach(([key, id]) => {
+                if (config[key]) {
+                    const checkbox = document.getElementById('payoutEnable' + id);
+                    const input = document.getElementById('payout' + id);
+                    if (checkbox) checkbox.checked = config[key].enabled !== false;
+                    if (input) input.value = config[key].value || 0;
+                }
+            });
+            
+            const grossPlacesEl = document.getElementById('payoutLowGrossPlaces');
+            const netPlacesEl = document.getElementById('payoutLowNetPlaces');
+            if (grossPlacesEl && config.lowGrossPlaces) grossPlacesEl.value = config.lowGrossPlaces;
+            if (netPlacesEl && config.lowNetPlaces) netPlacesEl.value = config.lowNetPlaces;
+            
+            updatePayoutPot();
+        }
+        
+        // Save config to both localStorage AND Firebase
+        function savePayoutConfig() {
+            const config = buildPayoutConfig();
+            
+            // Save to localStorage as fallback/default for future rounds
+            localStorage.setItem('letsgolf_payout_config', JSON.stringify(config));
+            
+            // Save to Firebase tournament doc so all devices get it
+            if (activeTournamentId && db) {
+                db.collection('tournaments').doc(activeTournamentId).update({
+                    payoutConfig: config
+                }).then(() => {
+                    console.log('💰 Payout config synced to Firebase');
+                }).catch(err => {
+                    console.error('Error syncing payout config:', err);
                 });
-                
-                const grossPlacesEl = document.getElementById('payoutLowGrossPlaces');
-                const netPlacesEl = document.getElementById('payoutLowNetPlaces');
-                if (grossPlacesEl && config.lowGrossPlaces) grossPlacesEl.value = config.lowGrossPlaces;
-                if (netPlacesEl && config.lowNetPlaces) netPlacesEl.value = config.lowNetPlaces;
-                
-                updatePayoutPot();
-            } catch(e) {
-                console.error('Error loading payout config:', e);
             }
+        }
+        
+        // Load config: Firebase first (shared), then localStorage (personal defaults)
+        function loadPayoutConfig() {
+            // Check Firebase tournament data first
+            if (tournamentData?.payoutConfig) {
+                console.log('💰 Loading payout config from Firebase');
+                applyPayoutConfigToForm(tournamentData.payoutConfig);
+                return true; // Config found
+            }
+            
+            // Fall back to localStorage
+            const saved = localStorage.getItem('letsgolf_payout_config');
+            if (saved) {
+                try {
+                    const config = JSON.parse(saved);
+                    applyPayoutConfigToForm(config);
+                    return true;
+                } catch(e) {
+                    console.error('Error loading payout config:', e);
+                }
+            }
+            
+            return false; // No config found
+        }
+        
+        // Auto-calculate payouts (called on expand for non-hosts, or after config sync)
+        function autoCalculatePayouts() {
+            const activePlayers = (tournamentData?.players || []).filter(p => p.scores && p.scores.some(s => s > 0));
+            if (activePlayers.length === 0) return;
+            
+            const buyIn = parseFloat(document.getElementById('payoutBuyIn')?.value) || 0;
+            if (buyIn <= 0) return;
+            
+            // Validate allocation
+            const categories = ['GrossSkins', 'NetSkins', 'LowGross', 'LowNet'];
+            let totalAllocated = 0;
+            let anyEnabled = false;
+            categories.forEach(cat => {
+                const checkbox = document.getElementById('payoutEnable' + cat);
+                const input = document.getElementById('payout' + cat);
+                if (checkbox?.checked && input) {
+                    totalAllocated += parseFloat(input.value) || 0;
+                    anyEnabled = true;
+                }
+            });
+            
+            if (!anyEnabled) return;
+            
+            if (payoutMode === 'percent' && Math.abs(totalAllocated - 100) > 0.5) return;
+            
+            const totalPot = buyIn * activePlayers.length;
+            if (payoutMode === 'fixed' && totalAllocated > totalPot) return;
+            
+            // All good - calculate
+            calculatePayouts();
+        }
+        
+        // Refresh payouts (recalculate with current scores and config)
+        function refreshPayouts() {
+            loadPayoutConfig();
+            autoCalculatePayouts();
+            showNotification('Refreshed', 'Payouts recalculated with latest scores');
+        }
+        
+        // Called from Firebase onSnapshot when payoutConfig changes
+        function onPayoutConfigUpdated() {
+            if (!payoutExpanded) return;
+            
+            // Reload config from tournament data and recalculate
+            loadPayoutConfig();
+            updatePayoutPermissions();
+            
+            // Auto-calculate for everyone
+            autoCalculatePayouts();
         }
 
         // ===== PHASE 1: SHARING FEATURES =====
