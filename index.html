@@ -4442,11 +4442,18 @@
                         </div>
                         
                         <!-- Quick Presets -->
-                        <div style="display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap;">
+                        <div style="display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap;">
                             <button type="button" onclick="applyPayoutPreset('even')" style="flex: 1; min-width: 70px; padding: 6px 4px; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; border-radius: 6px; font-size: 10px; font-weight: 600; cursor: pointer;">Even Split</button>
                             <button type="button" onclick="applyPayoutPreset('skins_heavy')" style="flex: 1; min-width: 70px; padding: 6px 4px; background: #fef3c7; color: #92400e; border: 1px solid #fde68a; border-radius: 6px; font-size: 10px; font-weight: 600; cursor: pointer;">Skins Heavy</button>
                             <button type="button" onclick="applyPayoutPreset('low_score')" style="flex: 1; min-width: 70px; padding: 6px 4px; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; border-radius: 6px; font-size: 10px; font-weight: 600; cursor: pointer;">Low Score</button>
                             <button type="button" onclick="applyPayoutPreset('custom')" style="flex: 1; min-width: 70px; padding: 6px 4px; background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 10px; font-weight: 600; cursor: pointer;">Custom</button>
+                        </div>
+                        
+                        <!-- Saved Preset Templates -->
+                        <div style="display: flex; gap: 6px; margin-bottom: 14px; align-items: center;">
+                            <button type="button" onclick="savePayoutTemplate()" style="flex: 1; padding: 6px 4px; background: #faf5ff; color: #7c3aed; border: 1px solid #ddd6fe; border-radius: 6px; font-size: 10px; font-weight: 600; cursor: pointer;">💾 Save Template</button>
+                            <button type="button" onclick="showPayoutTemplates()" style="flex: 1; padding: 6px 4px; background: #faf5ff; color: #7c3aed; border: 1px solid #ddd6fe; border-radius: 6px; font-size: 10px; font-weight: 600; cursor: pointer;">📂 Load Template</button>
+                            <button type="button" onclick="showEditSplitsModal()" style="flex: 1; padding: 6px 4px; background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; border-radius: 6px; font-size: 10px; font-weight: 600; cursor: pointer;">⚖️ Edit Splits</button>
                         </div>
                         
                         <!-- Category Allocation -->
@@ -4652,9 +4659,10 @@
                         <div id="payoutBreakdowns" style="margin-bottom: 16px;"></div>
                         
                         <!-- Action buttons -->
-                        <div style="display: flex; gap: 8px;">
-                            <button type="button" onclick="sharePayoutSummary()" style="flex: 1; padding: 10px; background: #1e3a5f; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">📋 Copy Summary</button>
-                            <button type="button" id="payoutEditBtn" onclick="showPayoutSetup()" style="flex: 1; padding: 10px; background: #d4b896; color: #1e3a5f; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">✏️ Edit Setup</button>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <button type="button" onclick="sharePayoutSummary()" style="flex: 1; min-width: 100px; padding: 10px; background: #1e3a5f; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">📋 Copy Text</button>
+                            <button type="button" onclick="exportPayoutImage()" style="flex: 1; min-width: 100px; padding: 10px; background: #166534; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">📸 Share Image</button>
+                            <button type="button" id="payoutEditBtn" onclick="showPayoutSetup()" style="flex: 1; min-width: 100px; padding: 10px; background: #d4b896; color: #1e3a5f; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">✏️ Edit Setup</button>
                         </div>
                     </div>
                 </div>
@@ -29198,8 +29206,9 @@
             
             let html = '';
             payoutCustomCategories.forEach(cc => {
-                html += `<div id="payoutCustomRow_${cc.id}" style="position: relative; overflow: hidden; border-radius: 6px;">
-                    <div style="display: flex; flex-direction: column; gap: 6px; background: #fefce8; border: 1px solid #fde68a; border-radius: 6px; padding: 8px; transition: transform 0.2s;"
+                html += `<div id="payoutCustomRow_${cc.id}" style="position: relative; overflow: hidden; border-radius: 6px; margin-bottom: 4px;">
+                    <button type="button" onclick="removePayoutCustomCategory(${cc.id})" style="position: absolute; right: 0; top: 0; bottom: 0; width: 70px; background: #c41e3a; color: white; border: none; font-size: 12px; font-weight: 600; cursor: pointer; z-index: 0;">Delete</button>
+                    <div style="position: relative; z-index: 1; display: flex; flex-direction: column; gap: 6px; background: #fefce8; border: 1px solid #fde68a; border-radius: 6px; padding: 8px; transition: transform 0.2s;"
                          ontouchstart="this._startX=event.touches[0].clientX;this._moved=false"
                          ontouchmove="const dx=event.touches[0].clientX-this._startX;if(dx<-30){this.style.transform='translateX(-70px)';this._moved=true}else if(dx>10){this.style.transform='';this._moved=false}"
                          ontouchend="if(!this._moved)this.style.transform=''">
@@ -29216,7 +29225,6 @@
                             </select>
                         </div>
                     </div>
-                    <button type="button" onclick="removePayoutCustomCategory(${cc.id})" style="position: absolute; right: 0; top: 0; bottom: 0; width: 70px; background: #ef4444; color: white; border: none; font-size: 12px; font-weight: 600; cursor: pointer;">Delete</button>
                 </div>`;
             });
             container.innerHTML = html;
@@ -29224,6 +29232,11 @@
         
         // Get the place payout split ratios
         function getPlaceSplits(numPlaces) {
+            // Check for user-customized splits first
+            if (numPlaces > 1 && payoutCustomSplits && payoutCustomSplits[numPlaces]) {
+                return payoutCustomSplits[numPlaces].map(v => v / 100);
+            }
+            // Defaults
             const splits = {
                 1: [1.0],
                 2: [0.70, 0.30],
@@ -29935,6 +29948,344 @@
             }
         }
         
+        // ===== PAYOUT PRESET TEMPLATES =====
+        // Custom place split ratios (user-editable)
+        let payoutCustomSplits = JSON.parse(localStorage.getItem('letsgolf_payout_splits') || 'null') || {
+            2: [70, 30],
+            3: [60, 25, 15],
+            4: [50, 25, 15, 10],
+            5: [40, 25, 15, 12, 8]
+        };
+        
+        function getPlaceSplitsCustom(numPlaces) {
+            if (numPlaces === 1) return [1.0];
+            const custom = payoutCustomSplits[numPlaces];
+            if (custom) return custom.map(v => v / 100);
+            return getPlaceSplits(numPlaces);
+        }
+        
+        function savePayoutTemplate() {
+            const name = prompt('Template name (e.g. "IHMC Saturday"):');
+            if (!name || !name.trim()) return;
+            
+            const config = buildPayoutConfig();
+            delete config.updatedAt;
+            // Strip per-tournament data (KP winners, custom category winners)
+            if (config.kp) config.kp.winners = {};
+            if (config.customCategories) config.customCategories.forEach(cc => cc.winner = '');
+            
+            const templates = JSON.parse(localStorage.getItem('letsgolf_payout_templates') || '{}');
+            templates[name.trim()] = { config, savedAt: Date.now() };
+            localStorage.setItem('letsgolf_payout_templates', JSON.stringify(templates));
+            showNotification('Saved!', `Template "${name.trim()}" saved`);
+        }
+        
+        function showPayoutTemplates() {
+            const templates = JSON.parse(localStorage.getItem('letsgolf_payout_templates') || '{}');
+            const names = Object.keys(templates);
+            if (names.length === 0) {
+                showNotification('No Templates', 'Save a template first using 💾 Save Template');
+                return;
+            }
+            
+            let overlay = document.getElementById('payoutTemplateOverlay');
+            if (overlay) overlay.remove();
+            
+            overlay = document.createElement('div');
+            overlay.id = 'payoutTemplateOverlay';
+            overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:10002;display:flex;align-items:center;justify-content:center;padding:20px;';
+            
+            let listHtml = names.map(n => {
+                const t = templates[n];
+                const date = new Date(t.savedAt).toLocaleDateString();
+                return `<div style="display:flex;align-items:center;gap:8px;padding:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;" onclick="loadPayoutTemplate('${n.replace(/'/g,"\\'")}')">
+                    <div style="flex:1;">
+                        <div style="font-size:13px;font-weight:600;color:#1e3a5f;">${n}</div>
+                        <div style="font-size:10px;color:#94a3b8;">Saved ${date}</div>
+                    </div>
+                    <button type="button" onclick="event.stopPropagation();deletePayoutTemplate('${n.replace(/'/g,"\\'")}')" style="width:28px;height:28px;background:#fee2e2;border:1px solid #fca5a5;border-radius:4px;font-size:14px;cursor:pointer;color:#dc2626;">✕</button>
+                </div>`;
+            }).join('');
+            
+            overlay.innerHTML = `<div style="background:white;border-radius:10px;padding:20px;max-width:340px;width:100%;max-height:70vh;overflow-y:auto;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                    <h3 style="margin:0;font-size:16px;color:#1e3a5f;">📂 Saved Templates</h3>
+                    <button type="button" onclick="document.getElementById('payoutTemplateOverlay')?.remove()" style="width:28px;height:28px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:4px;font-size:14px;cursor:pointer;">✕</button>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:8px;">${listHtml}</div>
+            </div>`;
+            
+            document.body.appendChild(overlay);
+        }
+        
+        function loadPayoutTemplate(name) {
+            const templates = JSON.parse(localStorage.getItem('letsgolf_payout_templates') || '{}');
+            const t = templates[name];
+            if (!t?.config) return;
+            
+            applyPayoutConfigToForm(t.config);
+            updatePayoutTotals();
+            document.getElementById('payoutTemplateOverlay')?.remove();
+            showNotification('Loaded', `Template "${name}" applied`);
+        }
+        
+        function deletePayoutTemplate(name) {
+            if (!confirm(`Delete template "${name}"?`)) return;
+            const templates = JSON.parse(localStorage.getItem('letsgolf_payout_templates') || '{}');
+            delete templates[name];
+            localStorage.setItem('letsgolf_payout_templates', JSON.stringify(templates));
+            document.getElementById('payoutTemplateOverlay')?.remove();
+            showPayoutTemplates(); // Refresh list
+        }
+        
+        // ===== CUSTOM SPLIT RATIOS =====
+        function showEditSplitsModal() {
+            let overlay = document.getElementById('payoutSplitsOverlay');
+            if (overlay) overlay.remove();
+            
+            overlay = document.createElement('div');
+            overlay.id = 'payoutSplitsOverlay';
+            overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:10002;display:flex;align-items:center;justify-content:center;padding:20px;';
+            
+            let html = `<div style="background:white;border-radius:10px;padding:20px;max-width:340px;width:100%;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                    <h3 style="margin:0;font-size:16px;color:#1e3a5f;">⚖️ Place Split Ratios</h3>
+                    <button type="button" onclick="document.getElementById('payoutSplitsOverlay')?.remove()" style="width:28px;height:28px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:4px;font-size:14px;cursor:pointer;">✕</button>
+                </div>
+                <p style="font-size:11px;color:#64748b;margin:0 0 12px;">Set how winnings split when paying multiple places. Values must total 100%.</p>`;
+            
+            [2,3,4,5].forEach(n => {
+                const splits = payoutCustomSplits[n] || [];
+                html += `<div style="margin-bottom:10px;">
+                    <div style="font-size:12px;font-weight:600;color:#1e3a5f;margin-bottom:4px;">${n} Places</div>
+                    <div style="display:flex;gap:4px;align-items:center;">`;
+                for (let i = 0; i < n; i++) {
+                    const ordinal = ['1st','2nd','3rd','4th','5th'][i];
+                    html += `<div style="flex:1;text-align:center;">
+                        <div style="font-size:9px;color:#94a3b8;">${ordinal}</div>
+                        <input type="number" id="splitInput_${n}_${i}" value="${splits[i] || 0}" min="0" max="100" step="1" style="width:100%;padding:4px;border:1px solid #e2e8f0;border-radius:4px;font-size:12px;text-align:center;">
+                    </div>`;
+                }
+                html += `<span style="font-size:11px;color:#64748b;">%</span></div></div>`;
+            });
+            
+            html += `<div style="display:flex;gap:8px;margin-top:14px;">
+                <button type="button" onclick="resetSplitsToDefaults()" style="flex:1;padding:8px;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Reset</button>
+                <button type="button" onclick="saveSplitsFromModal()" style="flex:1;padding:8px;background:#166534;color:white;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Save</button>
+            </div></div>`;
+            
+            overlay.innerHTML = html;
+            document.body.appendChild(overlay);
+        }
+        
+        function saveSplitsFromModal() {
+            let valid = true;
+            [2,3,4,5].forEach(n => {
+                const vals = [];
+                let total = 0;
+                for (let i = 0; i < n; i++) {
+                    const v = parseFloat(document.getElementById(`splitInput_${n}_${i}`)?.value) || 0;
+                    vals.push(v);
+                    total += v;
+                }
+                if (Math.abs(total - 100) > 0.5) {
+                    valid = false;
+                    showNotification('Error', `${n} places must total 100% (currently ${total}%)`);
+                }
+                payoutCustomSplits[n] = vals;
+            });
+            
+            if (!valid) return;
+            
+            localStorage.setItem('letsgolf_payout_splits', JSON.stringify(payoutCustomSplits));
+            document.getElementById('payoutSplitsOverlay')?.remove();
+            showNotification('Saved!', 'Custom split ratios saved');
+        }
+        
+        function resetSplitsToDefaults() {
+            const defaults = { 2: [70,30], 3: [60,25,15], 4: [50,25,15,10], 5: [40,25,15,12,8] };
+            [2,3,4,5].forEach(n => {
+                defaults[n].forEach((v, i) => {
+                    const el = document.getElementById(`splitInput_${n}_${i}`);
+                    if (el) el.value = v;
+                });
+            });
+        }
+        
+        // ===== PAYOUT IMAGE EXPORT =====
+        function exportPayoutImage() {
+            if (!lastPayoutData) { showNotification('No Data', 'Calculate payouts first'); return; }
+            
+            const { payouts, breakdowns, buyIn, totalPot, playerCount } = lastPayoutData;
+            const tourneyName = tournamentData?.name || 'Golf Tournament';
+            const tourneyDate = tournamentData?.date || '';
+            const courseName = tournamentData?.course || '';
+            
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const W = 750;
+            const padding = 30;
+            const contentW = W - padding * 2;
+            
+            // Pre-calculate height
+            const sorted = Object.entries(payouts).map(([name, data]) => ({
+                name, won: data.total, net: data.total - buyIn
+            })).sort((a, b) => b.net - a.net);
+            
+            let estH = 220; // Header + pot info
+            estH += sorted.length * 38 + 30; // Net results table
+            breakdowns.forEach(b => {
+                if (b.noWinners) return;
+                estH += 40 + (b.details?.length || 0) * 22 + 20;
+            });
+            estH += 50; // Footer
+            
+            canvas.width = W;
+            canvas.height = Math.max(estH, 400);
+            
+            // Background
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillRect(0, 0, W, canvas.height);
+            
+            // Header bar
+            const grad = ctx.createLinearGradient(0, 0, W, 80);
+            grad.addColorStop(0, '#1e3a5f');
+            grad.addColorStop(1, '#2d5480');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, 80);
+            
+            ctx.fillStyle = '#d4b896';
+            ctx.font = 'bold 28px Arial, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('💰 ' + tourneyName, W/2, 38);
+            
+            ctx.fillStyle = '#94b8d8';
+            ctx.font = '14px Arial, sans-serif';
+            let subtitle = '';
+            if (tourneyDate) subtitle += tourneyDate;
+            if (courseName) subtitle += (subtitle ? ' • ' : '') + courseName;
+            ctx.fillText(subtitle, W/2, 62);
+            
+            let y = 100;
+            
+            // Pot info
+            ctx.fillStyle = '#166534';
+            ctx.font = 'bold 22px Arial, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(`$${buyIn} buy-in × ${playerCount} players = $${totalPot} pot`, W/2, y);
+            y += 40;
+            
+            // Net results table
+            ctx.fillStyle = '#1e3a5f';
+            ctx.font = 'bold 16px Arial, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('Net Results', padding, y);
+            y += 8;
+            
+            // Table header line
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(padding, y); ctx.lineTo(W - padding, y); ctx.stroke();
+            y += 20;
+            
+            sorted.forEach((r, i) => {
+                // Alternating row background
+                if (i % 2 === 0) {
+                    ctx.fillStyle = '#f0f4f8';
+                    ctx.fillRect(padding, y - 14, contentW, 32);
+                }
+                
+                // Rank + Name
+                ctx.fillStyle = '#1e3a5f';
+                ctx.font = i === 0 ? 'bold 14px Arial, sans-serif' : '14px Arial, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText(`${i + 1}. ${r.name}`, padding + 8, y + 4);
+                
+                // Net amount
+                const sign = r.net > 0 ? '+' : '';
+                ctx.fillStyle = r.net > 0 ? '#166534' : r.net < 0 ? '#dc2626' : '#6b7280';
+                ctx.font = 'bold 14px Arial, sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText(`${sign}$${r.net.toFixed(2)}`, W - padding - 8, y + 4);
+                
+                // Gross in lighter text
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '11px Arial, sans-serif';
+                ctx.fillText(`(won $${r.won.toFixed(2)})`, W - padding - 80, y + 4);
+                
+                y += 32;
+            });
+            y += 15;
+            
+            // Category breakdowns
+            breakdowns.forEach(b => {
+                if (b.noWinners) return;
+                
+                ctx.fillStyle = '#1e3a5f';
+                ctx.font = 'bold 13px Arial, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText(`${b.title}  ($${b.pot.toFixed(0)} pot)`, padding, y);
+                y += 18;
+                
+                ctx.fillStyle = '#475569';
+                ctx.font = '12px Arial, sans-serif';
+                b.details?.forEach(d => {
+                    // Strip emoji for cleaner render
+                    const clean = d.replace(/[🥇🥈🥉🏆]/g, '').trim();
+                    ctx.fillText('  ' + clean, padding + 10, y);
+                    y += 20;
+                });
+                y += 10;
+            });
+            
+            // Footer
+            y += 5;
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.beginPath(); ctx.moveTo(padding, y); ctx.lineTo(W - padding, y); ctx.stroke();
+            y += 20;
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '10px Arial, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Generated by Let\'s Golf', W/2, y);
+            
+            // Trim canvas to actual content
+            const finalH = y + 20;
+            const trimmed = document.createElement('canvas');
+            trimmed.width = W;
+            trimmed.height = finalH;
+            trimmed.getContext('2d').drawImage(canvas, 0, 0);
+            
+            // Convert to blob and share/download
+            trimmed.toBlob(blob => {
+                if (!blob) { showNotification('Error', 'Could not generate image'); return; }
+                
+                const file = new File([blob], 'payouts.png', { type: 'image/png' });
+                
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    navigator.share({
+                        files: [file],
+                        title: tourneyName + ' Payouts',
+                        text: `$${totalPot} pot • ${playerCount} players`
+                    }).catch(() => {
+                        // Fallback to download
+                        downloadPayoutImage(blob);
+                    });
+                } else {
+                    downloadPayoutImage(blob);
+                }
+            }, 'image/png');
+        }
+        
+        function downloadPayoutImage(blob) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'payouts.png';
+            a.click();
+            URL.revokeObjectURL(url);
+            showNotification('Downloaded', 'Payout image saved');
+        }
+        
         // Build payout config object from current form state
         function buildPayoutConfig() {
             // Read KP winners from dropdowns
@@ -29976,6 +30327,7 @@
                 footlongOutPlaces: parseInt(document.getElementById('payoutFootlongOutPlaces')?.value) || 1,
                 footlongInPlaces: parseInt(document.getElementById('payoutFootlongInPlaces')?.value) || 1,
                 customCategories: payoutCustomCategories.map(cc => ({ id: cc.id, name: cc.name, value: cc.value, enabled: cc.enabled, winner: cc.winner })),
+                customSplits: payoutCustomSplits,
                 updatedAt: Date.now()
             };
         }
@@ -30053,6 +30405,15 @@
                 payoutCustomCategories = config.customCategories.map(cc => ({ ...cc }));
                 payoutCustomCategoryCounter = Math.max(payoutCustomCategoryCounter, ...payoutCustomCategories.map(cc => cc.id));
                 renderPayoutCustomCategories();
+            } else {
+                payoutCustomCategories = [];
+                payoutCustomCategoryCounter = 0;
+                renderPayoutCustomCategories();
+            }
+            
+            // Custom split ratios (from Firebase or keep local)
+            if (config.customSplits) {
+                payoutCustomSplits = config.customSplits;
             }
             
             updatePayoutPot();
@@ -30081,7 +30442,7 @@
             }
         }
         
-        // Load config: Firebase first (shared), then localStorage only for personal defaults on NEW tournaments
+        // Load config: Firebase first (shared), then defaults for new tournaments
         function loadPayoutConfig() {
             // Check Firebase tournament data first — this is the authoritative source
             if (tournamentData?.payoutConfig) {
@@ -30090,11 +30451,73 @@
                 return true; // Config found
             }
             
-            // No Firebase config — do NOT auto-load from localStorage
-            // localStorage configs are from OTHER tournaments and should not bleed over
-            // The host will configure from scratch or use presets
-            console.log('💰 No payout config found for this tournament');
+            // No Firebase config — reset form to clean defaults
+            // This prevents config from a previous tournament bleeding through
+            console.log('💰 No payout config for this tournament — resetting to defaults');
+            resetPayoutFormToDefaults();
             return false; // No config found
+        }
+        
+        // Reset payout form to clean starting state
+        function resetPayoutFormToDefaults() {
+            const buyInEl = document.getElementById('payoutBuyIn');
+            if (buyInEl) buyInEl.value = '20';
+            
+            // Reset mode to percent
+            payoutMode = 'percent';
+            const modeLabel = document.getElementById('payoutModeLabel');
+            if (modeLabel) modeLabel.textContent = 'Percentage (%)';
+            
+            // Reset built-in categories to defaults
+            const defaults = {
+                'GrossSkins': { enabled: true, value: 25 },
+                'NetSkins': { enabled: true, value: 25 },
+                'LowGross': { enabled: true, value: 25 },
+                'LowNet': { enabled: true, value: 25 },
+                'FootlongOut': { enabled: false, value: 0 },
+                'FootlongIn': { enabled: false, value: 0 },
+                'KP': { enabled: false, value: 0 }
+            };
+            
+            Object.entries(defaults).forEach(([id, def]) => {
+                const checkbox = document.getElementById(`payoutEnable${id}`);
+                const input = document.getElementById(`payout${id}`);
+                if (checkbox) checkbox.checked = def.enabled;
+                if (input) { input.value = def.value; input.disabled = !def.enabled; }
+            });
+            
+            // Reset places paid
+            ['LowGross', 'LowNet', 'FootlongOut', 'FootlongIn'].forEach(id => {
+                const sel = document.getElementById(`payout${id}Places`);
+                if (sel) sel.value = '3';
+            });
+            
+            // Reset skins options
+            const parOrBetter = document.getElementById('payoutSkinsParOrBetter');
+            const carryover = document.getElementById('payoutSkinsCarryover');
+            if (parOrBetter) parOrBetter.checked = false;
+            if (carryover) carryover.checked = false;
+            
+            // Reset footlong scopes
+            payoutFootlongOutScope = 'net';
+            payoutFootlongInScope = 'net';
+            
+            // Clear KP winners
+            payoutKPWinners = {};
+            
+            // Clear custom categories
+            payoutCustomCategories = [];
+            payoutCustomCategoryCounter = 0;
+            renderPayoutCustomCategories();
+            
+            // Clear any displayed results
+            const resultsSection = document.getElementById('payoutResultsSection');
+            if (resultsSection) resultsSection.style.display = 'none';
+            const setupSection = document.getElementById('payoutSetupSection');
+            if (setupSection) setupSection.style.display = 'block';
+            
+            // Update totals display
+            updatePayoutTotals();
         }
         
         // Auto-calculate payouts (called on expand for non-hosts, or after config sync)
@@ -31847,21 +32270,12 @@
                     hasJoinedTournament = data._hasJoinedTournament || false;
                     hostViewMode = data._hostViewMode || 'host';
                     
-                    // Restore co-host status
+                    // Restore co-host status — but ONLY for the same tournament
+                    // _isCoHost is tied to _hostForTournament via the save
                     if (data._isCoHost && activeTournamentId) {
                         isCoHost = true;
                         hasJoinedTournament = true;
-                        console.log('🔑 checkForSavedRound - Co-host status restored');
-                    }
-                    
-                    // Also check co-host from devices data or coHosts array
-                    if (data.devices && data.devices[currentDeviceId] && data.devices[currentDeviceId].isCoHost) {
-                        isCoHost = true;
-                        hasJoinedTournament = true;
-                    }
-                    if (data.coHosts && data.coHosts.includes(currentDeviceId)) {
-                        isCoHost = true;
-                        hasJoinedTournament = true;
+                        console.log('🔑 checkForSavedRound - Co-host status restored for tournament:', activeTournamentId);
                     }
                     
                     // Hosts and co-hosts are always considered joined
