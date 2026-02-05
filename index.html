@@ -28677,20 +28677,21 @@
         }
         
         function updatePayoutPermissions() {
-            const isHost = canManageTournament();
+            // Only restrict in multi-device when user is a confirmed non-host player
+            const isManager = canManageTournament() || isHost || !activeTournamentId;
             const setupSection = document.getElementById('payoutSetupSection');
             const readOnlySummary = document.getElementById('payoutReadOnlySummary');
             const editBtn = document.getElementById('payoutEditBtn');
+            const resultsShowing = document.getElementById('payoutResultsSection')?.style.display === 'block';
             
-            if (isHost) {
-                // Host sees full setup
+            if (isManager) {
                 if (readOnlySummary) readOnlySummary.style.display = 'none';
-                // Setup visibility depends on whether results are showing
-                if (editBtn) editBtn.style.display = 'flex';
+                if (setupSection && !resultsShowing) setupSection.style.display = 'block';
+                if (editBtn) editBtn.style.display = '';
             } else {
-                // Non-host: hide setup, show read-only summary
-                if (setupSection) setupSection.style.display = 'none';
-                if (readOnlySummary) readOnlySummary.style.display = 'block';
+                // Confirmed non-host player in multi-device
+                if (setupSection && !resultsShowing) setupSection.style.display = 'none';
+                if (readOnlySummary) readOnlySummary.style.display = resultsShowing ? 'block' : 'block';
                 if (editBtn) editBtn.style.display = 'none';
                 updateReadOnlySummary();
             }
@@ -29353,7 +29354,8 @@
         }
         
         function showPayoutSetup() {
-            if (!canManageTournament()) return; // Only host/co-host can edit
+            const isManager = canManageTournament() || isHost || !activeTournamentId;
+            if (!isManager) return;
             document.getElementById('payoutSetupSection').style.display = 'block';
             document.getElementById('payoutResultsSection').style.display = 'none';
         }
