@@ -18416,7 +18416,7 @@
                     
                     // Restore tournament data
                     const metadataKeys = ['_activeTournamentId', '_tournamentMode', '_isHost', '_hostForTournament', 
-                                        '_hasJoinedTournament', '_hostViewMode', '_scoreTimestamps', '_deletedPlayers', '_lastSaved'];
+                                        '_hasJoinedTournament', '_hostViewMode', '_isCoHost', '_scoreTimestamps', '_deletedPlayers', '_lastSaved'];
                     metadataKeys.forEach(key => delete data[key]);
                     tournamentData = data;
                     courseData = courses[tournamentData.course] || customCourses[tournamentData.course];
@@ -19616,7 +19616,7 @@
                         
                         // Extract metadata
                         const metadataKeys = ['_activeTournamentId', '_tournamentMode', '_isHost', '_hostForTournament', 
-                                            '_hasJoinedTournament', '_hostViewMode', '_scoreTimestamps', '_deletedPlayers', '_lastSaved'];
+                                            '_hasJoinedTournament', '_hostViewMode', '_isCoHost', '_scoreTimestamps', '_deletedPlayers', '_lastSaved'];
                         
                         isHost = data._isHost || false;
                         tournamentMode = data._tournamentMode || 'single';
@@ -19690,7 +19690,7 @@
                         
                         // Extract metadata
                         const metadataKeys = ['_activeTournamentId', '_tournamentMode', '_isHost', '_hostForTournament', 
-                                            '_hasJoinedTournament', '_hostViewMode', '_scoreTimestamps', '_deletedPlayers', '_lastSaved'];
+                                            '_hasJoinedTournament', '_hostViewMode', '_isCoHost', '_scoreTimestamps', '_deletedPlayers', '_lastSaved'];
                         
                         // Set isHost and tournamentMode from saved data
                         isHost = data._isHost || false;
@@ -28590,7 +28590,7 @@
                             
                             // Load tournament data (exclude metadata)
                             const metadataKeys = ['_activeTournamentId', '_tournamentMode', '_isHost', '_hostForTournament', 
-                                                '_hasJoinedTournament', '_hostViewMode', '_scoreTimestamps', '_deletedPlayers', '_lastSaved'];
+                                                '_hasJoinedTournament', '_hostViewMode', '_isCoHost', '_scoreTimestamps', '_deletedPlayers', '_lastSaved'];
                             const dataCopy = JSON.parse(savedData);
                             metadataKeys.forEach(key => delete dataCopy[key]);
                             tournamentData = dataCopy;
@@ -28815,6 +28815,7 @@
         let payoutKPWinners = {}; // { holeNum: 'playerName' }
         let payoutCustomCategories = []; // [{ id, name, value, enabled, winner }]
         let payoutCustomCategoryCounter = 0;
+        let _payoutSavingLocally = false; // Guard flag to prevent save→onSnapshot→recalculate→save loop
         
         function togglePayoutCalculator() {
             payoutExpanded = !payoutExpanded;
@@ -30066,37 +30067,33 @@
             
             // Save to Firebase tournament doc so all devices get it
             if (activeTournamentId && db) {
+                _payoutSavingLocally = true; // Guard: ignore the onSnapshot echo
                 db.collection('tournaments').doc(activeTournamentId).update({
                     payoutConfig: config
                 }).then(() => {
                     console.log('💰 Payout config synced to Firebase');
+                    // Clear guard after a delay (onSnapshot usually fires within 500ms)
+                    setTimeout(() => { _payoutSavingLocally = false; }, 2000);
                 }).catch(err => {
                     console.error('Error syncing payout config:', err);
+                    _payoutSavingLocally = false;
                 });
             }
         }
         
-        // Load config: Firebase first (shared), then localStorage (personal defaults)
+        // Load config: Firebase first (shared), then localStorage only for personal defaults on NEW tournaments
         function loadPayoutConfig() {
-            // Check Firebase tournament data first
+            // Check Firebase tournament data first — this is the authoritative source
             if (tournamentData?.payoutConfig) {
                 console.log('💰 Loading payout config from Firebase');
                 applyPayoutConfigToForm(tournamentData.payoutConfig);
                 return true; // Config found
             }
             
-            // Fall back to localStorage
-            const saved = localStorage.getItem('letsgolf_payout_config');
-            if (saved) {
-                try {
-                    const config = JSON.parse(saved);
-                    applyPayoutConfigToForm(config);
-                    return true;
-                } catch(e) {
-                    console.error('Error loading payout config:', e);
-                }
-            }
-            
+            // No Firebase config — do NOT auto-load from localStorage
+            // localStorage configs are from OTHER tournaments and should not bleed over
+            // The host will configure from scratch or use presets
+            console.log('💰 No payout config found for this tournament');
             return false; // No config found
         }
         
@@ -30141,6 +30138,12 @@
         
         // Called from Firebase onSnapshot when payoutConfig changes
         function onPayoutConfigUpdated() {
+            // Skip if this is an echo from our own save
+            if (_payoutSavingLocally) {
+                console.log('💰 Skipping onPayoutConfigUpdated — echo from local save');
+                return;
+            }
+            
             if (!payoutExpanded) return;
             
             // Reload config from tournament data and recalculate
@@ -31844,8 +31847,25 @@
                     hasJoinedTournament = data._hasJoinedTournament || false;
                     hostViewMode = data._hostViewMode || 'host';
                     
-                    // Hosts are always considered joined
-                    if (isHost) {
+                    // Restore co-host status
+                    if (data._isCoHost && activeTournamentId) {
+                        isCoHost = true;
+                        hasJoinedTournament = true;
+                        console.log('🔑 checkForSavedRound - Co-host status restored');
+                    }
+                    
+                    // Also check co-host from devices data or coHosts array
+                    if (data.devices && data.devices[currentDeviceId] && data.devices[currentDeviceId].isCoHost) {
+                        isCoHost = true;
+                        hasJoinedTournament = true;
+                    }
+                    if (data.coHosts && data.coHosts.includes(currentDeviceId)) {
+                        isCoHost = true;
+                        hasJoinedTournament = true;
+                    }
+                    
+                    // Hosts and co-hosts are always considered joined
+                    if (isHost || isCoHost) {
                         hasJoinedTournament = true;
                     }
                     
@@ -31853,6 +31873,7 @@
                     console.log('🔄 checkForSavedRound - tournamentMode:', tournamentMode);
                     console.log('🔄 checkForSavedRound - activeTournamentId:', activeTournamentId);
                     console.log('🔄 checkForSavedRound - isHost:', isHost);
+                    console.log('🔄 checkForSavedRound - isCoHost:', isCoHost);
                     console.log('🔄 checkForSavedRound - hasJoinedTournament:', hasJoinedTournament);
                     console.log('🔄 checkForSavedRound - players count:', data.players?.length || 0);
                     console.log('🔄 checkForSavedRound - allowNavigation:', allowNavigation);
@@ -31862,12 +31883,12 @@
                         initialLoadComplete = true;
                         
                         // AUTO-NAVIGATE: If this is a host with an active tournament, go to Host Home
-                        if (activeTournamentId && tournamentMode === 'multi' && isHost) {
-                            console.log('🏠 Host detected with active tournament - navigating to Host Home');
+                        if (activeTournamentId && tournamentMode === 'multi' && (isHost || isCoHost)) {
+                            console.log('🏠 Host/Co-host detected with active tournament - navigating to Host Home');
                             
                             // Load tournament data first (exclude metadata)
                             const metadataKeys = ['_activeTournamentId', '_tournamentMode', '_isHost', '_hostForTournament', 
-                                                '_hasJoinedTournament', '_hostViewMode', '_scoreTimestamps', '_deletedPlayers', '_lastSaved'];
+                                                '_hasJoinedTournament', '_hostViewMode', '_isCoHost', '_scoreTimestamps', '_deletedPlayers', '_lastSaved'];
                             metadataKeys.forEach(key => delete data[key]);
                             tournamentData = data;
                             
@@ -31889,12 +31910,12 @@
                         }
                         
                         // AUTO-NAVIGATE: If this is a non-host with joined tournament, go to Guest Home
-                        if (activeTournamentId && tournamentMode === 'multi' && hasJoinedTournament && !isHost) {
+                        if (activeTournamentId && tournamentMode === 'multi' && hasJoinedTournament && !isHost && !isCoHost) {
                             console.log('🏠 Guest detected with joined tournament - navigating to Guest Home');
                             
                             // Load tournament data
                             const metadataKeys = ['_activeTournamentId', '_tournamentMode', '_isHost', '_hostForTournament', 
-                                                '_hasJoinedTournament', '_hostViewMode', '_scoreTimestamps', '_deletedPlayers', '_lastSaved'];
+                                                '_hasJoinedTournament', '_hostViewMode', '_isCoHost', '_scoreTimestamps', '_deletedPlayers', '_lastSaved'];
                             metadataKeys.forEach(key => delete data[key]);
                             tournamentData = data;
                             
