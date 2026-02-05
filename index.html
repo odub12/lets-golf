@@ -5698,6 +5698,8 @@
                 currentAuthUser = user;
                 // Switch storage context BEFORE loading any data
                 setActiveStorageUser(user ? user.uid : null);
+                // Reload player history with correct scoped key
+                reloadPlayerHistory();
                 if (user) {
                     await loadUserSubscription(user.uid);
                     // Load and merge tournament history from Firebase
@@ -9289,6 +9291,26 @@
         let playerHistory = JSON.parse(userGet('indianHillsPlayerHistory') || '{}');
         // Format: { "PlayerName": { name: "PlayerName", handicap: 10, lastUsed: timestamp, usageCount: 5 } }
 
+        // Reload player history (call after auth state changes to pick up scoped data)
+        function reloadPlayerHistory() {
+            const fresh = userGet('indianHillsPlayerHistory');
+            if (fresh) {
+                try {
+                    const parsed = JSON.parse(fresh);
+                    // Merge: keep any entries from current session, add scoped ones
+                    const currentCount = Object.keys(playerHistory).length;
+                    const freshCount = Object.keys(parsed).length;
+                    if (freshCount > currentCount || currentCount === 0) {
+                        // Merge fresh into current (fresh wins on conflicts)
+                        Object.assign(playerHistory, parsed);
+                        console.log('📋 Player history reloaded after auth:', Object.keys(playerHistory).length, 'players');
+                    }
+                } catch(e) {
+                    console.error('Error reloading player history:', e);
+                }
+            }
+        }
+
         // Save player history
         function savePlayerHistory() {
             userSet('indianHillsPlayerHistory', JSON.stringify(playerHistory));
@@ -12443,6 +12465,7 @@
                     _activeTournamentId: activeTournamentId,
                     _tournamentMode: tournamentMode,
                     _isHost: isHost,
+                    _isCoHost: isCoHost,
                     _hostForTournament: activeTournamentId ? activeTournamentId : null, // Tie host to specific tournament
                     _hasJoinedTournament: hasJoinedTournament, // Track if user has joined
                     _hostViewMode: hostViewMode, // Host's current view mode
@@ -12487,6 +12510,7 @@
                         _activeTournamentId: activeTournamentId,
                         _tournamentMode: tournamentMode,
                         _isHost: isHost,
+                        _isCoHost: isCoHost,
                         _hostForTournament: activeTournamentId ? activeTournamentId : null,
                         _hasJoinedTournament: hasJoinedTournament,
                         _hostViewMode: hostViewMode,
@@ -12531,6 +12555,13 @@
                     hasJoinedTournament = data._hasJoinedTournament || false;
                     hostViewMode = data._hostViewMode || 'host';
                     
+                    // Restore co-host status
+                    if (data._isCoHost && activeTournamentId) {
+                        isCoHost = true;
+                        hasJoinedTournament = true;
+                        console.log('🔑 Co-host status restored from localStorage');
+                    }
+                    
                     // NEWEST WINS: Restore score timestamps and tombstones
                     scoreTimestamps = data._scoreTimestamps || {};
                     deletedPlayers = data._deletedPlayers || {};
@@ -12551,14 +12582,27 @@
                         console.log('🔑 Host status confirmed from tournament devices data');
                     }
                     
-                    // Hosts are always considered joined
-                    if (isHost) {
+                    // Also check co-host from devices data or coHosts array
+                    if (data.devices && data.devices[currentDeviceId] && data.devices[currentDeviceId].isCoHost) {
+                        isCoHost = true;
+                        hasJoinedTournament = true;
+                        console.log('🔑 Co-host status confirmed from tournament devices data');
+                    }
+                    if (data.coHosts && data.coHosts.includes(currentDeviceId)) {
+                        isCoHost = true;
+                        hasJoinedTournament = true;
+                        console.log('🔑 Co-host status confirmed from coHosts array');
+                    }
+                    
+                    // Hosts and co-hosts are always considered joined
+                    if (isHost || isCoHost) {
                         hasJoinedTournament = true;
                     }
                     
                     delete data._activeTournamentId;
                     delete data._tournamentMode;
                     delete data._isHost;
+                    delete data._isCoHost;
                     delete data._hostForTournament;
                     delete data._hasJoinedTournament;
                     delete data._hostViewMode;
