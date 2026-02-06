@@ -3636,7 +3636,6 @@
                     <option value="Skins">Skins</option>
                     <option value="Stableford">Stableford</option>
                     <option value="Stableford (Modified)">Stableford (Modified)</option>
-                    <option value="Footlong">Footlong</option>
                     <option value="Nassau">Nassau</option>
                     <option value="Best Ball">Best Ball</option>
                     <option value="Wolf">🐺 Wolf</option>
@@ -4184,7 +4183,6 @@
                         <option value="Skins">Skins</option>
                         <option value="Stableford">Stableford</option>
                         <option value="Stableford (Modified)">Stableford (Modified)</option>
-                        <option value="Footlong">Footlong</option>
                         <option value="Nassau">Nassau</option>
                     </select>
                     <div id="resultsFilterToggle" style="display: flex; background: #e5e7eb; border-radius: 6px; padding: 2px;">
@@ -27971,7 +27969,7 @@
             
             // Determine display label based on game type and scoring method
             let displayLabel = baseGameType;
-            if (baseGameType === 'Stroke Play' || baseGameType === 'Footlong' || baseGameType === 'Nassau') {
+            if (baseGameType === 'Stroke Play' || baseGameType === 'Nassau') {
                 if (currentScoringMethod === 'net') displayLabel = baseGameType + ' Net';
                 else if (currentScoringMethod === 'net18') displayLabel = baseGameType + ' Net (18 Max)';
                 else displayLabel = baseGameType + ' Gross';
@@ -28028,11 +28026,6 @@
             // Stroke Play Net
             else if (gameType === 'Stroke Play Net') {
                 renderStrokePlayResults(container, playersToDisplay, netMethod);
-            }
-            
-            // Footlong - Front 9 and Back 9 winners
-            else if (baseGameType === 'Footlong') {
-                renderFootlongResults(container, playersToDisplay, currentScoringMethod === 'gross' ? 'gross' : netMethod);
             }
             
             // Nassau - Front 9, Back 9, and Overall winners
@@ -28108,104 +28101,24 @@
             });
         }
         
-        // Render Footlong results (Front 9 + Back 9 winners)
-        function renderFootlongResults(container, players, method) {
-            const isNet = method !== 'gross';
-            
-            // Calculate front 9 and back 9 totals
-            const results = players.map((player, idx) => {
-                let front9 = 0, back9 = 0;
-                
-                player.scores.forEach((score, holeIdx) => {
-                    if (score > 0) {
-                        const netScore = isNet ? 
-                            getNetScore(score, player.handicap, courseData.holes[holeIdx].handicap, method) : score;
-                        
-                        if (holeIdx < 9) front9 += netScore;
-                        else back9 += netScore;
-                    }
-                });
-                
-                return { player, front9, back9, index: idx };
-            });
-            
-            // Front 9 Winner
-            const front9Results = results.filter(r => r.front9 > 0).sort((a, b) => {
-                if (a.front9 !== b.front9) return a.front9 - b.front9;
-                return footlongTiebreaker(a, b, 0, 8, isNet, method); // Holes 0-8 (front 9)
-            });
-            
-            // Back 9 Winner  
-            const back9Results = results.filter(r => r.back9 > 0).sort((a, b) => {
-                if (a.back9 !== b.back9) return a.back9 - b.back9;
-                return footlongTiebreaker(a, b, 9, 17, isNet, method); // Holes 9-17 (back 9)
-            });
-            
-            // Front 9 par
-            const front9Par = courseData.holes.slice(0, 9).reduce((sum, h) => sum + h.par, 0);
-            const back9Par = courseData.holes.slice(9, 18).reduce((sum, h) => sum + h.par, 0);
-            
-            // Display Front 9 Winner
-            container.innerHTML += `
-                <div style="background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); border: 2px solid #166534; border-radius: 6px; padding: 16px; margin-bottom: 12px;">
-                    <div style="font-size: 13px; color: #166534; font-weight: 700; margin-bottom: 8px; text-transform: uppercase;">🏆 Front 9 (OUT) Winner</div>
-                    ${front9Results.length > 0 ? `
-                        <div style="font-size: 20px; font-weight: 800; color: #166534;">${front9Results[0].player.name}</div>
-                        <div style="font-size: 14px; color: #047857;">${front9Results[0].front9} (${front9Results[0].front9 - front9Par >= 0 ? '+' : ''}${front9Results[0].front9 - front9Par})</div>
-                    ` : '<div style="color: #6b7280;">No scores yet</div>'}
-                </div>
-            `;
-            
-            // Display Back 9 Winner
-            container.innerHTML += `
-                <div style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border: 2px solid #1e3a5f; border-radius: 6px; padding: 16px; margin-bottom: 12px;">
-                    <div style="font-size: 13px; color: #1e3a5f; font-weight: 700; margin-bottom: 8px; text-transform: uppercase;">🏆 Back 9 (IN) Winner</div>
-                    ${back9Results.length > 0 ? `
-                        <div style="font-size: 20px; font-weight: 800; color: #1e3a5f;">${back9Results[0].player.name}</div>
-                        <div style="font-size: 14px; color: #1e3a5f;">${back9Results[0].back9} (${back9Results[0].back9 - back9Par >= 0 ? '+' : ''}${back9Results[0].back9 - back9Par})</div>
-                    ` : '<div style="color: #6b7280;">No scores yet</div>'}
-                </div>
-            `;
-            
-            // Show all players breakdown
-            container.innerHTML += `<div style="font-size: 12px; color: #64748b; font-weight: 600; margin: 16px 0 8px 0; text-transform: uppercase;">All Players</div>`;
-            
-            results.filter(r => r.front9 > 0 || r.back9 > 0).forEach(r => {
-                const div = document.createElement('div');
-                div.style.cssText = 'display: flex; justify-content: space-between; padding: 10px 12px; background: #f8fafc; border-radius: 8px; margin-bottom: 6px;';
-                div.innerHTML = `
-                    <span style="font-weight: 600; color: #1e293b;">${r.player.name}</span>
-                    <span style="color: #64748b;">OUT: <strong>${r.front9 || '-'}</strong> | IN: <strong>${r.back9 || '-'}</strong></span>
-                `;
-                container.appendChild(div);
-            });
-        }
-        
-        // Footlong tiebreaker - compare hardest holes within the 9
-        function footlongTiebreaker(a, b, startHole, endHole, isNet, method) {
-            // Get holes in this range sorted by handicap (hardest first)
+        // Render Nassau results (Front 9 + Back 9 + Overall winners)
+        // Tiebreaker for 9-hole segments (used by Nassau)
+        function nassauTiebreaker(a, b, startHole, endHole, isNet, method) {
             const holesInRange = courseData.holes
                 .map((h, idx) => ({ ...h, idx }))
                 .filter(h => h.idx >= startHole && h.idx <= endHole)
                 .sort((x, y) => x.handicap - y.handicap);
-            
             for (const hole of holesInRange) {
                 let scoreA = a.player.scores[hole.idx] || 0;
                 let scoreB = b.player.scores[hole.idx] || 0;
-                
                 if (isNet) {
                     scoreA = scoreA > 0 ? getNetScore(scoreA, a.player.handicap, hole.handicap, method) : 0;
                     scoreB = scoreB > 0 ? getNetScore(scoreB, b.player.handicap, hole.handicap, method) : 0;
                 }
-                
-                if (scoreA !== scoreB && scoreA > 0 && scoreB > 0) {
-                    return scoreA - scoreB;
-                }
+                if (scoreA !== scoreB && scoreA > 0 && scoreB > 0) return scoreA - scoreB;
             }
             return 0;
         }
-        
-        // Render Nassau results (Front 9 + Back 9 + Overall winners)
         function renderNassauResults(container, players, method) {
             const isNet = method !== 'gross';
             
@@ -28230,12 +28143,12 @@
             // Sort for each category
             const front9Results = results.filter(r => r.front9 > 0).sort((a, b) => {
                 if (a.front9 !== b.front9) return a.front9 - b.front9;
-                return footlongTiebreaker(a, b, 0, 8, isNet, method);
+                return nassauTiebreaker(a, b, 0, 8, isNet, method);
             });
             
             const back9Results = results.filter(r => r.back9 > 0).sort((a, b) => {
                 if (a.back9 !== b.back9) return a.back9 - b.back9;
-                return footlongTiebreaker(a, b, 9, 17, isNet, method);
+                return nassauTiebreaker(a, b, 9, 17, isNet, method);
             });
             
             const overallResults = results.filter(r => r.total > 0).sort((a, b) => {
