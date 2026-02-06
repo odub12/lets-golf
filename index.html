@@ -60,7 +60,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
-    <!-- VERSION: 2026-02-04-v15.9.81-tutorials-deeplink-fix -->
+    <!-- VERSION: 2026-02-06-v15.9.82-tutorial-update-rec-prefix-fix -->
     <style>
         /* ============================================
            RESKIN v1.0 - Navy + Tan Theme
@@ -15865,6 +15865,10 @@
             // Always update non-score data from cloud
             tournamentData.date = tournament.date;
             tournamentData.course = tournament.course;
+            // Strip fav_/rec_ prefix if present in cloud data
+            if (tournamentData.course && (tournamentData.course.startsWith('fav_') || tournamentData.course.startsWith('rec_'))) {
+                tournamentData.course = tournamentData.course.substring(4);
+            }
             tournamentData.gameType = tournament.gameType;
             tournamentData.enabledGames = tournament.enabledGames || [tournament.gameType];
             tournamentData.name = tournament.name || '';
@@ -17089,9 +17093,12 @@
                     
                     // Set course data
                     if (tournamentData.course) {
-                        // Strip fav_ prefix if present (legacy data fix)
+                        // Strip fav_ or rec_ prefix if present (legacy data fix)
                         let courseKey = tournamentData.course;
                         if (courseKey.startsWith('fav_')) {
+                            courseKey = courseKey.substring(4);
+                            tournamentData.course = courseKey; // Update the stored key
+                        } else if (courseKey.startsWith('rec_')) {
                             courseKey = courseKey.substring(4);
                             tournamentData.course = courseKey; // Update the stored key
                         }
@@ -17153,163 +17160,177 @@
         // TUTORIAL SYSTEM
         // ========================================
         
-        const TUTORIAL_APP_VERSION = '15.9.81';
+        const TUTORIAL_APP_VERSION = '15.9.82';
         
         // Tutorial content definitions - bump contentVersion when tutorial changes
         const tutorialContent = {
             hostHomePage: {
-                contentVersion: 1,
+                contentVersion: 2,
                 icon: '🏠',
-                title: 'Host Home',
-                subtitle: 'Your tournament command center',
+                title: 'Home',
+                subtitle: 'Your golf hub',
                 steps: [
                     [
-                        { icon: '🏌️', text: '<strong>Start a Round</strong> — Set up your course, game type, and players, then hit Start Round to begin scoring.' },
-                        { icon: '📱', text: '<strong>Multi-Device Mode</strong> — Share the tournament code so other players can join and enter their own scores in real-time.' }
+                        { icon: '👑', text: '<strong>Host a Round</strong> — Tap the <strong>HOST</strong> card to set up a new tournament. You\'ll pick a course, game type, and add players.' },
+                        { icon: '🔗', text: '<strong>Join a Round</strong> — Tap <strong>JOIN</strong> and enter a player code to join someone else\'s multi-device tournament.' }
                     ],
                     [
-                        { icon: '🔄', text: '<strong>Resume a Round</strong> — Your in-progress round appears at the top with a Resume button. Rounds auto-save.' },
-                        { icon: '📊', text: '<strong>Past Rounds</strong> — Scroll down to see your tournament history and stats.' }
+                        { icon: '🔄', text: '<strong>Current Round</strong> — Your active round appears with <strong>Resume</strong> and <strong>Leave</strong> buttons. Rounds auto-save so you can close the app and come back.' },
+                        { icon: '📊', text: '<strong>Previous Rounds</strong> — Scroll down to see your tournament history. Tap <strong>Results</strong> to review any past round.' }
+                    ],
+                    [
+                        { icon: '👤', text: '<strong>Your Profile</strong> — Tap your name in the top-right corner to manage your Golf Identity, view stats, and adjust settings.' }
                     ]
                 ]
             },
             guestHomePage: {
-                contentVersion: 1,
+                contentVersion: 2,
                 icon: '🏠',
                 title: 'Home',
-                subtitle: 'Join or start a round',
+                subtitle: 'Start scoring',
                 steps: [
                     [
-                        { icon: '🔗', text: '<strong>Join a Tournament</strong> — Enter the player code shared by the host to join a multi-device round.' },
-                        { icon: '👤', text: '<strong>Sign In</strong> — Create an account to save your rounds, track stats, and set your golf identity.' }
+                        { icon: '👑', text: '<strong>Host a Round</strong> — Tap <strong>HOST</strong> to create a new tournament and invite others to score on their own devices.' },
+                        { icon: '🔗', text: '<strong>Join a Round</strong> — Tap <strong>JOIN</strong> and enter the player code shared by the host to join a live round.' }
+                    ],
+                    [
+                        { icon: '👤', text: '<strong>Sign In</strong> — Create an account to save your rounds, track stats, and set up your Golf Identity. Tap the profile icon in the top right.' }
                     ]
                 ]
             },
             scoringPage_hole: {
-                contentVersion: 1,
+                contentVersion: 2,
                 icon: '⛳',
                 title: 'Scoring — Hole View',
                 subtitle: 'Enter scores hole by hole',
                 steps: [
                     [
-                        { icon: '🔢', text: '<strong>Tap a Score</strong> — Tap any player\'s score cell to open the quick entry popup with +/− buttons and presets.' },
-                        { icon: '📍', text: '<strong>Hole Navigation</strong> — Use the numbered buttons at the top to jump to any hole.' }
+                        { icon: '🔢', text: '<strong>Enter Scores</strong> — Tap the score circle next to any player to enter their score with +/− buttons.' },
+                        { icon: '⬅️', text: '<strong>Hole Navigation</strong> — Use the <strong>← / →</strong> arrow buttons or tap the hole numbers to jump between holes.' }
                     ],
                     [
-                        { icon: '🔄', text: '<strong>Switch Views</strong> — Tap <strong>👤 Players</strong> at the top to see one player\'s full scorecard at a time.' },
-                        { icon: '📊', text: '<strong>Track Stats</strong> — Tap the ⚙️ gear icon to enable putts, fairways, and greens tracking for detailed statistics.' }
+                        { icon: '👤', text: '<strong>Switch to Player View</strong> — Tap <strong>🏌️ Players</strong> at the top to see one player\'s full 18-hole scorecard at a time.' },
+                        { icon: '🖐️', text: '<strong>Touch vs Voice</strong> — Toggle between <strong>👆 Touch</strong> and <strong>🎙️ Voice</strong> input modes for entering scores.' }
+                    ],
+                    [
+                        { icon: '📊', text: '<strong>Stats Tracking</strong> — FIR, GIR, PUTT, and DOT boxes appear below each player when stats are enabled. Tap them to record.' },
+                        { icon: '📝', text: '<strong>Hole Notes</strong> — Tap the 📝 notepad icon to add notes for the current hole.' }
                     ]
                 ]
             },
             scoringPage_player: {
-                contentVersion: 1,
+                contentVersion: 2,
                 icon: '👤',
                 title: 'Scoring — Player View',
                 subtitle: 'Full scorecard per player',
                 steps: [
                     [
-                        { icon: '👆', text: '<strong>Swipe Between Players</strong> — Swipe left/right on the scorecard or use the arrow buttons to navigate between players.' },
-                        { icon: '🔍', text: '<strong>Search Players</strong> — Tap the 🔍 button to jump directly to any player.' }
+                        { icon: '👆', text: '<strong>Swipe Between Players</strong> — Swipe left/right on the scorecard or use the arrow buttons to switch players.' },
+                        { icon: '🔍', text: '<strong>Search Players</strong> — Tap the 🔍 button to jump directly to any player by name.' }
                     ],
                     [
-                        { icon: '⛶', text: '<strong>Fullscreen Mode</strong> — Tap the ⛶ button for a larger view of the scorecard. Great for entering lots of scores.' },
-                        { icon: '🟢', text: '<strong>Handicap Dots</strong> — Green dots show strokes received, red dots show strokes given for plus handicaps.' }
+                        { icon: '⛶', text: '<strong>Fullscreen Mode</strong> — Tap the ⛶ button for a larger scorecard view — great for entering lots of scores quickly.' },
+                        { icon: '🟢', text: '<strong>Handicap Dots</strong> — Green dots show strokes received on that hole. Red dots indicate strokes given for plus handicaps.' }
                     ]
                 ]
             },
             resultsPage: {
-                contentVersion: 1,
+                contentVersion: 2,
                 icon: '🏆',
-                title: 'Results',
-                subtitle: 'Leaderboard and game results',
+                title: 'Results & Leaderboard',
+                subtitle: 'Standings, payouts, and side games',
                 steps: [
                     [
-                        { icon: '📋', text: '<strong>Leaderboard</strong> — Shows final standings sorted by score. Toggle between <strong>Gross</strong> and <strong>Net</strong> with the button at the top.' },
-                        { icon: '💰', text: '<strong>Skins & Games</strong> — Scroll down for skins results, Nassau, and other game payouts based on your game type.' }
+                        { icon: '📋', text: '<strong>Leaderboard</strong> — View standings with <strong>Gross</strong>, <strong>Net</strong>, <strong>Net 18</strong>, and <strong>Net ½</strong> scoring options. Toggle between My Players and All Players.' },
+                        { icon: '🎮', text: '<strong>Game Type</strong> — Use the dropdown to switch between Stroke Play, Stableford, and other formats.' }
                     ],
                     [
-                        { icon: '📤', text: '<strong>Share Results</strong> — Tap the share button to copy a formatted leaderboard to paste into group chats.' },
-                        { icon: '🏁', text: '<strong>Finish Round</strong> — Tap Finish Round to save to history and return home. You can always view past results from the home screen.' }
+                        { icon: '💰', text: '<strong>Payout Calculator</strong> — Expand the Payout Calculator to configure buy-ins, skins, KP, and custom categories. Save templates for quick reuse.' },
+                        { icon: '🎲', text: '<strong>Side Game</strong> — Tap the <strong>Side Game</strong> tab to set up team games (Best Ball, Match Play) that run alongside your tournament.' }
                     ]
                 ]
             },
             myPlayersPage: {
-                contentVersion: 1,
+                contentVersion: 2,
                 icon: '👥',
                 title: 'My Players',
-                subtitle: 'Manage who you\'re scoring for',
+                subtitle: 'Claim players and track stats',
                 steps: [
                     [
-                        { icon: '✋', text: '<strong>Claim Players</strong> — Tap a player\'s name to claim them. You\'ll enter scores for your claimed players.' },
-                        { icon: '👁', text: '<strong>Watch Others</strong> — Players you haven\'t claimed show as "watched" — you can see their scores update live but can\'t edit them.' }
+                        { icon: '✅', text: '<strong>Claim Players</strong> — Tap <strong>✓ Claim</strong> next to a player to score for them on your device. You can claim multiple players.' },
+                        { icon: '👁', text: '<strong>Watch Players</strong> — Tap <strong>👁 Watch</strong> to follow a player\'s scores live without entering scores for them.' }
                     ],
                     [
-                        { icon: '➕', text: '<strong>Claim More</strong> — Use the Claim Another Player button to add more players to your device.' },
-                        { icon: '🏠', text: '<strong>Return Home</strong> — Tap 🏠 to go back. If you\'re not signed in, you\'ll see a sign-in prompt.' }
+                        { icon: '📊', text: '<strong>Stats Tracker</strong> — Enable <strong>FIR</strong>, <strong>GIR</strong>, <strong>Putts</strong>, and <strong>Dots</strong> tracking for detailed stats in Hole View. Tap <strong>📈 History</strong> to see trends.' },
+                        { icon: '🔔', text: '<strong>Notifications</strong> — Tap <strong>🔔 Notify</strong> in the Watching section to get alerts when watched players enter scores.' }
                     ]
                 ]
             },
             playerManagementPage: {
-                contentVersion: 1,
+                contentVersion: 2,
                 icon: '⚙️',
-                title: 'Tournament Management',
-                subtitle: 'Add, edit, and organize players',
+                title: 'Host — Player Management',
+                subtitle: 'Manage your tournament roster',
                 steps: [
                     [
-                        { icon: '➕', text: '<strong>Add Players</strong> — Use Quick Add for saved players, or type a name manually. Import from a roster for big groups.' },
-                        { icon: '🎯', text: '<strong>Handicaps</strong> — Set each player\'s course handicap. Use GHIN lookup to pull official handicaps automatically.' }
+                        { icon: '➕', text: '<strong>Add Players</strong> — Tap <strong>+ Add</strong> to add a player. Enter their name and handicap, or use Quick Add for saved players.' },
+                        { icon: '✏️', text: '<strong>Edit Players</strong> — Tap the ✏️ pencil icon to edit a player\'s name or handicap. Use ↑↓ arrows to reorder.' }
                     ],
                     [
-                        { icon: '🏷️', text: '<strong>Tee Assignments</strong> — Tap the tee buttons (⬜🟦🔴) next to each player to assign their playing tees.' },
-                        { icon: '👑', text: '<strong>Co-Host</strong> — Tap the crown icon next to a player to make them a co-host who can manage the tournament from their device.' }
+                        { icon: '🔑', text: '<strong>Co-Hosts & Codes</strong> — Share the <strong>🔑 Host Code</strong> so others can join with full host controls. Co-hosts can manage the tournament from their own device.' },
+                        { icon: '🏁', text: '<strong>Manage Round</strong> — Use <strong>All 18 / Front 9 / Back 9</strong> to clear scores. Tap <strong>⚙️ Edit Tournament</strong> to change course or settings.' }
                     ]
                 ]
             },
             setupPage: {
-                contentVersion: 1,
+                contentVersion: 2,
                 icon: '⛳',
                 title: 'Tournament Setup',
-                subtitle: 'Configure your round before teeing off',
+                subtitle: 'Configure your round',
                 steps: [
                     [
-                        { icon: '⛳', text: '<strong>Course</strong> — Search for any course or add a custom one. Star ⭐ your favorites so they appear at the top.' },
-                        { icon: '🏷️', text: '<strong>Tees & Rating</strong> — Pick your tees after selecting a course. Slope and rating auto-fill for accurate handicaps.' }
+                        { icon: '⛳', text: '<strong>Pick a Course</strong> — Choose from your ⭐ Favorites and 🕐 Recent courses, or search 45,000+ courses. Star courses you play often.' },
+                        { icon: '🏷️', text: '<strong>Tees & Rating</strong> — After selecting a course, pick your tees. Slope and rating auto-fill for accurate handicap calculations.' }
                     ],
                     [
-                        { icon: '🎮', text: '<strong>Game Type</strong> — Choose Stroke Play, Skins, Nassau, Wolf, and more. Each has its own scoring and payout rules.' },
-                        { icon: '🚀', text: '<strong>Start Tournament</strong> — Tap the button at the top when you\'re ready. You\'ll add players on the next screen.' }
+                        { icon: '👥', text: '<strong>Add Players</strong> — Use <strong>+ Add Player</strong> for manual entry, <strong>👥 Quick Add</strong> for saved players, or <strong>📋 Import Roster</strong> / <strong>📁 Saved Rosters</strong> for groups.' },
+                        { icon: '🎯', text: '<strong>Handicaps</strong> — Check <strong>Use GHIN Handicap Index</strong> for automatic course handicap calculation, or enter course handicaps manually.' }
+                    ],
+                    [
+                        { icon: '🔒', text: '<strong>Privacy</strong> — Control whether players can view the leaderboard or watch other players\' scores during the round.' },
+                        { icon: '🚀', text: '<strong>Start Tournament</strong> — Tap the green button at the top when you\'re ready. You\'ll land on the scoring page with all players loaded.' }
                     ]
                 ]
             },
             sideGame: {
-                contentVersion: 1,
+                contentVersion: 2,
                 icon: '🎲',
-                title: 'Side Game',
-                subtitle: 'Best Ball & team games alongside your round',
+                title: 'Side Game Setup',
+                subtitle: 'Team games alongside your tournament',
                 steps: [
                     [
-                        { icon: '👥', text: '<strong>Build Teams</strong> — Drag players into 2+ teams. Use Auto Pair to balance teams by handicap automatically.' },
-                        { icon: '🏆', text: '<strong>Best Ball Scoring</strong> — Each team\'s best score per hole counts. Toggle Gross/Net/Net 18 at the top.' }
+                        { icon: '👥', text: '<strong>Players Per Team</strong> — Choose 1, 2, 3, or 4 players per team. Pick how many scores count per hole (Best Ball = 1).' },
+                        { icon: '🎮', text: '<strong>Format</strong> — Select <strong>Stroke Play</strong> for total score or <strong>Match Play</strong> for hole-by-hole competition between teams.' }
                     ],
                     [
-                        { icon: '✏️', text: '<strong>Edit Teams</strong> — Tap Edit Teams to rearrange at any time. Changes recalculate results instantly.' },
-                        { icon: '↩️', text: '<strong>Back to Tournament</strong> — Tap ← Back to Tournament to return to the main leaderboard.' }
+                        { icon: '📋', text: '<strong>Assign Teams</strong> — Use the dropdowns to assign players to each team, or tap <strong>+ Add Team</strong> for more teams.' },
+                        { icon: '↩️', text: '<strong>View Results</strong> — Tap <strong>✓ View Results</strong> to see the side game leaderboard. Tap <strong>← Back to Tournament</strong> to return to the main results.' }
                     ]
                 ]
             },
             accountModal: {
-                contentVersion: 1,
+                contentVersion: 2,
                 icon: '👤',
-                title: 'Profile & Account',
-                subtitle: 'Your golf identity and settings',
+                title: 'My Account',
+                subtitle: 'Your profile and golf identity',
                 steps: [
                     [
-                        { icon: '⛳', text: '<strong>Golf Identity</strong> — Set your name and nicknames so Let\'s Golf can track your stats automatically across tournaments.' },
-                        { icon: '👁️', text: '<strong>Tracked Players</strong> — Add friends to track their stats whenever they appear in your rounds.' }
+                        { icon: '⛳', text: '<strong>Golf Identity</strong> — Set your name and nicknames/aliases so Let\'s Golf recognizes you across tournaments and tracks your stats.' },
+                        { icon: '⭐', text: '<strong>Tracked Players</strong> — Add friends with <strong>+ Add</strong> to automatically track their stats whenever they appear in your rounds.' }
                     ],
                     [
-                        { icon: '⚙️', text: '<strong>Account Settings</strong> — Update your username, email, or password from the ⚙️ button.' },
-                        { icon: '📊', text: '<strong>Player Stats</strong> — Scroll down to see your round history, scoring averages, and personal bests.' }
+                        { icon: '📊', text: '<strong>View Stats History</strong> — Tap the green button to see your round history, scoring averages, and personal bests.' },
+                        { icon: '🔄', text: '<strong>Sync & Settings</strong> — Tap <strong>Sync</strong> to refresh your data. Use the ☀️/🌙 icon to toggle dark mode and 🗑️ to manage cached data.' }
                     ]
                 ]
             }
@@ -21870,8 +21891,10 @@
             const gameType = document.getElementById('gameType').value;
             let selectedCourse = document.getElementById('courseSelect').value;
             
-            // Strip fav_ prefix if present - save the actual course key
+            // Strip fav_ or rec_ prefix if present - save the actual course key
             if (selectedCourse && selectedCourse.startsWith('fav_')) {
+                selectedCourse = selectedCourse.substring(4);
+            } else if (selectedCourse && selectedCourse.startsWith('rec_')) {
                 selectedCourse = selectedCourse.substring(4);
             }
             
@@ -21895,6 +21918,12 @@
             
             // Update course data
             courseData = courses[selectedCourse] || customCourses[selectedCourse];
+            
+            // If not found, try with api_ prefix (for API-sourced courses stored in customCourses)
+            if (!courseData && customCourses['api_' + selectedCourse]) {
+                selectedCourse = 'api_' + selectedCourse;
+                courseData = customCourses[selectedCourse];
+            }
             
             // Get tee data for course handicap calculation
             const teeData = (courseData && selectedTee && courseData.tees) ? courseData.tees[selectedTee] : null;
@@ -33783,6 +33812,13 @@
             // Safety check for course data - try multiple sources
             if (!courseData || !courseData.holes) {
                 console.error('❌ No course data available, attempting to load...');
+                
+                // Strip fav_ or rec_ prefix if still present
+                if (tournamentData.course && (tournamentData.course.startsWith('fav_') || tournamentData.course.startsWith('rec_'))) {
+                    tournamentData.course = tournamentData.course.substring(4);
+                    console.log('🔧 Stripped prefix, course key now:', tournamentData.course);
+                }
+                
                 console.log('Looking for course:', tournamentData.course);
                 console.log('Built-in courses available:', Object.keys(courses));
                 
@@ -33794,6 +33830,13 @@
                 if (!courseData) {
                     courseData = customCourses[tournamentData.course];
                     console.log('From custom courses:', !!courseData);
+                }
+                
+                // Try with api_ prefix (for API-sourced courses)
+                if (!courseData && customCourses['api_' + tournamentData.course]) {
+                    tournamentData.course = 'api_' + tournamentData.course;
+                    courseData = customCourses[tournamentData.course];
+                    console.log('From custom courses with api_ prefix:', !!courseData);
                 }
                 
                 // Try embedded course data from tournament
