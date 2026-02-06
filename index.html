@@ -22093,6 +22093,9 @@
                         // Initialize foursome games if needed
                         initFoursomeGameIfNeeded();
                         
+                        // Ensure host starts in host mode (sees all players)
+                        hostViewMode = 'host';
+                        
                         // Continue to scoring
                         saveToLocalStorage();
                         renderScoringPage();
@@ -22118,6 +22121,9 @@
                     document.getElementById('singleDeviceBtn').classList.add('active');
                     document.getElementById('multiDeviceBtn').classList.remove('active');
                     
+                    // Ensure host starts in host mode (sees all players)
+                    hostViewMode = 'host';
+                    
                     saveToLocalStorage();
                     renderScoringPage();
                     showPage('scoringPage');
@@ -22130,6 +22136,9 @@
                     
                     // Free users in single-device mode are still the host
                     isHost = true;
+                    
+                    // Ensure host starts in host mode (sees all players)
+                    hostViewMode = 'host';
                     
                     saveToLocalStorage();
                     renderScoringPage();
@@ -22149,6 +22158,9 @@
                 
                 // Initialize foursome games if needed
                 initFoursomeGameIfNeeded();
+                
+                // Ensure host starts in host mode (sees all players)
+                hostViewMode = 'host';
                 
                 saveToLocalStorage();
                 renderScoringPage();
