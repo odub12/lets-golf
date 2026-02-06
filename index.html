@@ -997,12 +997,6 @@
             box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
         
-        .btn-toggle-group .toggle-btn.voice-active {
-            background: #166534;
-            color: white;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-        }
-        
         .scoring-grid-btn {
             padding: 10px 8px;
             background: #f1f5f9;
@@ -1022,12 +1016,6 @@
         .scoring-grid-btn.active {
             background: #1e3a5f;
             border-color: #1e3a5f;
-            color: white;
-        }
-        
-        .scoring-grid-btn.voice-btn.active {
-            background: #166534;
-            border-color: #166534;
             color: white;
         }
         
@@ -2691,86 +2679,6 @@
             display: none;
         }
         
-        /* Voice/Keyboard Input Toggle */
-        .input-mode-toggle {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 12px;
-            background: #f1f5f9;
-            border-radius: 8px;
-            margin: 8px 0;
-        }
-        
-        .input-mode-toggle label {
-            font-size: 12px;
-            color: #64748b;
-            font-weight: 600;
-        }
-        
-        .input-mode-btn {
-            padding: 6px 12px;
-            border: 2px solid #e2e8f0;
-            background: white;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .input-mode-btn.active {
-            background: #1e3a5f;
-            border-color: #1e3a5f;
-            color: white;
-        }
-        
-        .input-mode-btn:hover:not(.active) {
-            border-color: #1e3a5f;
-        }
-        
-        /* Voice listening indicator */
-        .voice-listening {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.9);
-            color: white;
-            padding: 32px 48px;
-            border-radius: 8px;
-            z-index: 10001;
-            text-align: center;
-            display: none;
-        }
-        
-        .voice-listening.active {
-            display: block;
-        }
-        
-        .voice-listening .mic-icon {
-            font-size: 48px;
-            animation: pulse 1s infinite;
-        }
-        
-        .voice-listening .voice-text {
-            font-size: 18px;
-            margin-top: 12px;
-            font-weight: 600;
-        }
-        
-        .voice-listening .voice-result {
-            font-size: 48px;
-            margin-top: 16px;
-            font-weight: 700;
-            color: #166534;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.1); opacity: 0.8; }
-        }
-        
         /* Compact Player Card (9-column grid for auto-fit) */
         .player-card-compact {
             background: white;
@@ -3240,6 +3148,7 @@
             display: flex;
             gap: 2px;
             justify-content: center;
+            min-height: 8px;
             height: 8px;
             margin-bottom: 2px;
         }
@@ -4065,13 +3974,6 @@
             <span>Round in Progress • Auto-saved</span>
         </div>
         
-        <!-- Voice Listening Overlay -->
-        <div id="voiceListening" class="voice-listening">
-            <div class="mic-icon">🎤</div>
-            <div class="voice-text">Listening...</div>
-            <div class="voice-result" id="voiceResult"></div>
-        </div>
-        
         <!-- Expanded Score Input Modal -->
         <div id="expandedScoreModal" class="expanded-score-modal">
             <div class="expanded-score-content">
@@ -4198,10 +4100,6 @@
                 <div class="btn-toggle-group" style="display: flex; background: #e5e7eb; border-radius: 6px; padding: 2px;">
                     <button type="button" id="toggleHoleView" class="toggle-btn active" onclick="switchToHoleView()" style="padding: 6px 14px; font-size: 12px; font-weight: 600; border-radius: 4px; border: none; background: #1e3a5f; color: white; cursor: pointer;">⛳ Holes</button>
                     <button type="button" id="togglePlayerView" class="toggle-btn" onclick="switchToPlayerView()" style="padding: 6px 14px; font-size: 12px; font-weight: 600; border-radius: 4px; border: none; background: transparent; color: #6b7280; cursor: pointer;">👤 Players</button>
-                </div>
-                <div class="btn-toggle-group" style="display: flex; background: #e5e7eb; border-radius: 6px; padding: 2px;">
-                    <button type="button" class="toggle-btn active" id="keyboardModeBtn" onclick="setInputMode('keyboard')" style="padding: 6px 14px; font-size: 12px; font-weight: 600; border-radius: 4px; border: none; background: #1e3a5f; color: white; cursor: pointer;">👆 Touch</button>
-                    <button type="button" class="toggle-btn" id="voiceModeBtn" onclick="setInputMode('voice')" style="padding: 6px 14px; font-size: 12px; font-weight: 600; border-radius: 4px; border: none; background: transparent; color: #6b7280; cursor: pointer;">🎤 Voice</button>
                 </div>
             </div>
             
@@ -17199,7 +17097,7 @@
                 ]
             },
             scoringPage_hole: {
-                contentVersion: 2,
+                contentVersion: 3,
                 icon: '⛳',
                 title: 'Scoring — Hole View',
                 subtitle: 'Enter scores hole by hole',
@@ -17210,11 +17108,11 @@
                     ],
                     [
                         { icon: '👤', text: '<strong>Switch to Player View</strong> — Tap <strong>🏌️ Players</strong> at the top to see one player\'s full 18-hole scorecard at a time.' },
-                        { icon: '🖐️', text: '<strong>Touch vs Voice</strong> — Toggle between <strong>👆 Touch</strong> and <strong>🎙️ Voice</strong> input modes for entering scores.' }
+                        { icon: '📋', text: '<strong>Scorecard</strong> — Tap the 📋 icon in the nav bar for a summary scorecard view of all players.' }
                     ],
                     [
                         { icon: '📊', text: '<strong>Stats Tracking</strong> — FIR, GIR, PUTT, and DOT boxes appear below each player when stats are enabled. Tap them to record.' },
-                        { icon: '📝', text: '<strong>Hole Notes</strong> — Tap the 📝 notepad icon to add notes for the current hole.' }
+                        { icon: '🏆', text: '<strong>Results</strong> — Tap the 🏆 icon to view the live leaderboard, payout calculator, and side games at any time.' }
                     ]
                 ]
             },
@@ -32713,212 +32611,15 @@
         let carouselTouchEndX = 0;
         
         // Input mode state
-        let inputMode = 'keyboard'; // 'keyboard' or 'voice'
-        let currentVoiceTarget = null; // { playerIndex, holeIndex }
-        let recognition = null;
-        
-        // Set input mode
-        function setInputMode(mode) {
-            inputMode = mode;
-            const keyboardBtn = document.getElementById('keyboardModeBtn');
-            const voiceBtn = document.getElementById('voiceModeBtn');
-            
-            keyboardBtn.classList.toggle('active', mode === 'keyboard');
-            voiceBtn.classList.toggle('active', mode === 'voice');
-            voiceBtn.classList.toggle('voice-active', mode === 'voice');
-            
-            // Update visual state for inline styles
-            if (mode === 'keyboard') {
-                if (keyboardBtn) {
-                    keyboardBtn.style.background = '#1e3a5f';
-                    keyboardBtn.style.color = 'white';
-                }
-                if (voiceBtn) {
-                    voiceBtn.style.background = 'transparent';
-                    voiceBtn.style.color = '#6b7280';
-                }
-            } else {
-                if (voiceBtn) {
-                    voiceBtn.style.background = '#1e3a5f';
-                    voiceBtn.style.color = 'white';
-                }
-                if (keyboardBtn) {
-                    keyboardBtn.style.background = 'transparent';
-                    keyboardBtn.style.color = '#6b7280';
-                }
-            }
-            
-            // Check if voice is supported
-            if (mode === 'voice' && !('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-                alert('Voice input is not supported in this browser. Please use Chrome or Safari.');
-                setInputMode('keyboard');
-            }
-        }
-        
-        // Initialize speech recognition
-        function initSpeechRecognition() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) return null;
-            
-            recognition = new SpeechRecognition();
-            recognition.continuous = false;
-            recognition.interimResults = false;
-            recognition.lang = 'en-US';
-            recognition.maxAlternatives = 3;
-            
-            recognition.onresult = (event) => {
-                const result = event.results[0][0].transcript.toLowerCase().trim();
-                console.log('Voice result:', result);
-                processVoiceResult(result);
-            };
-            
-            recognition.onerror = (event) => {
-                console.error('Speech recognition error:', event.error);
-                hideVoiceListening();
-                if (event.error === 'not-allowed') {
-                    alert('Microphone access denied. Please enable microphone permissions.');
-                    setInputMode('keyboard');
-                }
-            };
-            
-            recognition.onend = () => {
-                // Auto-hide after timeout if no result
-                setTimeout(() => {
-                    hideVoiceListening();
-                }, 500);
-            };
-            
-            return recognition;
-        }
-        
-        // Process voice input result
-        function processVoiceResult(result) {
-            if (!currentVoiceTarget) {
-                console.log('No voice target, ignoring result:', result);
-                return;
-            }
-            
-            // Capture target immediately in case it gets cleared
-            const targetPlayerIndex = currentVoiceTarget.playerIndex;
-            const targetHoleIndex = currentVoiceTarget.holeIndex;
-            
-            let score = null;
-            
-            // Direct number parsing
-            const numMatch = result.match(/\d+/);
-            if (numMatch) {
-                score = parseInt(numMatch[0]);
-            }
-            
-            // Word to number mapping
-            const wordNumbers = {
-                'zero': 0, 'one': 1, 'two': 2, 'three': 3, 'four': 4,
-                'five': 5, 'six': 6, 'seven': 7, 'eight': 8, 'nine': 9,
-                'ten': 10, 'eleven': 11, 'twelve': 12
-            };
-            
-            for (const [word, num] of Object.entries(wordNumbers)) {
-                if (result.includes(word)) {
-                    score = num;
-                    break;
-                }
-            }
-            
-            // Golf terms (relative to par)
-            if (courseData && courseData.holes[targetHoleIndex]) {
-                const hole = courseData.holes[targetHoleIndex];
-                const par = hole.par;
-                
-                if (result.includes('ace') || result.includes('hole in one')) {
-                    score = 1;
-                } else if (result.includes('double eagle') || result.includes('albatross')) {
-                    score = par - 3;
-                } else if (result.includes('eagle')) {
-                    score = par - 2;
-                } else if (result.includes('birdie')) {
-                    score = par - 1;
-                } else if (result.includes('par')) {
-                    score = par;
-                } else if (result.includes('bogey') && !result.includes('double') && !result.includes('triple')) {
-                    score = par + 1;
-                } else if (result.includes('double bogey') || result.includes('double')) {
-                    score = par + 2;
-                } else if (result.includes('triple bogey') || result.includes('triple')) {
-                    score = par + 3;
-                }
-            }
-            
-            // Show result and save
-            if (score !== null && score >= 1 && score <= 15) {
-                document.getElementById('voiceResult').textContent = score;
-                
-                setTimeout(() => {
-                    updateScore(targetPlayerIndex, targetHoleIndex, score);
-                    hideVoiceListening();
-                    // Refresh appropriate view
-                    if (currentView === 'hole') {
-                        renderHoleView();
-                    } else {
-                        switchToPlayerView();
-                    }
-                }, 800);
-            } else {
-                document.getElementById('voiceResult').textContent = '?';
-                setTimeout(hideVoiceListening, 1000);
-            }
-        }
-        
-        // Show voice listening overlay
-        function showVoiceListening(playerIndex, holeIndex) {
-            currentVoiceTarget = { playerIndex, holeIndex };
-            document.getElementById('voiceResult').textContent = '';
-            document.getElementById('voiceListening').classList.add('active');
-            
-            if (!recognition) {
-                recognition = initSpeechRecognition();
-            }
-            
-            if (recognition) {
-                try {
-                    recognition.start();
-                } catch (e) {
-                    console.error('Could not start recognition:', e);
-                }
-            }
-            
-            // Auto-timeout after 4 seconds
-            setTimeout(() => {
-                if (document.getElementById('voiceListening').classList.contains('active')) {
-                    hideVoiceListening();
-                }
-            }, 4000);
-        }
-        
-        // Hide voice listening overlay
-        function hideVoiceListening() {
-            document.getElementById('voiceListening').classList.remove('active');
-            currentVoiceTarget = null;
-            if (recognition) {
-                try {
-                    recognition.stop();
-                } catch (e) {}
-            }
-        }
-        
-        // Handle score cell click (keyboard or voice based on mode)
+        // Handle score cell click
         function handleScoreCellClick(playerIndex, holeIndex, currentScore) {
-            if (inputMode === 'voice') {
-                showVoiceListening(playerIndex, holeIndex);
-            } else {
-                // Keyboard mode - show prompt
-                const hole = courseData.holes[holeIndex];
-                const newScore = prompt(`Hole ${hole.number} (Par ${hole.par}) - Enter score:`, currentScore || hole.par);
-                if (newScore !== null) {
-                    const score = parseInt(newScore);
-                    if (!isNaN(score) && score >= 0 && score <= 15) {
-                        updateScore(playerIndex, holeIndex, score);
-                        renderScoringPage();
-                    }
+            const hole = courseData.holes[holeIndex];
+            const newScore = prompt(`Hole ${hole.number} (Par ${hole.par}) - Enter score:`, currentScore || hole.par);
+            if (newScore !== null) {
+                const score = parseInt(newScore);
+                if (!isNaN(score) && score >= 0 && score <= 15) {
+                    updateScore(playerIndex, holeIndex, score);
+                    renderScoringPage();
                 }
             }
         }
@@ -32999,7 +32700,7 @@
                     }
                     
                     // Calculate handicap dots
-                    let hcpDotsHtml = '';
+                    let hcpDotsHtml = '<div class="hcp-dots-compact">';
                     if (player.handicap !== 0) {
                         const strokes = getHandicapStrokesForHole(player.handicap, hole.handicap, netMethod);
                         if (strokes !== 0) {
@@ -33007,19 +32708,20 @@
                             const dotCount = isHalfPop ? Math.abs(strokes * 2) : Math.abs(strokes);
                             const dotColor = strokes > 0 ? 'green' : 'red';
                             
-                            hcpDotsHtml = '<div class="hcp-dots-compact">';
                             for (let d = 0; d < Math.min(dotCount, 3); d++) {
                                 hcpDotsHtml += `<span class="hcp-dot-compact ${dotColor}"></span>`;
                             }
-                            hcpDotsHtml += '</div>';
                         }
                     }
+                    hcpDotsHtml += '</div>';
                     
-                    // Calculate net score for display
+                    // Calculate net score for display (always reserve space)
                     let netScoreHTML = '';
                     if (score > 0 && player.handicap !== 0) {
                         const netScore = getNetScore(score, player.handicap, hole.handicap, netMethod);
                         netScoreHTML = `<div class="net-score">(${netScore})</div>`;
+                    } else {
+                        netScoreHTML = `<div class="net-score" style="visibility:hidden;">&nbsp;</div>`;
                     }
                     
                     const cellHTML = `
@@ -33307,11 +33009,12 @@
                 }
             }
             
-            if (inputMode === 'voice') {
-                showVoiceListening(playerIndex, holeIndex);
-            } else {
-                showExpandedScoreInput(playerIndex, holeIndex, currentScore, playerName);
-            }
+            showExpandedScoreInput(playerIndex, holeIndex, currentScore, playerName);
+
+
+
+
+
         }
         
         // Expanded score input state
@@ -34336,13 +34039,7 @@
             // Always blur to prevent keyboard
             inputElement.blur();
             
-            // If voice mode, use voice input
-            if (inputMode === 'voice') {
-                showVoiceListening(playerIndex, holeIndex);
-                return;
-            }
-            
-            // Touch mode - use expanded input modal
+            // Use expanded input modal
             const currentScore = tournamentData.players[playerIndex].scores[holeIndex] || 0;
             const playerName = tournamentData.players[playerIndex].name;
             showExpandedScoreInput(playerIndex, holeIndex, currentScore, playerName);
