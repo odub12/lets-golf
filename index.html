@@ -5166,9 +5166,9 @@
             
             <!-- Row 4: Host/Player Toggle - tan/beige when selected, white when not -->
             <div id="hostPlayerToggleRow" style="display: flex; justify-content: center;">
-                <div style="display: flex; background: #e5e7eb; border-radius: 6px; padding: 3px;">
-                    <button type="button" id="toggleHostMode" onclick="setHostViewMode('host')" style="padding: 8px 20px; font-size: 13px; font-weight: 600; border-radius: 5px; border: none; background: #d4b896; color: #1e3a5f; cursor: pointer;">👑 Host</button>
-                    <button type="button" id="togglePlayerMode" onclick="setHostViewMode('player')" style="padding: 8px 20px; font-size: 13px; font-weight: 600; border-radius: 5px; border: none; background: white; color: #6b7280; cursor: pointer;">👤 Player</button>
+                <div style="display: flex; background: #f3f4f6; border-radius: 8px; padding: 4px;">
+                    <button type="button" id="toggleHostMode" onclick="setHostViewMode('host')" style="padding: 12px 32px; font-size: 15px; font-weight: 600; border-radius: 6px; border: none; background: #d4b896; color: #1e3a5f; cursor: pointer;">👑 Host</button>
+                    <button type="button" id="togglePlayerMode" onclick="setHostViewMode('player')" style="padding: 12px 32px; font-size: 15px; font-weight: 600; border-radius: 6px; border: none; background: white; color: #6b7280; cursor: pointer;">👤 Player</button>
                 </div>
             </div>
         </div>
@@ -5193,12 +5193,6 @@
                     </button>
                 </div>
             </div>
-            
-            <!-- BOX 0: Scan Scores from Photo -->
-            <button type="button" onclick="scanScoresFromCard()"
-                style="width: 100%; padding: 12px; margin-bottom: 10px; background: linear-gradient(135deg, #1e3a5f 0%, #2d5a8e 100%); border: none; border-radius: 6px; font-size: 13px; font-weight: 600; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 8px rgba(30,58,95,0.3);">
-                <span style="font-size: 18px;">📷</span> Scan Scores from Scorecard Photo
-            </button>
             
             <!-- BOX 1: Co-hosts - Standalone white box -->
             <div id="coHostsSection" style="background: white; border-radius: 6px; padding: 12px; margin-bottom: 10px; display: none;">
@@ -5302,9 +5296,9 @@
             
             <!-- Row 4: Host/Player Toggle - tan/beige when selected, white when not -->
             <div id="myPlayersHostToggle" style="display: none; justify-content: center;">
-                <div style="display: flex; background: #e5e7eb; border-radius: 6px; padding: 3px;">
-                    <button type="button" id="myPlayersHostBtn" onclick="switchToHostMode()" style="padding: 8px 20px; font-size: 13px; font-weight: 600; border-radius: 5px; border: none; background: white; color: #6b7280; cursor: pointer;">👑 Host</button>
-                    <button type="button" id="myPlayersPlayerBtn" style="padding: 8px 20px; font-size: 13px; font-weight: 600; border-radius: 5px; border: none; background: #d4b896; color: #1e3a5f; cursor: pointer;">👤 Player</button>
+                <div style="display: flex; background: #f3f4f6; border-radius: 8px; padding: 4px;">
+                    <button type="button" id="myPlayersHostBtn" onclick="switchToHostMode()" style="padding: 12px 32px; font-size: 15px; font-weight: 600; border-radius: 6px; border: none; background: white; color: #6b7280; cursor: pointer;">👑 Host</button>
+                    <button type="button" id="myPlayersPlayerBtn" style="padding: 12px 32px; font-size: 15px; font-weight: 600; border-radius: 6px; border: none; background: #d4b896; color: #1e3a5f; cursor: pointer;">👤 Player</button>
                 </div>
             </div>
         </div>
@@ -7908,373 +7902,6 @@
         };
         let selectedPlan = 'week';  // Default selection in paywall
         
-        // ===== CLAUDE VISION API =====
-        const ANTHROPIC_API_KEY = 'YOUR_ANTHROPIC_API_KEY'; // Replace with your actual key
-        
-        async function sendToClaudeVision(base64Data, mediaType, prompt) {
-            if (ANTHROPIC_API_KEY === 'YOUR_ANTHROPIC_API_KEY') {
-                throw new Error('API key not configured. Replace YOUR_ANTHROPIC_API_KEY in the code.');
-            }
-            
-            const response = await fetch('https://api.anthropic.com/v1/messages', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-api-key': ANTHROPIC_API_KEY,
-                    'anthropic-version': '2023-06-01',
-                    'anthropic-dangerous-direct-browser-access': 'true'
-                },
-                body: JSON.stringify({
-                    model: 'claude-haiku-4-5-20251001',
-                    max_tokens: 1500,
-                    messages: [{
-                        role: 'user',
-                        content: [
-                            {
-                                type: 'image',
-                                source: { type: 'base64', media_type: mediaType, data: base64Data }
-                            },
-                            { type: 'text', text: prompt }
-                        ]
-                    }]
-                })
-            });
-            
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error?.message || `API error: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            const text = data.content.map(b => b.text || '').join('');
-            
-            // Extract JSON from response (may be wrapped in markdown code blocks)
-            const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) || text.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-                return JSON.parse(jsonMatch[1] || jsonMatch[0]);
-            }
-            throw new Error('Could not parse response as JSON');
-        }
-        
-        // Show/hide scan loading overlay
-        function showScanOverlay(message = 'Scanning scorecard...') {
-            let overlay = document.getElementById('scanOverlay');
-            if (!overlay) {
-                overlay = document.createElement('div');
-                overlay.id = 'scanOverlay';
-                overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 20000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;';
-                overlay.innerHTML = `
-                    <div style="font-size: 48px; animation: pulse 1s infinite;">📷</div>
-                    <div id="scanOverlayText" style="color: white; font-size: 18px; font-weight: 600;"></div>
-                    <div style="color: #94a3b8; font-size: 13px;">This may take a few seconds</div>
-                `;
-                document.body.appendChild(overlay);
-            }
-            document.getElementById('scanOverlayText').textContent = message;
-            overlay.style.display = 'flex';
-        }
-        
-        function hideScanOverlay() {
-            const overlay = document.getElementById('scanOverlay');
-            if (overlay) overlay.style.display = 'none';
-        }
-        
-        // Capture image from camera/file
-        function captureImage() {
-            return new Promise((resolve, reject) => {
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = 'image/*';
-                input.capture = 'environment'; // Back camera on mobile
-                input.onchange = (e) => {
-                    const file = e.target.files[0];
-                    if (!file) { reject(new Error('No file selected')); return; }
-                    const reader = new FileReader();
-                    reader.onload = () => {
-                        const base64 = reader.result.split(',')[1];
-                        const mediaType = file.type || 'image/jpeg';
-                        resolve({ base64, mediaType });
-                    };
-                    reader.onerror = () => reject(new Error('Failed to read file'));
-                    reader.readAsDataURL(file);
-                };
-                input.click();
-            });
-        }
-        
-        // ===== SCAN COURSE SCORECARD =====
-        async function scanCourseScorecard() {
-            try {
-                const { base64, mediaType } = await captureImage();
-                showScanOverlay('Reading course scorecard...');
-                
-                const prompt = `Analyze this golf course scorecard image. Extract the following data and return ONLY valid JSON (no other text):
-
-{
-  "courseName": "string or null",
-  "city": "string or null", 
-  "state": "2-letter state code or null",
-  "slope": number or null,
-  "rating": number or null,
-  "holes": [
-    {"number": 1, "par": number, "handicap": number},
-    {"number": 2, "par": number, "handicap": number},
-    ...all 18 holes
-  ]
-}
-
-Rules:
-- Par values are typically 3, 4, or 5
-- Handicap values are 1-18 (difficulty ranking, each number used once)
-- Look for rows labeled "Par", "Hdcp", "Hcp", "HCP", or "Handicap"
-- Front 9 = holes 1-9, Back 9 = holes 10-18
-- If you can't read a value, use null
-- Slope is typically 55-155, Rating is typically 60.0-80.0
-- Return ONLY the JSON object, no markdown, no explanation`;
-
-                const result = await sendToClaudeVision(base64, mediaType, prompt);
-                hideScanOverlay();
-                
-                // Fill form fields
-                if (result.courseName) {
-                    const nameField = document.getElementById('manualCourseName');
-                    if (nameField && !nameField.value) nameField.value = result.courseName;
-                }
-                if (result.city) {
-                    const cityField = document.getElementById('manualCourseCity');
-                    if (cityField && !cityField.value) cityField.value = result.city;
-                }
-                if (result.state) {
-                    const stateField = document.getElementById('manualCourseState');
-                    if (stateField && !stateField.value) stateField.value = result.state;
-                }
-                if (result.slope) {
-                    const slopeField = document.getElementById('manualCourseSlope');
-                    if (slopeField) slopeField.value = result.slope;
-                }
-                if (result.rating) {
-                    const ratingField = document.getElementById('manualCourseRating');
-                    if (ratingField) ratingField.value = result.rating;
-                }
-                
-                // Fill hole data
-                if (result.holes && result.holes.length === 18) {
-                    // Expand the hole details section
-                    const section = document.getElementById('manualHoleDetailsSection');
-                    const arrow = document.getElementById('manualHoleToggleArrow');
-                    if (section) section.style.display = 'block';
-                    if (arrow) arrow.style.transform = 'rotate(180deg)';
-                    
-                    result.holes.forEach(hole => {
-                        if (hole.par) {
-                            const parInput = document.getElementById(`manualPar${hole.number}`);
-                            if (parInput) parInput.value = hole.par;
-                        }
-                        if (hole.handicap) {
-                            const hcpInput = document.getElementById(`manualHcp${hole.number}`);
-                            if (hcpInput) hcpInput.value = hole.handicap;
-                        }
-                    });
-                    
-                    // Update par totals
-                    if (typeof updateManualParTotal === 'function') updateManualParTotal();
-                }
-                
-                let filled = [];
-                if (result.courseName) filled.push('name');
-                if (result.slope) filled.push('slope');
-                if (result.rating) filled.push('rating');
-                if (result.holes?.length === 18) filled.push('18 holes');
-                
-                showNotification('Scan Complete! ✅', `Filled: ${filled.join(', ') || 'partial data'}. Review and adjust as needed.`);
-                
-            } catch (err) {
-                hideScanOverlay();
-                if (err.message === 'No file selected') return; // User cancelled
-                console.error('Scan error:', err);
-                showNotification('Scan Failed', err.message || 'Could not read scorecard. Try a clearer photo or enter manually.', true);
-            }
-        }
-        
-        // ===== SCAN SCORES FROM SCORECARD =====
-        async function scanScoresFromCard() {
-            if (!tournamentData || !tournamentData.players || tournamentData.players.length === 0) {
-                showNotification('No Tournament', 'Start a tournament first before scanning scores.');
-                return;
-            }
-            
-            try {
-                const { base64, mediaType } = await captureImage();
-                showScanOverlay('Reading scores from scorecard...');
-                
-                const playerNames = tournamentData.players.map(p => p.name);
-                
-                const prompt = `Analyze this completed golf scorecard image. Extract player names and their scores for each hole.
-
-The current tournament has these players: ${JSON.stringify(playerNames)}
-
-Return ONLY valid JSON (no other text):
-
-{
-  "players": [
-    {
-      "name": "exact name from scorecard",
-      "matchedName": "best match from tournament player list or null if no match",
-      "scores": [score1, score2, ..., score18]
-    }
-  ]
-}
-
-Rules:
-- Scores are typically 1-12 per hole
-- Use 0 for holes with no score entered
-- Front 9 = holes 1-9, Back 9 = holes 10-18
-- Match scorecard names to the tournament player list as closely as possible (first name match is fine)
-- If a name on the card doesn't match any tournament player, set matchedName to null
-- Include ALL players you can read from the scorecard
-- Return ONLY the JSON object, no markdown, no explanation`;
-
-                const result = await sendToClaudeVision(base64, mediaType, prompt);
-                hideScanOverlay();
-                
-                if (!result.players || result.players.length === 0) {
-                    showNotification('No Scores Found', 'Could not read any player scores from the image.', true);
-                    return;
-                }
-                
-                // Show confirmation modal
-                showScoreScanConfirmation(result.players);
-                
-            } catch (err) {
-                hideScanOverlay();
-                if (err.message === 'No file selected') return;
-                console.error('Score scan error:', err);
-                showNotification('Scan Failed', err.message || 'Could not read scores. Try a clearer photo.', true);
-            }
-        }
-        
-        // Show confirmation modal for scanned scores
-        function showScoreScanConfirmation(scannedPlayers) {
-            const modal = document.createElement('div');
-            modal.id = 'scoreScanModal';
-            modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 15000; display: flex; align-items: center; justify-content: center; padding: 16px;';
-            
-            const tournamentPlayers = tournamentData.players;
-            
-            let playerRows = scannedPlayers.map((sp, idx) => {
-                const matchOptions = tournamentPlayers.map((tp, tIdx) => 
-                    `<option value="${tIdx}" ${sp.matchedName === tp.name ? 'selected' : ''}>${tp.name}</option>`
-                ).join('');
-                
-                const totalScore = sp.scores.reduce((s, v) => s + (v || 0), 0);
-                const holesPlayed = sp.scores.filter(v => v > 0).length;
-                
-                return `
-                    <div style="background: #f8fafc; border-radius: 8px; padding: 12px; margin-bottom: 8px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <div>
-                                <div style="font-weight: 700; color: #1e3a5f; font-size: 14px;">${sp.name}</div>
-                                <div style="font-size: 11px; color: #64748b;">${holesPlayed} holes • Total: ${totalScore}</div>
-                            </div>
-                            <select id="scanMatch_${idx}" style="padding: 6px 8px; border: 1.5px solid #d1d5db; border-radius: 6px; font-size: 12px; font-weight: 600; color: #1e3a5f;">
-                                <option value="-1">Skip (don't import)</option>
-                                ${matchOptions}
-                            </select>
-                        </div>
-                        <div style="display: grid; grid-template-columns: repeat(9, 1fr); gap: 2px; font-size: 10px; text-align: center;">
-                            ${sp.scores.slice(0, 9).map((s, i) => `<div style="background: ${s > 0 ? '#e2e8f0' : '#f1f5f9'}; padding: 2px; border-radius: 3px;"><div style="color: #94a3b8;">${i+1}</div><div style="font-weight: 700; color: ${s > 0 ? '#1e3a5f' : '#d1d5db'};">${s || '-'}</div></div>`).join('')}
-                        </div>
-                        <div style="display: grid; grid-template-columns: repeat(9, 1fr); gap: 2px; font-size: 10px; text-align: center; margin-top: 2px;">
-                            ${sp.scores.slice(9, 18).map((s, i) => `<div style="background: ${s > 0 ? '#e2e8f0' : '#f1f5f9'}; padding: 2px; border-radius: 3px;"><div style="color: #94a3b8;">${i+10}</div><div style="font-weight: 700; color: ${s > 0 ? '#1e3a5f' : '#d1d5db'};">${s || '-'}</div></div>`).join('')}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            
-            modal.innerHTML = `
-                <div style="background: white; border-radius: 12px; max-width: 420px; width: 100%; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
-                    <div style="padding: 16px; border-bottom: 1px solid #e2e8f0;">
-                        <h3 style="margin: 0; color: #1e3a5f; font-size: 16px;">📷 Scanned Scores</h3>
-                        <p style="margin: 4px 0 0 0; font-size: 12px; color: #64748b;">Match each scanned player to a tournament player, then confirm.</p>
-                    </div>
-                    <div style="padding: 16px;">
-                        ${playerRows}
-                    </div>
-                    <div style="padding: 12px 16px; border-top: 1px solid #e2e8f0; display: flex; gap: 8px;">
-                        <button onclick="document.getElementById('scoreScanModal').remove();" 
-                            style="flex: 1; padding: 12px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">Cancel</button>
-                        <button onclick="applyScannedScores(${scannedPlayers.length})" 
-                            style="flex: 2; padding: 12px; background: #166534; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">✅ Apply Scores</button>
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
-            
-            // Store scanned data for apply function
-            window._scannedPlayers = scannedPlayers;
-        }
-        
-        // Apply confirmed scanned scores
-        function applyScannedScores(count) {
-            const scannedPlayers = window._scannedPlayers;
-            if (!scannedPlayers) return;
-            
-            let applied = 0;
-            
-            for (let i = 0; i < count; i++) {
-                const select = document.getElementById(`scanMatch_${i}`);
-                const playerIdx = parseInt(select.value);
-                
-                if (playerIdx < 0) continue; // Skipped
-                
-                const scanned = scannedPlayers[i];
-                const player = tournamentData.players[playerIdx];
-                
-                if (!player || !scanned.scores) continue;
-                
-                // Apply scores (only overwrite holes that have scanned values > 0)
-                scanned.scores.forEach((score, holeIdx) => {
-                    if (score > 0 && holeIdx < 18) {
-                        player.scores[holeIdx] = score;
-                    }
-                });
-                
-                applied++;
-            }
-            
-            // Clean up
-            delete window._scannedPlayers;
-            document.getElementById('scoreScanModal').remove();
-            
-            if (applied > 0) {
-                // Save locally
-                saveToLocalStorage();
-                
-                // Sync all updated scores to Firebase if in cloud mode
-                if (activeTournamentId && tournamentMode === 'multi') {
-                    for (let i = 0; i < count; i++) {
-                        const select = document.getElementById(`scanMatch_${i}`);
-                        const playerIdx = parseInt(select.value);
-                        if (playerIdx < 0) continue;
-                        const player = tournamentData.players[playerIdx];
-                        if (!player) continue;
-                        player.scores.forEach((score, holeIdx) => {
-                            if (score > 0) {
-                                updatePlayerScore(activeTournamentId, player.name, holeIdx, score).catch(e => 
-                                    console.error('Firebase sync error:', e));
-                            }
-                        });
-                    }
-                }
-                
-                renderScoringPage();
-                showNotification('Scores Applied! ✅', `Updated scores for ${applied} player${applied > 1 ? 's' : ''}.`);
-            } else {
-                showNotification('No Changes', 'No players were selected for import.');
-            }
-        }
-        
         // ===== STRIPE CONFIGURATION =====
         // TO SET UP STRIPE:
         // 1. Go to Stripe Dashboard > Payment Links
@@ -8295,6 +7922,7 @@ Rules:
         // For testing without real Stripe, set this to true
         // This will simulate purchases (writes directly to Firebase)
         const STRIPE_TEST_MODE = true;  // Set to false when you have real Stripe links
+        
         const PLAN_PRICES = {
             day: { price: 4.99, label: 'Day Pass', days: 1 },
             week: { price: 9.99, label: 'Week Pass', days: 7 },
@@ -10817,12 +10445,6 @@ Rules:
                         💡 Find slope/rating on the course scorecard or website.
                     </p>
                     
-                    <!-- Scan Scorecard button -->
-                    <button type="button" onclick="scanCourseScorecard()"
-                        style="width: 100%; padding: 10px; margin-bottom: 12px; background: linear-gradient(135deg, #1e3a5f 0%, #2d5a8e 100%); border: none; border-radius: 6px; font-size: 13px; font-weight: 600; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                        <span style="font-size: 18px;">📷</span> Scan Scorecard Photo
-                    </button>
-                    
                     <!-- Per-hole par and handicap entry -->
                     <div style="margin-bottom: 12px;">
                         <button type="button" onclick="toggleManualHoleDetails()" id="manualHoleToggleBtn"
@@ -10892,6 +10514,7 @@ Rules:
             
             document.getElementById('manualCourseName').focus();
         }
+        
         // Toggle manual hole details section
         function toggleManualHoleDetails() {
             const section = document.getElementById('manualHoleDetailsSection');
@@ -11126,10 +10749,10 @@ Rules:
                 rawId = selectedValue.replace('rec_', '');
             }
             
-            // Show edit button for any course in customCourses (manual or API-sourced)
+            // Show edit button only for custom/manual courses
             if (editBtn) {
-                const courseToCheck = customCourses[rawId] || customCourses['api_' + rawId];
-                const isCustomCourse = !!courseToCheck;
+                const courseToCheck = customCourses[rawId];
+                const isCustomCourse = courseToCheck && courseToCheck.isManual;
                 editBtn.style.display = isCustomCourse ? 'flex' : 'none';
                 editBtn.style.alignItems = 'center';
                 editBtn.style.justifyContent = 'center';
@@ -11146,30 +10769,17 @@ Rules:
         // Edit the currently selected custom course
         function editSelectedCustomCourse() {
             const select = document.getElementById('courseSelect');
-            let selectedValue = select.value;
+            const selectedValue = select.value;
             
-            // Strip prefix to get raw course ID
-            if (selectedValue && selectedValue.startsWith('fav_')) {
-                selectedValue = selectedValue.substring(4);
-            } else if (selectedValue && selectedValue.startsWith('rec_')) {
-                selectedValue = selectedValue.substring(4);
-            }
-            
-            // Try with api_ prefix if not found directly
-            let courseKey = selectedValue;
-            if (!customCourses[courseKey] && customCourses['api_' + courseKey]) {
-                courseKey = 'api_' + courseKey;
-            }
-            
-            if (!courseKey || !customCourses[courseKey]) {
-                showNotification('Cannot Edit', 'Only custom/saved courses can be edited');
+            if (!selectedValue || !customCourses[selectedValue] || !customCourses[selectedValue].isManual) {
+                showNotification('Cannot Edit', 'Only custom courses can be edited');
                 return;
             }
             
             showCourseSearchModal();
             // Small delay to ensure modal DOM is ready
             setTimeout(() => {
-                showManualCourseEntry('', courseKey);
+                showManualCourseEntry('', selectedValue);
             }, 50);
         }
         
