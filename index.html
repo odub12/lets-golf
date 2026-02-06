@@ -19375,7 +19375,7 @@
             const courseName = tournamentData.courseName || getCourseDisplayName(tournamentData.course) || '';
             const dateStr = tournamentData.date ? formatShortDate(tournamentData.date) : '';
             const roundName = tournamentData.name || 'Tournament';
-            const roleIcon = isHost ? '👑' : '🏌️';
+            const roleIcon = (isHost || isCoHost) ? '👑' : '🏌️';
             
             return `
                 <div style="display: flex; align-items: center; gap: 10px;">
@@ -19415,7 +19415,7 @@
             const dateStr = round.date ? formatShortDate(round.date) : '';
             const courseName = round.courseName || getCourseDisplayName(round.course) || '';
             const roundName = round.name || 'Unnamed Round';
-            const roleIcon = round.role === 'host' ? '👑' : '🏌️';
+            const roleIcon = (round.role === 'host' || round.role === 'cohost' || round.role === 'co-host') ? '👑' : '🏌️';
             
             container.innerHTML = `
                 <!-- Delete button - positioned absolute, will be revealed when content slides left -->
@@ -19624,10 +19624,11 @@
                             ...data
                         };
                         
-                        // Check if user is host
+                        // Check if user is host or co-host
                         const history = getTournamentHistory();
                         const historyEntry = history.find(h => h.id === tournamentId);
                         isHost = historyEntry?.role === 'host';
+                        isCoHost = historyEntry?.role === 'cohost' || historyEntry?.role === 'co-host';
                         
                         // Set course data
                         courseData = courses[tournamentData.course] || customCourses[tournamentData.course];
@@ -19706,10 +19707,11 @@
                             ...data
                         };
                         
-                        // Check if user is host from history
+                        // Check if user is host or co-host from history
                         const history = getTournamentHistory();
                         const historyEntry = history.find(h => h.id === tournamentId);
                         isHost = historyEntry?.role === 'host';
+                        isCoHost = historyEntry?.role === 'cohost' || historyEntry?.role === 'co-host';
                         tournamentMode = 'multi';
                         
                         // Set course data
@@ -19866,8 +19868,9 @@
                 });
                 
                 historyHTML = sortedHistory.map((t, idx) => {
-                    const roleIcon = t.role === 'host' ? '👑' : t.role === 'viewer' ? '👁' : '🏌️';
-                    const roleText = t.role === 'host' ? 'Host' : t.role === 'viewer' ? 'Viewer' : 'Player';
+                    const isCoHostRole = t.role === 'cohost' || t.role === 'co-host';
+                    const roleIcon = (t.role === 'host' || isCoHostRole) ? '👑' : t.role === 'viewer' ? '👁' : '🏌️';
+                    const roleText = t.role === 'host' ? 'Host' : isCoHostRole ? 'Co-Host' : t.role === 'viewer' ? 'Viewer' : 'Player';
                     const finishedBadge = t.isFinished ? `<span style="background: #fef3c7; color: #92400e; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">FINISHED</span>` : '';
                     
                     return `
