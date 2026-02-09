@@ -16,7 +16,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
     <!-- PWA Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -112,6 +112,18 @@
             --radius-sm: 4px;
             --radius-md: 6px;
             --radius-lg: 8px;
+            
+            /* iOS Safe Area - uses env() which returns actual values on iOS */
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        
+        /* iOS Safe Area: if env() is supported (iOS with viewport-fit=cover), use it */
+        @supports (padding-top: env(safe-area-inset-top)) {
+            :root {
+                --safe-top: env(safe-area-inset-top, 0px);
+                --safe-bottom: env(safe-area-inset-bottom, 0px);
+            }
         }
         
         * {
@@ -161,6 +173,7 @@
             display: none;
             min-height: 100vh;
             padding: 12px;
+            padding-top: calc(12px + var(--safe-top));
             overscroll-behavior: none; /* Prevent pull-to-refresh */
             background: transparent;
             overflow-x: hidden;
@@ -193,7 +206,7 @@
             bottom: 0;
             z-index: 9000;
             /* iOS safe area support for notch/Dynamic Island */
-            padding: env(safe-area-inset-top) 20px env(safe-area-inset-bottom) 20px;
+            padding: calc(20px + var(--safe-top)) 20px calc(20px + var(--safe-bottom)) 20px;
             /* Ensure background covers everything */
             background: linear-gradient(150deg, var(--navy-dark) 0%, var(--navy-medium) 100%);
         }
@@ -292,7 +305,7 @@
         /* Sticky Header for Setup Page */
         .setup-header-sticky {
             position: fixed;
-            top: 12px;
+            top: calc(12px + var(--safe-top));
             left: 12px;
             right: 12px;
             z-index: 500;
@@ -307,7 +320,7 @@
         
         /* Add padding to setup container to account for fixed header */
         #setupPage .setup-container {
-            margin-top: 160px;
+            margin-top: calc(160px + var(--safe-top));
         }
         
         .setup-header-title {
@@ -934,7 +947,7 @@
             flex-direction: column;
             gap: 8px;
             position: fixed;
-            top: 12px;
+            top: calc(12px + var(--safe-top));
             left: 12px;
             right: 12px;
             z-index: 50;
@@ -1059,7 +1072,7 @@
         /* Results page header - simple single row */
         .results-sticky-header {
             position: fixed;
-            top: 0;
+            top: var(--safe-top);
             left: 0;
             right: 0;
             z-index: 50;
@@ -1072,7 +1085,7 @@
         
         /* Add padding to results page content to account for fixed header */
         #resultsPage .results-container {
-            margin-top: 200px;
+            margin-top: calc(200px + var(--safe-top));
         }
         
         .results-page-header {
@@ -1110,19 +1123,19 @@
         }
 
         .scoring-content {
-            padding-top: 200px;
+            padding-top: calc(200px + var(--safe-top));
             padding-left: 0;
             padding-right: 0;
         }
 
         .round-indicator.active ~ .scoring-header,
         #scoringPage .round-indicator.active ~ .scoring-header {
-            top: 44px;
+            top: calc(44px + var(--safe-top));
         }
 
         .round-indicator.active ~ .scoring-content,
         #scoringPage .round-indicator.active ~ .scoring-content {
-            padding-top: 240px;
+            padding-top: calc(240px + var(--safe-top));
         }
 
 
@@ -1865,7 +1878,7 @@
             display: flex;
             align-items: flex-start;
             justify-content: center;
-            padding: 20px;
+            padding: calc(20px + var(--safe-top)) 20px 20px 20px;
         }
 
         .scorecard-content {
@@ -4252,11 +4265,11 @@
             
             <!-- Leaderboard Card -->
             <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0; overflow: hidden; box-shadow: 0 2px 8px rgba(30, 58, 95, 0.1);">
-                <!-- Trophy Header - Navy Blue -->
-                <div style="background: linear-gradient(135deg, #1e3a5f, #2d4a6f); padding: 10px 16px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <!-- Trophy Header - Clickable to collapse -->
+                <div onclick="toggleLeaderboard()" style="background: linear-gradient(135deg, #1e3a5f, #2d4a6f); padding: 10px 16px; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;">
                     <span style="font-size: 18px;">🏆</span>
                     <span style="font-size: 14px; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 1px;">Leaderboard</span>
-                    <span style="font-size: 18px;">🏆</span>
+                    <span id="leaderboardToggleArrow" style="font-size: 12px; color: #d4b896; transition: transform 0.2s;">▲</span>
                 </div>
                 
                 <!-- Results Content -->
@@ -5326,7 +5339,7 @@
 
     <!-- Guest Home Page (Non-Host) -->
     <!-- Unified Home Page -->
-    <div id="guestHomePage" class="page" style="padding-top: 20px;">
+    <div id="guestHomePage" class="page">
         <!-- BOX 1: Header Section - Standalone white box -->
         <div style="background: white; border-radius: 6px; padding: 16px; margin-bottom: 10px; text-align: center; position: relative;">
             <!-- Top Left: Owner badge -->
@@ -5416,7 +5429,7 @@
     </div>
 
     <!-- Host Home Page (kept for compatibility, same design as guest) -->
-    <div id="hostHomePage" class="page" style="padding-top: 20px;">
+    <div id="hostHomePage" class="page">
         <!-- BOX 1: Header Section - Standalone white box -->
         <div style="background: white; border-radius: 6px; padding: 16px; margin-bottom: 10px; text-align: center; position: relative;">
             <!-- Top Left: Owner badge -->
@@ -5614,6 +5627,24 @@
     </div>
 
     <script>
+        // ========================================
+        // iOS SAFE AREA DETECTION (logging only — env() works via CSS)
+        // ========================================
+        (function() {
+            var isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+            var isCapacitor = (window.location.protocol === 'capacitor:');
+            if (isIOS || isCapacitor) {
+                var test = document.createElement('div');
+                test.style.cssText = 'position:fixed;top:0;left:0;padding-top:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none;';
+                document.documentElement.appendChild(test);
+                setTimeout(function() {
+                    var val = parseInt(window.getComputedStyle(test).paddingTop, 10) || 0;
+                    test.remove();
+                    console.log('[SafeArea] env() value:', val + 'px', '| platform:', isCapacitor ? 'Capacitor' : 'Safari');
+                }, 100);
+            }
+        })();
+
         // ========================================
         // FIREBASE CONFIGURATION & INITIALIZATION
         // ========================================
@@ -29125,6 +29156,15 @@ Rules:
         let payoutCustomCategoryCounter = 0;
         let _payoutSavingLocally = false; // Guard flag to prevent save→onSnapshot→recalculate→save loop
         
+        let leaderboardExpanded = true;
+        function toggleLeaderboard() {
+            leaderboardExpanded = !leaderboardExpanded;
+            const body = document.getElementById('resultsContent');
+            const arrow = document.getElementById('leaderboardToggleArrow');
+            if (body) body.style.display = leaderboardExpanded ? 'block' : 'none';
+            if (arrow) arrow.textContent = leaderboardExpanded ? '▲' : '▼';
+        }
+
         function togglePayoutCalculator() {
             payoutExpanded = !payoutExpanded;
             const body = document.getElementById('payoutCalculatorBody');
